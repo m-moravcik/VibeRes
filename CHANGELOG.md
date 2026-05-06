@@ -4,6 +4,12 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.5] — 2026-05-06
+
+### Changed
+
+- App icon re-rendered through `librsvg` instead of `sips`. The first cut had visible gradient banding, blurry drop shadows, and rough edges at small sizes — `sips`'s CoreSVG backend doesn't fully implement SVG filter primitives. Now each `.iconset` size is rendered directly from the source SVG at its target resolution. Cleaner across the board, especially the 16×16 and 32×32 menu/Finder thumbnails.
+
 ## [0.3.4] — 2026-05-06
 
 ### Added
