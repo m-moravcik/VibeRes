@@ -12,16 +12,26 @@ final class DisplayStore {
     private(set) var displays: [DisplayInfo] = []
     private(set) var lastError: String?
 
+    /// Bumps once each time the active display *set* (not just modes) changes —
+    /// i.e. a monitor was added or removed. UI/profile auto-apply observes this
+    /// to know when to re-evaluate "does any saved profile match this layout?".
+    private(set) var setChangeToken: Int = 0
+
     private var registered = false
     private var pendingRefresh: Task<Void, Never>?
+    /// Set of display IDs currently considered "active". Mutated only on the
+    /// main actor inside `applyRefresh`; compared against the next snapshot to
+    /// detect add/remove events.
+    private var lastDisplayIDs: Set<CGDirectDisplayID> = []
 
     init() {
         refresh()
+        lastDisplayIDs = Set(displays.map(\.id))
         registerReconfigurationCallback()
     }
 
     func refresh() {
-        displays = DisplayManager.snapshot()
+        applyRefresh(triggeredByCallback: false)
     }
 
     /// Coalesces bursts of reconfiguration callbacks (macOS often fires several in rapid
@@ -32,9 +42,22 @@ final class DisplayStore {
         pendingRefresh = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled else { return }
-            self?.refresh()
+            self?.applyRefresh(triggeredByCallback: true)
             self?.dismissStaleMenuBarPopover()
         }
+    }
+
+    /// Re-snapshots the display list and bumps `setChangeToken` if a display
+    /// was added or removed since the last snapshot. Mode-only changes don't
+    /// bump the token — we don't want auto-apply to fight the user when they
+    /// manually pick a different resolution.
+    private func applyRefresh(triggeredByCallback: Bool) {
+        displays = DisplayManager.snapshot()
+        let nowIDs = Set(displays.map(\.id))
+        if triggeredByCallback && nowIDs != lastDisplayIDs {
+            setChangeToken &+= 1
+        }
+        lastDisplayIDs = nowIDs
     }
 
     /// MenuBarExtra(.window) caches its NSPanel frame from when it was first shown.

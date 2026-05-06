@@ -171,8 +171,12 @@ private struct DisplayCard: View {
 private struct DisplayDetailView: View {
     let displayID: CGDirectDisplayID
     @Environment(DisplayStore.self) private var store
+    @Environment(Preferences.self) private var preferences
     @Environment(\.dismiss) private var dismiss
     @State private var filter: ModeFilter = .hiDPIIfAvailable
+    /// Single desktop snapshot, fetched once per detail-view appearance
+    /// when the user has Live Preview enabled. Reused by every hover row.
+    @State private var desktopSnapshot: NSImage?
 
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
@@ -308,9 +312,17 @@ private struct DisplayDetailView: View {
                 CompactResolutionRow(
                     group: group,
                     currentMode: display.currentMode,
+                    desktopImage: desktopSnapshot,
                     apply: { mode in store.apply(mode, to: display.id) }
                 )
             }
+        }
+        .task(id: displayID) {
+            // Lazily fetch one snapshot per detail-view appearance. Permission
+            // prompt fires here on the first run for users who enabled Live
+            // Preview. Failures fall back silently to the geometric variant.
+            guard preferences.livePreviewEnabled else { return }
+            desktopSnapshot = await DesktopCapture.snapshot(of: displayID)
         }
     }
 
@@ -348,6 +360,7 @@ private struct DisplayDetailView: View {
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
     @Environment(UpdateChecker.self) private var updateChecker
+    @Environment(Preferences.self) private var preferences
     @State private var launchAtLogin: Bool = LoginItem.isEnabled
 
     var body: some View {
@@ -396,6 +409,24 @@ private struct FooterBar: View {
                     // System Settings → Login Items between popover opens.
                     launchAtLogin = LoginItem.isEnabled
                 }
+
+                MenuRow(
+                    icon: preferences.autoApplyOnDisplayChange ? "checkmark.circle.fill" : "circle",
+                    label: "Auto-apply Matching Profile",
+                    shortcut: nil,
+                    action: {
+                        preferences.autoApplyOnDisplayChange.toggle()
+                    }
+                )
+
+                MenuRow(
+                    icon: preferences.livePreviewEnabled ? "checkmark.circle.fill" : "circle",
+                    label: "Live Preview on Hover",
+                    shortcut: nil,
+                    action: {
+                        preferences.livePreviewEnabled.toggle()
+                    }
+                )
 
                 MenuRow(
                     icon: updateChecker.isChecking ? "arrow.triangle.2.circlepath" : "arrow.down.circle",
@@ -598,6 +629,10 @@ private struct BackButton: View {
 private struct CompactResolutionRow: View {
     let group: ResolutionGroup
     let currentMode: CGDisplayMode?
+    /// Cached desktop snapshot from the parent. When non-nil and the user
+    /// hovers the row, a popover shows the proposed mode framed against the
+    /// current one with this image clipped into the inner rectangle.
+    let desktopImage: NSImage?
     let apply: (CGDisplayMode) -> Void
     @State private var isHovering = false
 
@@ -627,6 +662,19 @@ private struct CompactResolutionRow: View {
         .onHover { isHovering = $0 }
         .help(tooltipText)
         .accessibilityValue(tooltipText)
+        .popover(isPresented: .constant(isHovering && !isCurrentSize), arrowEdge: .trailing) {
+            if let cur = currentMode {
+                PreviewBox(
+                    currentWidth: cur.width,
+                    currentHeight: cur.height,
+                    proposedWidth: group.pointWidth,
+                    proposedHeight: group.pointHeight,
+                    maxSize: 140,
+                    desktopImage: desktopImage
+                )
+                .padding(8)
+            }
+        }
     }
 
     @ViewBuilder
