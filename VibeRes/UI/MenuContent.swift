@@ -3,6 +3,7 @@ import SwiftUI
 struct MenuContent: View {
     @Environment(DisplayStore.self) private var store
     @State private var path = NavigationPath()
+    @State private var menuTracking = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -22,7 +23,23 @@ struct MenuContent: View {
         // patterns (Control Center, Bluetooth, Wi-Fi): each open is a fresh task,
         // not a continuation of an abandoned one. Avoids the "where am I?" moment
         // when reopening hours later mid-detail.
+        //
+        // Caveat: opening any NSMenu (e.g. a SwiftUI `.contextMenu` from a profile
+        // pill) makes the popover briefly resign key — without filtering, that
+        // would reset path AND dismiss the popover. We skip resign events that
+        // fire while a menu is being tracked.
+        .onReceive(NotificationCenter.default.publisher(for: NSMenu.didBeginTrackingNotification)) { _ in
+            menuTracking = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSMenu.didEndTrackingNotification)) { _ in
+            // Defer slightly — resign-key may fire just after end-tracking.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(150))
+                menuTracking = false
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { note in
+            guard !menuTracking else { return }
             guard let window = note.object as? NSWindow else { return }
             let className = String(describing: type(of: window))
             if className.contains("MenuBarExtra") || className.contains("StatusBar") || className.contains("Popover") {
