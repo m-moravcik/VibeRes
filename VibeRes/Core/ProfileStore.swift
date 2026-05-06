@@ -120,39 +120,119 @@ final class ProfileStore {
         add(Profile(name: name, entries: entries))
     }
 
+    /// Outcome of applying a single profile entry. Lets the UI explain *what*
+    /// actually happened — exact match, fallback to a different refresh rate
+    /// or close size, or skipped because no display matched.
+    struct ApplyOutcome {
+        enum Status {
+            case applied                  // exact request honoured
+            case appliedWithFallback      // got close, see fallback fields
+            case skippedNoMatch           // nothing matched the matcher
+            case skippedNoMode            // matched but no usable mode found
+            case failed(String)           // ResolutionSwitcher threw
+        }
+        let displayName: String
+        let requestedSize: (Int, Int)
+        let requestedHz: Int?
+        let appliedSize: (Int, Int)?
+        let appliedHz: Int?
+        let status: Status
+
+        /// Human-readable summary used in tooltips and CLI output.
+        var summary: String {
+            switch status {
+            case .applied:
+                let hz = appliedHz.map { " @ \($0)Hz" } ?? ""
+                return "\(displayName) → \(appliedSize.map { "\($0.0)×\($0.1)" } ?? "?")\(hz)"
+            case .appliedWithFallback:
+                let req = "\(requestedSize.0)×\(requestedSize.1)" + (requestedHz.map { " @\($0)Hz" } ?? "")
+                let got = (appliedSize.map { "\($0.0)×\($0.1)" } ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
+                return "\(displayName): wanted \(req), used \(got) (closest available)"
+            case .skippedNoMatch:
+                return "\(displayName) not connected"
+            case .skippedNoMode:
+                return "\(displayName): no usable mode for \(requestedSize.0)×\(requestedSize.1)"
+            case .failed(let err):
+                return "\(displayName): \(err)"
+            }
+        }
+
+        var isProblem: Bool {
+            switch status {
+            case .applied: return false
+            case .appliedWithFallback, .skippedNoMatch, .skippedNoMode, .failed: return true
+            }
+        }
+    }
+
     /// Apply every entry of the profile to its matching live display, picking the
-    /// best mode via the same scoring used by SetResolutionIntent. Skipping rules:
-    /// - .edid / .builtIn matchers that find no display → "X not connected" warning
-    /// - .anyExternal that finds no external display → "no external connected"
-    /// - .anyExternal with multiple externals → applies to all of them
+    /// best mode via the same scoring used by SetResolutionIntent. Returns a
+    /// per-entry outcome so the UI can distinguish between success, fallback,
+    /// and skip.
     @discardableResult
-    func apply(_ profile: Profile, displays: [DisplayInfo]) -> [String] {
-        var failures: [String] = []
-        var anyApplied = false
+    func applyDetailed(_ profile: Profile, displays: [DisplayInfo]) -> [ApplyOutcome] {
+        var outcomes: [ApplyOutcome] = []
 
         for entry in profile.entries {
             let matches = displays.filter { entry.matcher.matches($0.id) }
             if matches.isEmpty {
-                failures.append(entry.matcher.notConnectedDescription(for: entry))
+                outcomes.append(ApplyOutcome(
+                    displayName: entry.displayName,
+                    requestedSize: (entry.pointWidth, entry.pointHeight),
+                    requestedHz: entry.refreshHz,
+                    appliedSize: nil,
+                    appliedHz: nil,
+                    status: .skippedNoMatch
+                ))
                 continue
             }
             for info in matches {
                 guard let mode = bestMatch(in: info.modes, entry: entry) else {
-                    failures.append("No matching mode on \(info.name)")
+                    outcomes.append(ApplyOutcome(
+                        displayName: info.name,
+                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedHz: entry.refreshHz,
+                        appliedSize: nil,
+                        appliedHz: nil,
+                        status: .skippedNoMode
+                    ))
                     continue
                 }
+                let isExact = mode.width == entry.pointWidth
+                    && mode.height == entry.pointHeight
+                    && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
+                    && mode.isHiDPI == entry.isHiDPI
                 do {
                     try ResolutionSwitcher.apply(mode, to: info.id)
-                    anyApplied = true
+                    outcomes.append(ApplyOutcome(
+                        displayName: info.name,
+                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedHz: entry.refreshHz,
+                        appliedSize: (mode.width, mode.height),
+                        appliedHz: mode.refreshHz,
+                        status: isExact ? .applied : .appliedWithFallback
+                    ))
                 } catch {
-                    failures.append("\(info.name): \(error)")
+                    outcomes.append(ApplyOutcome(
+                        displayName: info.name,
+                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedHz: entry.refreshHz,
+                        appliedSize: nil,
+                        appliedHz: nil,
+                        status: .failed("\(error)")
+                    ))
                 }
             }
         }
-        if !anyApplied && failures.isEmpty {
-            failures.append("Nothing to apply.")
-        }
-        return failures
+        return outcomes
+    }
+
+    /// Backward-compat wrapper that converts ApplyOutcome list into a flat string array.
+    @discardableResult
+    func apply(_ profile: Profile, displays: [DisplayInfo]) -> [String] {
+        applyDetailed(profile, displays: displays)
+            .filter(\.isProblem)
+            .map(\.summary)
     }
 
     private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry) -> CGDisplayMode? {

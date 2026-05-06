@@ -7,7 +7,13 @@ struct ProfilesSection: View {
     @Environment(ProfileStore.self) private var profiles
     @Environment(DisplayStore.self) private var displays
     @State private var mode: Mode = .idle
+    @State private var lastNote: String?
+    @State private var lastNoteTone: NoteTone = .info
     @FocusState private var nameFieldFocused: Bool
+
+    enum NoteTone {
+        case info, fallback, problem
+    }
 
     /// What the section is currently showing.
     enum Mode: Equatable {
@@ -53,8 +59,28 @@ struct ProfilesSection: View {
             case .renaming:
                 renameForm
             }
+
+            if let note = lastNote {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
+                                       : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
+                        .font(.system(size: 9))
+                    Text(note).font(.system(size: 10)).lineLimit(3)
+                }
+                .foregroundStyle(noteColor)
+                .padding(.horizontal, Design.Spacing.l)
+                .padding(.top, 2)
+            }
         }
         .padding(.bottom, Design.Spacing.s)
+    }
+
+    private var noteColor: Color {
+        switch lastNoteTone {
+        case .info: return .green
+        case .fallback: return .orange
+        case .problem: return .red
+        }
     }
 
     // MARK: - Idle pills
@@ -74,12 +100,8 @@ struct ProfilesSection: View {
             FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(profiles.profiles) { profile in
                     ProfilePill(profile: profile) {
-                        let failures = profiles.apply(profile, displays: displays.displays)
-                        if !failures.isEmpty {
-                            // Surface the first failure as a transient note.
-                            // (Multiple failures get joined.)
-                            print("apply: \(failures.joined(separator: ", "))")
-                        }
+                        let outcomes = profiles.applyDetailed(profile, displays: displays.displays)
+                        announceOutcome(outcomes)
                     } onRename: {
                         mode = .renaming(profileID: profile.id, newName: profile.name)
                     } onDelete: {
@@ -345,6 +367,45 @@ struct ProfilesSection: View {
 
         profiles.captureCurrent(name: trimmed, displays: displays.displays, selection: selection)
         mode = .idle
+    }
+
+    /// Translates outcome list into a single coloured note shown under the pills.
+    /// Priority: any problem > any fallback > all-applied success.
+    private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
+        let problems = outcomes.filter {
+            if case .applied = $0.status { return false }
+            if case .appliedWithFallback = $0.status { return false }
+            return true
+        }
+        let fallbacks = outcomes.filter {
+            if case .appliedWithFallback = $0.status { return true }
+            return false
+        }
+
+        if !problems.isEmpty {
+            lastNoteTone = .problem
+            lastNote = problems.map(\.summary).joined(separator: "; ")
+        } else if !fallbacks.isEmpty {
+            lastNoteTone = .fallback
+            lastNote = fallbacks.map(\.summary).joined(separator: "; ")
+        } else if let first = outcomes.first(where: {
+            if case .applied = $0.status { return true }
+            return false
+        }) {
+            lastNoteTone = .info
+            lastNote = first.summary + (outcomes.count > 1 ? " (+\(outcomes.count - 1) more)" : "")
+        } else {
+            lastNote = nil
+        }
+
+        // Auto-clear after a few seconds so the popover doesn't keep stale notes.
+        if lastNote != nil {
+            let token = lastNote
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(6))
+                if lastNote == token { lastNote = nil }
+            }
+        }
     }
 
     private func commitRename(id: UUID) {

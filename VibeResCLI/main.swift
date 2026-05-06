@@ -117,8 +117,14 @@ func cmdHelp() {
       viberes set <display> <WxH[@Hz][-hidpi|-native]>
                                                 Switch a display to the closest matching mode
       viberes profile list                      List saved profiles
-      viberes profile save <name>               Capture current state as a new profile
-      viberes profile apply <name>              Apply a saved profile across matching displays
+      viberes profile show <name>               Show details (matchers, sizes, refresh)
+      viberes profile save <name> [--any-external] [--only <display>...]
+                                                Capture current state as a profile.
+                                                  --any-external makes external entries flexible
+                                                    (matches any non-built-in display, not just
+                                                    the one you saved from).
+                                                  --only restricts the profile to listed displays.
+      viberes profile apply <name>              Apply a profile (prints per-display outcome)
       viberes profile delete <name>             Delete a profile
       viberes profile rename <old> <new>        Rename a profile
 
@@ -128,7 +134,9 @@ func cmdHelp() {
       viberes list
       viberes set "Built-in" 1800x1169@120
       viberes set Q3279 2560x1440-native
-      viberes profile save "Work"
+      viberes profile save Work
+      viberes profile save Presentation --any-external
+      viberes profile save "Code Mode" --only Built-in
       viberes profile apply Presentation
     """
     print(help)
@@ -214,17 +222,58 @@ func cmdProfileList() {
 }
 
 @MainActor
-func cmdProfileSave(_ name: String) {
+func cmdProfileSave(_ name: String, args: [String]) {
     let store = ProfileStore()
     let displays = DisplayManager.snapshot()
     guard !displays.isEmpty else { fail("no displays connected") }
-    // CLI defaults to "specific" matching for every connected display.
-    // Users wanting flexible/built-in-only profiles use the GUI save dialog
-    // where it's a one-click toggle.
+
+    let anyExternal = args.contains("--any-external")
+    var onlyFilters: [String] = []
+    var i = 0
+    while i < args.count {
+        if args[i] == "--only", i + 1 < args.count {
+            onlyFilters.append(args[i + 1])
+            i += 2
+        } else {
+            i += 1
+        }
+    }
+
     var selection: [CGDirectDisplayID: ProfileMatchKind] = [:]
-    for d in displays { selection[d.id] = .specific }
+    for d in displays {
+        if !onlyFilters.isEmpty {
+            let matched = onlyFilters.contains { needle in
+                d.name.lowercased().contains(needle.lowercased()) || "\(d.id)" == needle
+            }
+            if !matched { continue }
+        }
+        let isBuiltin = CGDisplayIsBuiltin(d.id) != 0
+        selection[d.id] = (anyExternal && !isBuiltin) ? .anyExternal : .specific
+    }
+    guard !selection.isEmpty else { fail("no displays matched the --only filter") }
+
     store.captureCurrent(name: name, displays: displays, selection: selection)
-    print("saved profile \"\(name)\" with \(displays.count) display\(displays.count == 1 ? "" : "s")")
+    print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
+}
+
+@MainActor
+func cmdProfileShow(_ name: String) {
+    let store = ProfileStore()
+    guard let p = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
+        fail("no profile named \"\(name)\"")
+    }
+    print("# \(p.name)\t(\(p.humanSummary))")
+    for entry in p.entries {
+        let kind: String
+        switch entry.matcher {
+        case .edid: kind = "specific"
+        case .anyExternal: kind = "any-external"
+        case .builtIn: kind = "built-in"
+        }
+        let hz = entry.refreshHz.map { "@\($0)Hz" } ?? "@?Hz"
+        let scale = entry.isHiDPI ? "HiDPI" : "Native"
+        print("  - \(entry.displayName) [\(kind)]\t\(entry.pointWidth)x\(entry.pointHeight) \(hz) \(scale)")
+    }
 }
 
 @MainActor
@@ -234,14 +283,19 @@ func cmdProfileApply(_ name: String) {
         fail("no profile named \"\(name)\"")
     }
     let displays = DisplayManager.snapshot()
-    let failures = store.apply(profile, displays: displays)
-    if failures.isEmpty {
-        print("applied profile \"\(profile.name)\"")
-    } else {
-        print2("partial apply for \"\(profile.name)\":")
-        for f in failures { print2("  - \(f)") }
-        exit(2)
+    let outcomes = store.applyDetailed(profile, displays: displays)
+    var hadProblem = false
+    print("# applied profile \"\(profile.name)\"")
+    for o in outcomes {
+        let icon: String
+        switch o.status {
+        case .applied: icon = "✓"
+        case .appliedWithFallback: icon = "~"; hadProblem = true
+        case .skippedNoMatch, .skippedNoMode, .failed: icon = "✗"; hadProblem = true
+        }
+        print("  \(icon) \(o.summary)")
     }
+    if hadProblem { exit(2) }
 }
 
 @MainActor
@@ -299,8 +353,11 @@ func main() {
         case "list":
             cmdProfileList()
         case "save":
-            guard args.count == 3 else { fail("usage: viberes profile save <name>") }
-            cmdProfileSave(args[2])
+            guard args.count >= 3 else { fail("usage: viberes profile save <name> [--any-external] [--only <display>...]") }
+            cmdProfileSave(args[2], args: Array(args.dropFirst(3)))
+        case "show":
+            guard args.count == 3 else { fail("usage: viberes profile show <name>") }
+            cmdProfileShow(args[2])
         case "apply":
             guard args.count == 3 else { fail("usage: viberes profile apply <name>") }
             cmdProfileApply(args[2])
