@@ -125,6 +125,10 @@ func cmdHelp() {
                                                     the one you saved from).
                                                   --only restricts the profile to listed displays.
       viberes profile apply <name>              Apply a profile (prints per-display outcome)
+      viberes profile update <name>             Refresh profile entries from current
+                                                  display state (keeps name, id, matchers)
+      viberes profile flex <name>               Toggle external entries between
+                                                  specific (EDID) and flexible (any external)
       viberes profile delete <name>             Delete a profile
       viberes profile rename <old> <new>        Rename a profile
 
@@ -309,6 +313,31 @@ func cmdProfileDelete(_ name: String) {
 }
 
 @MainActor
+func cmdProfileUpdate(_ name: String) {
+    let store = ProfileStore()
+    guard let profile = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
+        fail("no profile named \"\(name)\"")
+    }
+    let displays = DisplayManager.snapshot()
+    if let updated = store.updateFromCurrent(profile, displays: displays) {
+        print("updated \"\(updated.name)\" with current setup (\(updated.entries.count) entries)")
+    } else {
+        fail("could not update — profile not found in store")
+    }
+}
+
+@MainActor
+func cmdProfileFlex(_ name: String) {
+    let store = ProfileStore()
+    guard let profile = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
+        fail("no profile named \"\(name)\"")
+    }
+    let displays = DisplayManager.snapshot()
+    let nowFlex = store.toggleFlexible(profile, displays: displays)
+    print("\"\(profile.name)\" is now " + (nowFlex ? "flexible (any external)" : "specific (locked to monitors)"))
+}
+
+@MainActor
 func cmdProfileRename(_ old: String, _ new: String) {
     let store = ProfileStore()
     guard var profile = store.profiles.first(where: { $0.name.lowercased() == old.lowercased() }) else {
@@ -364,6 +393,12 @@ func main() {
         case "delete":
             guard args.count == 3 else { fail("usage: viberes profile delete <name>") }
             cmdProfileDelete(args[2])
+        case "update":
+            guard args.count == 3 else { fail("usage: viberes profile update <name>") }
+            cmdProfileUpdate(args[2])
+        case "flex":
+            guard args.count == 3 else { fail("usage: viberes profile flex <name>") }
+            cmdProfileFlex(args[2])
         case "rename":
             guard args.count == 4 else { fail("usage: viberes profile rename <old> <new>") }
             cmdProfileRename(args[2], args[3])

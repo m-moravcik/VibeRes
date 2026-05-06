@@ -164,7 +164,6 @@ private struct DisplayDetailView: View {
     @Environment(DisplayStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var filter: ModeFilter = .hiDPIIfAvailable
-    @State private var showAll: Bool = false
 
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
@@ -185,11 +184,10 @@ private struct DisplayDetailView: View {
                         currentModeCard(for: display)
                         filterToggle(for: display)
                         sizeList(for: display)
-                        showAllToggle(for: display)
                     }
                     .padding(.vertical, 8)
                 }
-                .frame(idealHeight: 420)
+                .frame(idealHeight: 480)
             } else {
                 Text("Display unavailable.")
                     .foregroundStyle(.secondary)
@@ -278,13 +276,13 @@ private struct DisplayDetailView: View {
         if hasBothKinds(for: display) {
             HStack(spacing: 6) {
                 Picker("", selection: $filter) {
-                    Text("Looks like").tag(ModeFilter.hiDPIIfAvailable)
-                    Text("Pixel-perfect").tag(ModeFilter.allNative)
+                    Text("Scaled").tag(ModeFilter.hiDPIIfAvailable)
+                    Text("Native").tag(ModeFilter.allNative)
                 }
                 .pickerStyle(.segmented)
                 .controlSize(.small)
                 .labelsHidden()
-                .help("'Looks like' uses HiDPI scaling so text stays sharp on Retina. 'Pixel-perfect' is 1:1 native — typical for non-Retina externals.")
+                .help("'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors.")
             }
             .padding(.horizontal, Design.Spacing.l)
             .padding(.bottom, 6)
@@ -295,11 +293,8 @@ private struct DisplayDetailView: View {
 
     @ViewBuilder
     private func sizeList(for display: DisplayInfo) -> some View {
-        let groups = visibleGroups(for: display)
-        let visible = showAll ? groups : Array(groups.prefix(defaultRowCount(for: groups, display: display)))
-
         VStack(spacing: 0) {
-            ForEach(visible) { group in
+            ForEach(visibleGroups(for: display)) { group in
                 CompactResolutionRow(
                     group: group,
                     currentMode: display.currentMode,
@@ -307,43 +302,6 @@ private struct DisplayDetailView: View {
                 )
             }
         }
-    }
-
-    @ViewBuilder
-    private func showAllToggle(for display: DisplayInfo) -> some View {
-        let groups = visibleGroups(for: display)
-        let defaultCount = defaultRowCount(for: groups, display: display)
-        if groups.count > defaultCount {
-            Button {
-                withAnimation(.easeInOut(duration: 0.15)) { showAll.toggle() }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: showAll ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
-                    Text(showAll ? "Show fewer" : "Show all (\(groups.count))")
-                        .font(.system(size: 11))
-                }
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    /// How many rows we show by default. Aim for the same shortlist System Settings
-    /// uses (~5-6 sensible "Looks like…" sizes). Always include the current size
-    /// so the user can confirm orientation.
-    private func defaultRowCount(for groups: [ResolutionGroup], display: DisplayInfo) -> Int {
-        let target = 6
-        guard let curID = display.currentMode?.ioDisplayModeID else { return min(target, groups.count) }
-        // Find current group index — make sure it's visible without expand.
-        if let curIdx = groups.firstIndex(where: { g in
-            g.modesByRefresh.contains { $0.mode.ioDisplayModeID == curID }
-        }), curIdx >= target {
-            return curIdx + 1
-        }
-        return min(target, groups.count)
     }
 
     // MARK: Filtering helpers
@@ -623,7 +581,7 @@ private struct CompactResolutionRow: View {
     }
 
     private var tooltipText: String {
-        let kind = group.isHiDPI ? "Looks like" : "Pixel-perfect"
+        let kind = group.isHiDPI ? "Scaled (HiDPI)" : "Native (1:1)"
         let pixels = "\(group.pixelWidth)×\(group.pixelHeight) pixels"
         let area = areaDelta
         return "\(kind) · \(pixels)\(area)"

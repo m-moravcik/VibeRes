@@ -99,11 +99,22 @@ struct ProfilesSection: View {
         } else {
             FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(profiles.profiles) { profile in
-                    ProfilePill(profile: profile) {
+                    ProfilePill(profile: profile, isCurrentlyFlexible: isFlexible(profile)) {
                         let outcomes = profiles.applyDetailed(profile, displays: displays.displays)
                         announceOutcome(outcomes)
                     } onRename: {
                         mode = .renaming(profileID: profile.id, newName: profile.name)
+                    } onUpdateCurrent: {
+                        _ = profiles.updateFromCurrent(profile, displays: displays.displays)
+                        announce("Updated '\(profile.name)' with current setup", tone: .info)
+                    } onToggleFlexible: {
+                        let nowFlex = profiles.toggleFlexible(profile, displays: displays.displays)
+                        announce(
+                            nowFlex
+                                ? "'\(profile.name)' now matches any external monitor"
+                                : "'\(profile.name)' is locked to current monitors",
+                            tone: .info
+                        )
                     } onDelete: {
                         profiles.delete(profile)
                     }
@@ -369,6 +380,29 @@ struct ProfilesSection: View {
         mode = .idle
     }
 
+    /// Whether the profile contains any .anyExternal matcher.
+    private func isFlexible(_ profile: Profile) -> Bool {
+        profile.entries.contains {
+            if case .anyExternal = $0.matcher { return true }
+            return false
+        }
+    }
+
+    /// Sets a transient note with the given tone, auto-clearing after 6s.
+    private func announce(_ text: String, tone: NoteTone) {
+        lastNote = text
+        lastNoteTone = tone
+        scheduleNoteClear()
+    }
+
+    private func scheduleNoteClear() {
+        let token = lastNote
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(6))
+            if lastNote == token { lastNote = nil }
+        }
+    }
+
     /// Translates outcome list into a single coloured note shown under the pills.
     /// Priority: any problem > any fallback > all-applied success.
     private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
@@ -398,14 +432,7 @@ struct ProfilesSection: View {
             lastNote = nil
         }
 
-        // Auto-clear after a few seconds so the popover doesn't keep stale notes.
-        if lastNote != nil {
-            let token = lastNote
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(6))
-                if lastNote == token { lastNote = nil }
-            }
-        }
+        if lastNote != nil { scheduleNoteClear() }
     }
 
     private func commitRename(id: UUID) {
@@ -426,8 +453,11 @@ struct ProfilesSection: View {
 
 private struct ProfilePill: View {
     let profile: Profile
+    let isCurrentlyFlexible: Bool
     let onApply: () -> Void
     let onRename: () -> Void
+    let onUpdateCurrent: () -> Void
+    let onToggleFlexible: () -> Void
     let onDelete: () -> Void
     @State private var isHovering = false
 
@@ -439,8 +469,7 @@ private struct ProfilePill: View {
                 Text(profile.name)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
-                if isFlexible {
-                    // Subtle "✱" mark to hint that this profile travels.
+                if isCurrentlyFlexible {
                     Text("✱")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.tint)
@@ -458,6 +487,9 @@ private struct ProfilePill: View {
         .help(tooltip)
         .contextMenu {
             Button("Apply", action: onApply)
+            Button("Update with current setup", action: onUpdateCurrent)
+            Button(isCurrentlyFlexible ? "Make specific (lock to current monitors)" : "Make flexible (any external)",
+                   action: onToggleFlexible)
             Button("Rename…", action: onRename)
             Divider()
             Button("Delete", role: .destructive, action: onDelete)
