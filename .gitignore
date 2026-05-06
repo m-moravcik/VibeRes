@@ -35,3 +35,6 @@ notarization-*.json
 
 # XcodeGen output — regenerate with `xcodegen generate`, project.yml is the source of truth
 *.xcodeproj/
+
+# Icon render scratch — actual icons live in Assets.xcassets
+icon-build/

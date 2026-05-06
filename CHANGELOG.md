@@ -4,6 +4,12 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.4] — 2026-05-06
+
+### Added
+
+- App icon. Squircle with a violet → teal gradient, two stacked monitor screens with subtle pixel grids — visualises the multi-display, multi-resolution premise. Source SVG lives in `icon-build/icon.svg`; rendered to a full `.icns` set wired through `Assets.xcassets/AppIcon.appiconset/`. Surfaces in the Dock during About panel, in `Cmd+Tab`, and on the Cask install in Launchpad.
+
 ## [0.3.3] — 2026-05-06
 
 ### Added

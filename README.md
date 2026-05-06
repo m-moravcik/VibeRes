@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/screenshots/icon.png" width="160" alt="VibeRes app icon"></p>
+
 # VibeRes
 
 A modern menubar resolution switcher for macOS. Native SwiftUI, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
