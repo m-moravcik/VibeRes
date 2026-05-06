@@ -76,15 +76,31 @@ final class ProfileStore {
     }
 
     func add(_ profile: Profile) {
-        profiles.append(profile)
+        var p = profile
+        p.name = Self.sanitised(p.name)
+        guard !p.name.isEmpty else { return }
+        profiles.append(p)
         save()
     }
 
     func update(_ profile: Profile) {
         if let i = profiles.firstIndex(where: { $0.id == profile.id }) {
-            profiles[i] = profile
+            var p = profile
+            p.name = Self.sanitised(p.name)
+            guard !p.name.isEmpty else { return }
+            profiles[i] = p
             save()
         }
+    }
+
+    /// Strip control characters / null bytes and cap length, so that hand-edited
+    /// JSON or CLI argument abuse can't push junk into the profile name field.
+    static func sanitised(_ name: String) -> String {
+        let stripped = name.unicodeScalars.filter { scalar in
+            !CharacterSet.controlCharacters.contains(scalar) && scalar != "\0"
+        }.map(Character.init)
+        let trimmed = String(stripped).trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(trimmed.prefix(128))
     }
 
     func delete(_ profile: Profile) {
