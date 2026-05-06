@@ -22,9 +22,7 @@ struct ProfileStoreTests {
     func addPersists() {
         let (store, dir) = makeTempStore()
         let entry = Profile.Entry(
-            displayVendor: 1,
-            displayModel: 2,
-            displaySerial: 3,
+            matcher: .edid(vendor: 1, model: 2, serial: 3),
             displayName: "Test",
             pointWidth: 1920,
             pointHeight: 1080,

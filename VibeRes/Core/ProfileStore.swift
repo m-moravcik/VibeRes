@@ -2,6 +2,24 @@ import CoreGraphics
 import Foundation
 import Observation
 
+/// User-facing intent at save time: should this entry match a specific
+/// physical display (EDID-locked) or any monitor of that role.
+enum ProfileMatchKind {
+    case specific
+    case anyExternal
+}
+
+extension DisplayMatcher {
+    /// Friendly message when no live display satisfies this matcher.
+    func notConnectedDescription(for entry: Profile.Entry) -> String {
+        switch self {
+        case .edid: return "\(entry.displayName) not connected"
+        case .anyExternal: return "no external monitor connected"
+        case .builtIn: return "built-in display not found"
+        }
+    }
+}
+
 /// Persistent profile catalog. Stored as JSON in
 /// `~/Library/Application Support/VibeRes/profiles.json`.
 @Observable
@@ -66,15 +84,31 @@ final class ProfileStore {
         save()
     }
 
-    /// Captures the current state of every connected display as a new profile.
-    func captureCurrent(name: String, displays: [DisplayInfo]) {
+    /// Captures the current state of selected displays as a new profile.
+    /// `selection` decides which physical displays to include and how to bind
+    /// each entry — by EDID (specific) or by role (any external).
+    func captureCurrent(
+        name: String,
+        displays: [DisplayInfo],
+        selection: [CGDirectDisplayID: ProfileMatchKind]
+    ) {
         let entries: [Profile.Entry] = displays.compactMap { info in
             guard let mode = info.currentMode else { return nil }
-            let identity = DisplayIdentity.capture(info.id)
+            guard let kind = selection[info.id] else { return nil }
+            let matcher: DisplayMatcher = {
+                let identity = DisplayIdentity.capture(info.id)
+                let isBuiltin = CGDisplayIsBuiltin(info.id) != 0
+                switch kind {
+                case .specific:
+                    return isBuiltin
+                        ? .builtIn(vendor: identity.vendor, model: identity.model, serial: identity.serial)
+                        : .edid(vendor: identity.vendor, model: identity.model, serial: identity.serial)
+                case .anyExternal:
+                    return .anyExternal
+                }
+            }()
             return Profile.Entry(
-                displayVendor: identity.vendor,
-                displayModel: identity.model,
-                displaySerial: identity.serial,
+                matcher: matcher,
                 displayName: info.name,
                 pointWidth: mode.width,
                 pointHeight: mode.height,
@@ -87,29 +121,36 @@ final class ProfileStore {
     }
 
     /// Apply every entry of the profile to its matching live display, picking the
-    /// best mode via the same scoring used by SetResolutionIntent.
+    /// best mode via the same scoring used by SetResolutionIntent. Skipping rules:
+    /// - .edid / .builtIn matchers that find no display → "X not connected" warning
+    /// - .anyExternal that finds no external display → "no external connected"
+    /// - .anyExternal with multiple externals → applies to all of them
     @discardableResult
     func apply(_ profile: Profile, displays: [DisplayInfo]) -> [String] {
         var failures: [String] = []
+        var anyApplied = false
+
         for entry in profile.entries {
-            guard let info = displays.first(where: {
-                let id = DisplayIdentity.capture($0.id)
-                return id.vendor == entry.displayVendor
-                    && id.model == entry.displayModel
-                    && id.serial == entry.displaySerial
-            }) else {
-                failures.append("\(entry.displayName) not connected")
+            let matches = displays.filter { entry.matcher.matches($0.id) }
+            if matches.isEmpty {
+                failures.append(entry.matcher.notConnectedDescription(for: entry))
                 continue
             }
-            guard let mode = bestMatch(in: info.modes, entry: entry) else {
-                failures.append("No matching mode on \(entry.displayName)")
-                continue
+            for info in matches {
+                guard let mode = bestMatch(in: info.modes, entry: entry) else {
+                    failures.append("No matching mode on \(info.name)")
+                    continue
+                }
+                do {
+                    try ResolutionSwitcher.apply(mode, to: info.id)
+                    anyApplied = true
+                } catch {
+                    failures.append("\(info.name): \(error)")
+                }
             }
-            do {
-                try ResolutionSwitcher.apply(mode, to: info.id)
-            } catch {
-                failures.append("\(entry.displayName): \(error)")
-            }
+        }
+        if !anyApplied && failures.isEmpty {
+            failures.append("Nothing to apply.")
         }
         return failures
     }
