@@ -33,5 +33,5 @@ Package.resolved
 *.dmg
 notarization-*.json
 
-# XcodeGen generates this; uncomment if you prefer to commit project.yml only
-# *.xcodeproj/
+# XcodeGen output — regenerate with `xcodegen generate`, project.yml is the source of truth
+*.xcodeproj/
