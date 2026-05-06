@@ -12,6 +12,11 @@ final class DisplayStore {
     private(set) var displays: [DisplayInfo] = []
     private(set) var lastError: String?
 
+    /// Single-step revert history. Populated by `apply(...)` on user clicks
+    /// and by ProfileStore on profile apply. Cleared when the display set
+    /// changes (a captured `before` mode would reference a phantom display).
+    let revert = RevertHistory()
+
     /// Bumps once each time the active display *set* (not just modes) changes —
     /// i.e. a monitor was added or removed. UI/profile auto-apply observes this
     /// to know when to re-evaluate "does any saved profile match this layout?".
@@ -56,6 +61,10 @@ final class DisplayStore {
         let nowIDs = Set(displays.map(\.id))
         if triggeredByCallback && nowIDs != lastDisplayIDs {
             setChangeToken &+= 1
+            // A captured `before` mode might reference a display that's
+            // no longer attached. Drop the revert history rather than
+            // serve up an entry that would silently no-op.
+            revert.clear()
         }
         lastDisplayIDs = nowIDs
     }
@@ -79,12 +88,31 @@ final class DisplayStore {
 
     func apply(_ mode: CGDisplayMode, to display: CGDirectDisplayID) {
         do {
+            // Capture the pre-change mode so a follow-up Revert click can
+            // restore it. Skip when the click is a no-op (mode === current).
+            if let info = displays.first(where: { $0.id == display }),
+               let current = info.currentMode,
+               current.ioDisplayModeID != mode.ioDisplayModeID {
+                revert.record(displayID: display, displayName: info.name, before: current)
+            }
             try ResolutionSwitcher.apply(mode, to: display)
             lastError = nil
             refresh()
         } catch {
             lastError = "\(error)"
         }
+    }
+
+    /// Re-apply each display's `before` mode and clear the history. Returns
+    /// the count of displays touched so the caller can surface a toast.
+    @discardableResult
+    func performRevert() -> Int {
+        let snapshot = revert.consume()
+        for entry in snapshot {
+            try? ResolutionSwitcher.apply(entry.before, to: entry.displayID)
+        }
+        if !snapshot.isEmpty { refresh() }
+        return snapshot.count
     }
 
     private func registerReconfigurationCallback() {

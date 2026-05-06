@@ -370,6 +370,22 @@ private struct FooterBar: View {
                 .frame(height: 1)
 
             VStack(spacing: 0) {
+                if store.revert.canRevert {
+                    MenuRow(
+                        icon: "arrow.uturn.backward.circle",
+                        label: revertLabel,
+                        shortcut: "⌘Z",
+                        action: {
+                            let n = store.performRevert()
+                            // No toast — the user already knows what they
+                            // just clicked. Their displays jump back, the
+                            // row disappears, that's the feedback.
+                            _ = n
+                        }
+                    )
+                    .keyboardShortcut("z")
+                }
+
                 MenuRow(
                     icon: "arrow.clockwise",
                     label: "Refresh",
@@ -457,6 +473,18 @@ private struct FooterBar: View {
             }
             .padding(.top, 4)
             .padding(.bottom, 2)
+        }
+    }
+
+    /// Compact label for the revert row — fits the menu's natural width
+    /// without truncating, regardless of whether one or several displays
+    /// were touched by the last apply.
+    private var revertLabel: String {
+        let n = store.revert.entries.count
+        switch n {
+        case 0: return "Revert last change"
+        case 1: return "Revert \(store.revert.summary)"
+        default: return "Revert last change (\(n) displays)"
         }
     }
 

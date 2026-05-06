@@ -278,8 +278,15 @@ final class ProfileStore {
     /// per-entry outcome so the UI can distinguish between success, fallback,
     /// and skip.
     @discardableResult
-    func applyDetailed(_ profile: Profile, displays: [DisplayInfo]) -> [ApplyOutcome] {
+    func applyDetailed(
+        _ profile: Profile,
+        displays: [DisplayInfo],
+        revert: RevertHistory? = nil
+    ) -> [ApplyOutcome] {
         var outcomes: [ApplyOutcome] = []
+        // Collect pre-change snapshots so a single multi-display profile
+        // apply can be undone with one Revert click.
+        var batchSnapshot: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
 
         for entry in profile.entries {
             let matches = displays.filter { entry.matcher.matches($0.id) }
@@ -317,6 +324,9 @@ final class ProfileStore {
                     && mode.isHiDPI == entry.isHiDPI
                 do {
                     if !isAlready {
+                        if let cur = info.currentMode {
+                            batchSnapshot.append((info.id, info.name, cur))
+                        }
                         try ResolutionSwitcher.apply(mode, to: info.id)
                     }
                     let status: ApplyOutcome.Status = {
@@ -342,6 +352,11 @@ final class ProfileStore {
                     ))
                 }
             }
+        }
+        // Commit the batch atomically — Revert undoes "the last profile
+        // apply" rather than the last individual switch within it.
+        if !batchSnapshot.isEmpty, let revert = revert {
+            revert.recordBatch(batchSnapshot)
         }
         return outcomes
     }
