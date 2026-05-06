@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		52AEAA9060B2211C4FEEB23E /* ResolutionGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3FBF890A22354DA52BAE1C5 /* ResolutionGroup.swift */; };
+		5CDE9438599EBF3D3C73A2BE /* DisplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C05D1E29BEEE03581198C68 /* DisplayManager.swift */; };
+		7FE458B716F9CD2DA96F3793 /* VibeResApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87CB17973ADA3455F4740C9A /* VibeResApp.swift */; };
+		8487B9D40F9877B7E3518A29 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D59431D028785379F900FBA /* DesignTokens.swift */; };
+		89A0A58CA220D10041492BD8 /* DisplayMode+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4417CBECDBD6A27AB9406CF0 /* DisplayMode+Extensions.swift */; };
+		AFEC08317A50F98B72405722 /* DisplayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F2D82FF4976F831A19B461 /* DisplayStore.swift */; };
+		B40D166D00B7FBFA3C91F973 /* ResolutionSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9024A4906C43C13A5ED72C /* ResolutionSwitcher.swift */; };
+		D5519DD346C50FEB70A6B55B /* MenuContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07C32BA1A7ABC0D70F2D95E7 /* MenuContent.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		07C32BA1A7ABC0D70F2D95E7 /* MenuContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuContent.swift; sourceTree = "<group>"; };
+		4417CBECDBD6A27AB9406CF0 /* DisplayMode+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DisplayMode+Extensions.swift"; sourceTree = "<group>"; };
+		6C05D1E29BEEE03581198C68 /* DisplayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayManager.swift; sourceTree = "<group>"; };
+		72F2D82FF4976F831A19B461 /* DisplayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayStore.swift; sourceTree = "<group>"; };
+		87CB17973ADA3455F4740C9A /* VibeResApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeResApp.swift; sourceTree = "<group>"; };
+		8D59431D028785379F900FBA /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		ED9024A4906C43C13A5ED72C /* ResolutionSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResolutionSwitcher.swift; sourceTree = "<group>"; };
+		F244B9EE79156320BCBE0636 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F3FBF890A22354DA52BAE1C5 /* ResolutionGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResolutionGroup.swift; sourceTree = "<group>"; };
+		F5225838592EC1A8244A776A /* VibeRes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeRes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0730133CFEEA8EF70CBFEFDF = {
+			isa = PBXGroup;
+			children = (
+				FAE12C439BDA7E69D6B70CDE /* VibeRes */,
+				07CE5140A20ADC60349B5DC1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		07CE5140A20ADC60349B5DC1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F5225838592EC1A8244A776A /* VibeRes.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4BBBCEB86C342571781A0D90 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				8D59431D028785379F900FBA /* DesignTokens.swift */,
+				07C32BA1A7ABC0D70F2D95E7 /* MenuContent.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		C8DBE56DD5DB5F8779924730 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				6C05D1E29BEEE03581198C68 /* DisplayManager.swift */,
+				4417CBECDBD6A27AB9406CF0 /* DisplayMode+Extensions.swift */,
+				72F2D82FF4976F831A19B461 /* DisplayStore.swift */,
+				F3FBF890A22354DA52BAE1C5 /* ResolutionGroup.swift */,
+				ED9024A4906C43C13A5ED72C /* ResolutionSwitcher.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		FAE12C439BDA7E69D6B70CDE /* VibeRes */ = {
+			isa = PBXGroup;
+			children = (
+				F244B9EE79156320BCBE0636 /* Info.plist */,
+				87CB17973ADA3455F4740C9A /* VibeResApp.swift */,
+				C8DBE56DD5DB5F8779924730 /* Core */,
+				4BBBCEB86C342571781A0D90 /* UI */,
+			);
+			path = VibeRes;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B116B13F8B6D22FA9AB79B20 /* VibeRes */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F786982EA178552CF9D8B09F /* Build configuration list for PBXNativeTarget "VibeRes" */;
+			buildPhases = (
+				0C1F7EF533E44C46B97B9007 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VibeRes;
+			packageProductDependencies = (
+			);
+			productName = VibeRes;
+			productReference = F5225838592EC1A8244A776A /* VibeRes.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4EFABBA566E3D5BC90045017 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B116B13F8B6D22FA9AB79B20 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 23F7A0DE6FF79F07621EAECC /* Build configuration list for PBXProject "VibeRes" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 0730133CFEEA8EF70CBFEFDF;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 07CE5140A20ADC60349B5DC1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B116B13F8B6D22FA9AB79B20 /* VibeRes */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0C1F7EF533E44C46B97B9007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8487B9D40F9877B7E3518A29 /* DesignTokens.swift in Sources */,
+				5CDE9438599EBF3D3C73A2BE /* DisplayManager.swift in Sources */,
+				89A0A58CA220D10041492BD8 /* DisplayMode+Extensions.swift in Sources */,
+				AFEC08317A50F98B72405722 /* DisplayStore.swift in Sources */,
+				D5519DD346C50FEB70A6B55B /* MenuContent.swift in Sources */,
+				52AEAA9060B2211C4FEEB23E /* ResolutionGroup.swift in Sources */,
+				B40D166D00B7FBFA3C91F973 /* ResolutionSwitcher.swift in Sources */,
+				7FE458B716F9CD2DA96F3793 /* VibeResApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		462E04C60866BAE37436B0B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		4984F0AF5363028D91D08B51 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VibeRes/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sk.moravcik.VibeRes;
+				PRODUCT_NAME = VibeRes;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		7C552EBD4628745C7C2B7D85 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		EA2C305C9896E692F75EAB50 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VibeRes/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sk.moravcik.VibeRes;
+				PRODUCT_NAME = VibeRes;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		23F7A0DE6FF79F07621EAECC /* Build configuration list for PBXProject "VibeRes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C552EBD4628745C7C2B7D85 /* Debug */,
+				462E04C60866BAE37436B0B0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F786982EA178552CF9D8B09F /* Build configuration list for PBXNativeTarget "VibeRes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EA2C305C9896E692F75EAB50 /* Debug */,
+				4984F0AF5363028D91D08B51 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4EFABBA566E3D5BC90045017 /* Project object */;
+}

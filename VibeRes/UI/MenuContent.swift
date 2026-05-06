@@ -11,8 +11,9 @@ struct MenuContent: View {
                     DisplayDetailView(displayID: displayID)
                 }
         }
-        .frame(width: 320)
-        .frame(minHeight: 200, maxHeight: 560)
+        .frame(width: Design.Layout.popoverWidth)
+        .frame(minHeight: Design.Layout.popoverMinHeight, maxHeight: Design.Layout.popoverMaxHeight)
+        .background(.ultraThinMaterial)
     }
 }
 
@@ -26,18 +27,18 @@ private struct RootView: View {
         VStack(spacing: 0) {
             if let err = store.lastError {
                 Text(err)
-                    .font(.caption)
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.red)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
+                    .padding(.horizontal, Design.Spacing.l)
+                    .padding(.top, Design.Spacing.m)
             }
 
             ScrollView {
-                VStack(spacing: 6) {
+                VStack(spacing: Design.Spacing.s) {
                     if store.displays.isEmpty {
                         Text("No displays detected.")
                             .foregroundStyle(.secondary)
-                            .padding(20)
+                            .padding(Design.Spacing.xl)
                     } else {
                         ForEach(store.displays) { display in
                             DisplayCard(display: display) {
@@ -46,30 +47,12 @@ private struct RootView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 10)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
+                .padding(.horizontal, Design.Spacing.m)
+                .padding(.top, Design.Spacing.m)
+                .padding(.bottom, Design.Spacing.s)
             }
 
-            Divider()
-
-            HStack {
-                Button {
-                    store.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.borderless)
-                .help("Refresh display list")
-
-                Spacer()
-
-                Button("Quit VibeRes") { NSApp.terminate(nil) }
-                    .buttonStyle(.borderless)
-                    .keyboardShortcut("q")
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            FooterBar()
         }
     }
 }
@@ -77,53 +60,59 @@ private struct RootView: View {
 private struct DisplayCard: View {
     let display: DisplayInfo
     let action: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: Design.Spacing.m) {
                 Image(systemName: display.isMain ? "laptopcomputer" : "display")
-                    .font(.title2)
+                    .font(.system(size: 18))
                     .foregroundStyle(.secondary)
-                    .frame(width: 28)
+                    .frame(width: 26)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: Design.Spacing.s) {
                         Text(display.name)
-                            .font(.headline)
+                            .font(Design.Typography.cardTitle)
                             .lineLimit(1)
                         if display.isMain {
                             Text("MAIN")
-                                .font(.caption2.bold())
+                                .font(Design.Typography.badge)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 1)
-                                .background(.secondary.opacity(0.2), in: Capsule())
+                                .background(.secondary.opacity(0.22), in: Capsule())
+                                .foregroundStyle(.secondary)
                         }
                     }
                     if let cur = display.currentMode {
                         Text(currentModeSubtitle(cur))
-                            .font(.caption)
+                            .font(Design.Typography.cardSubtitle)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
 
-                Spacer(minLength: 4)
+                Spacer(minLength: Design.Spacing.s)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, Design.Spacing.l)
+            .padding(.vertical, Design.Spacing.m)
+            .background(
+                RoundedRectangle(cornerRadius: Design.Radius.card)
+                    .fill(isHovering ? Design.Palette.cardFillHover : Design.Palette.cardFill)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: Design.Radius.card))
         }
         .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
     }
 
     private func currentModeSubtitle(_ m: CGDisplayMode) -> String {
-        var parts = ["\(m.width) × \(m.height)"]
-        if let hz = m.refreshHz { parts.append("@ \(hz) Hz") }
+        var parts = ["\(formatThousands(m.width)) × \(formatThousands(m.height))"]
+        if let hz = m.refreshHz { parts.append("\(hz) Hz") }
         if m.isHiDPI { parts.append("HiDPI") }
         return parts.joined(separator: " · ")
     }
@@ -159,46 +148,47 @@ private struct DisplayDetailView: View {
                                 currentModeID: display.currentMode?.ioDisplayModeID,
                                 apply: { mode in store.apply(mode, to: display.id) }
                             )
-                            Divider().opacity(0.3)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, Design.Spacing.xs)
                 }
             } else {
                 Text("Display unavailable.")
                     .foregroundStyle(.secondary)
                     .padding()
             }
+
+            FooterBar()
         }
         .navigationBarBackButtonHidden(true)
     }
 
     private var header: some View {
-        VStack(spacing: 4) {
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                }
-                .buttonStyle(.borderless)
-
-                Spacer()
-
+        VStack(spacing: Design.Spacing.s) {
+            ZStack {
                 Text(display?.name ?? "Display")
-                    .font(.headline)
+                    .font(Design.Typography.navTitle)
                     .lineLimit(1)
+                    .frame(maxWidth: .infinity)
 
-                Spacer()
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 1) {
+                            Image(systemName: "chevron.left")
+                                .font(.caption.weight(.semibold))
+                            Text("Back")
+                                .font(.system(size: 12))
+                        }
+                    }
+                    .buttonStyle(.borderless)
 
-                // Symmetric placeholder so the title stays centered.
-                Color.clear.frame(width: 44, height: 1)
+                    Spacer()
+                }
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 6)
+            .padding(.horizontal, Design.Spacing.m)
+            .padding(.top, Design.Spacing.m)
 
             if let display, hasBothKinds(for: display) {
                 Picker("", selection: $filter) {
@@ -208,11 +198,13 @@ private struct DisplayDetailView: View {
                 .pickerStyle(.segmented)
                 .controlSize(.small)
                 .labelsHidden()
-                .padding(.horizontal, 12)
-                .padding(.bottom, 6)
+                .padding(.horizontal, Design.Spacing.l)
+                .padding(.bottom, Design.Spacing.xs)
             }
 
-            Divider()
+            Rectangle()
+                .fill(Design.Palette.separator)
+                .frame(height: 1)
         }
     }
 
@@ -238,35 +230,69 @@ private struct DisplayDetailView: View {
     }
 }
 
-// MARK: - Resolution row + chip
+// MARK: - Footer
+
+private struct FooterBar: View {
+    @Environment(DisplayStore.self) private var store
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(Design.Palette.separator)
+                .frame(height: 1)
+            HStack {
+                Button {
+                    store.refresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderless)
+                .help("Refresh display list")
+
+                Spacer()
+
+                Button("Quit VibeRes") { NSApp.terminate(nil) }
+                    .buttonStyle(.borderless)
+                    .font(Design.Typography.footer)
+                    .keyboardShortcut("q")
+            }
+            .padding(.horizontal, Design.Spacing.l)
+            .padding(.vertical, Design.Spacing.s)
+        }
+    }
+}
+
+// MARK: - Resolution row
 
 private struct ResolutionRow: View {
     let group: ResolutionGroup
     let currentModeID: Int32?
     let apply: (CGDisplayMode) -> Void
+    @State private var isHovering = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: isCurrentSize ? "checkmark" : "circle.dotted")
-                .font(.caption)
-                .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+        HStack(spacing: Design.Spacing.m) {
+            Image(systemName: isCurrentSize ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 11))
+                .foregroundStyle(isCurrentSize ? AnyShapeStyle(Design.Palette.rowSelectedTint) : AnyShapeStyle(.tertiary))
                 .frame(width: 14)
 
             Text(formatSize(group.pointWidth, group.pointHeight))
-                .font(.system(.body).monospacedDigit())
+                .font(isCurrentSize ? Design.Typography.rowBold : Design.Typography.row)
                 .fixedSize()
 
-            Spacer(minLength: 6)
+            Spacer(minLength: Design.Spacing.s)
 
             if group.modesByRefresh.count <= 1 {
                 if let only = group.modesByRefresh.first, only.hz > 0 {
                     Text("\(only.hz) Hz")
-                        .font(.caption.monospacedDigit())
+                        .font(Design.Typography.chip)
                         .foregroundStyle(.secondary)
                         .fixedSize()
                 }
             } else {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     ForEach(group.modesByRefresh, id: \.hz) { entry in
                         RefreshChip(
                             hz: entry.hz,
@@ -278,13 +304,26 @@ private struct ResolutionRow: View {
                 .fixedSize()
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 5)
+        .padding(.horizontal, Design.Spacing.l)
+        .padding(.vertical, Design.Layout.rowVerticalPadding)
+        .background(rowBackground)
         .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
         .onTapGesture {
             if let best = group.modesByRefresh.last?.mode {
                 apply(best)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var rowBackground: some View {
+        if isCurrentSize {
+            Design.Palette.rowSelectedFill
+        } else if isHovering {
+            Color.secondary.opacity(0.08)
+        } else {
+            Color.clear
         }
     }
 
@@ -293,18 +332,8 @@ private struct ResolutionRow: View {
         return group.modesByRefresh.contains { $0.mode.ioDisplayModeID == id }
     }
 
-    /// Formats numbers with NBSP thousand separator the way the user's locale shows them
-    /// in the screenshot (1 800 × 1 169) without taking a hard locale dependency.
     private func formatSize(_ w: Int, _ h: Int) -> String {
         "\(formatThousands(w)) × \(formatThousands(h))"
-    }
-
-    private func formatThousands(_ n: Int) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.groupingSeparator = "\u{202F}" // narrow no-break space
-        f.usesGroupingSeparator = true
-        return f.string(from: NSNumber(value: n)) ?? "\(n)"
     }
 }
 
@@ -312,20 +341,40 @@ private struct RefreshChip: View {
     let hz: Int
     let isActive: Bool
     let action: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
             Text(hz > 0 ? "\(hz)" : "—")
-                .font(.caption2.monospacedDigit().weight(isActive ? .bold : .regular))
+                .font(isActive ? Design.Typography.chipActive : Design.Typography.chip)
                 .foregroundStyle(isActive ? Color.white : Color.primary)
                 .fixedSize()
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
+                .frame(minWidth: Design.Layout.chipMinWidth)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
                 .background(
-                    Capsule().fill(isActive ? Color.accentColor : Color.secondary.opacity(0.18))
+                    RoundedRectangle(cornerRadius: Design.Radius.chip, style: .continuous)
+                        .fill(chipFill)
                 )
         }
         .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
         .help(hz > 0 ? "\(hz) Hz" : "Unknown refresh rate")
     }
+
+    private var chipFill: Color {
+        if isActive { return Color.accentColor }
+        if isHovering { return Color.secondary.opacity(0.32) }
+        return Design.Palette.chipFill
+    }
+}
+
+// MARK: - Number formatting (shared)
+
+private func formatThousands(_ n: Int) -> String {
+    let f = NumberFormatter()
+    f.numberStyle = .decimal
+    f.groupingSeparator = "\u{202F}" // narrow no-break space
+    f.usesGroupingSeparator = true
+    return f.string(from: NSNumber(value: n)) ?? "\(n)"
 }

@@ -39,16 +39,33 @@ struct ResolutionGroup: Identifiable, Hashable {
         }
 
         return buckets.map { key, entries in
-            let sorted = entries.sorted { $0.0 < $1.0 }
-            // Pick a representative mode for pixel size (all entries in a bucket share it).
-            let rep = sorted.first?.1
+            // macOS reports NTSC drop-frame variants (59.94, 47.95) alongside their integer
+            // counterparts (60, 48). Both round to the same Int, producing duplicate chips.
+            // Dedup by rounded Hz, preferring whichever variant is closer to a whole integer
+            // (typically the user-visible one — 60 over 59.94).
+            var byHz: [Int: (Double, CGDisplayMode)] = [:]
+            for (hz, mode) in entries {
+                let exact = mode.refreshRate
+                let drift = abs(exact - exact.rounded())
+                if let prior = byHz[hz] {
+                    if drift < prior.0 {
+                        byHz[hz] = (drift, mode)
+                    }
+                } else {
+                    byHz[hz] = (drift, mode)
+                }
+            }
+            let sorted: [(hz: Int, mode: CGDisplayMode)] = byHz
+                .map { (hz: $0.key, mode: $0.value.1) }
+                .sorted { $0.hz < $1.hz }
+            let rep = sorted.first?.mode
             return ResolutionGroup(
                 pointWidth: key.w,
                 pointHeight: key.h,
                 isHiDPI: key.hidpi,
                 pixelWidth: rep?.pixelWidth ?? key.w,
                 pixelHeight: rep?.pixelHeight ?? key.h,
-                modesByRefresh: sorted.map { (hz: $0.0, mode: $0.1) }
+                modesByRefresh: sorted
             )
         }
         .sorted { lhs, rhs in
