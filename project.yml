@@ -1,0 +1,47 @@
+name: VibeRes
+options:
+  bundleIdPrefix: sk.moravcik
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  VibeRes:
+    type: application
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VibeRes
+    resources:
+      - path: VibeRes/Assets.xcassets
+        optional: true
+    info:
+      path: VibeRes/Info.plist
+      properties:
+        CFBundleDisplayName: VibeRes
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSUIElement: true
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: "Copyright © 2026 Michal Moravčík. MIT License."
+        NSScreenCaptureUsageDescription: "VibeRes shows a live preview of your desktop in the proposed resolution before you switch."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeRes
+        PRODUCT_NAME: VibeRes
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_APP_SANDBOX: NO
+        COMBINE_HIDPI_IMAGES: YES
