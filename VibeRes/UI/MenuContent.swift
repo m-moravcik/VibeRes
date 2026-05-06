@@ -145,7 +145,7 @@ private struct DisplayDetailView: View {
                         ForEach(visibleGroups(for: display)) { group in
                             ResolutionRow(
                                 group: group,
-                                currentModeID: display.currentMode?.ioDisplayModeID,
+                                currentMode: display.currentMode,
                                 apply: { mode in store.apply(mode, to: display.id) }
                             )
                         }
@@ -232,6 +232,9 @@ private struct DisplayDetailView: View {
 
 // MARK: - Footer
 
+/// Native-style menu in the popover footer. SwiftUI's `Menu` bridges to NSMenu so we get
+/// real macOS chrome: SF symbol icons on the left, labels in the middle, ⌘-shortcuts on
+/// the right — same look as standard menubar apps' dropdowns.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
 
@@ -240,26 +243,69 @@ private struct FooterBar: View {
             Rectangle()
                 .fill(Design.Palette.separator)
                 .frame(height: 1)
-            HStack {
-                Button {
-                    store.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11, weight: .semibold))
-                }
-                .buttonStyle(.borderless)
-                .help("Refresh display list")
 
+            HStack(spacing: 0) {
                 Spacer()
 
-                Button("Quit VibeRes") { NSApp.terminate(nil) }
-                    .buttonStyle(.borderless)
-                    .font(Design.Typography.footer)
+                Menu {
+                    Button {
+                        store.refresh()
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                    .keyboardShortcut("r")
+
+                    Button {
+                        NSApp.activate(ignoringOtherApps: true)
+                        // Settings scene placeholder until Phase 4 lands.
+                    } label: {
+                        Label("Settings…", systemImage: "gearshape")
+                    }
+                    .keyboardShortcut(",")
+                    .disabled(true)
+
+                    Divider()
+
+                    Button {
+                        showAbout()
+                    } label: {
+                        Label("About VibeRes", systemImage: "info.circle")
+                    }
+
+                    Divider()
+
+                    Button {
+                        NSApp.terminate(nil)
+                    } label: {
+                        Label("Quit", systemImage: "power")
+                    }
                     .keyboardShortcut("q")
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("More options")
             }
-            .padding(.horizontal, Design.Spacing.l)
-            .padding(.vertical, Design.Spacing.s)
+            .padding(.horizontal, Design.Spacing.m)
+            .padding(.vertical, Design.Spacing.xs + 2)
         }
+    }
+
+    private func showAbout() {
+        let credits = NSAttributedString(
+            string: "Modern menubar resolution switcher for macOS.\nMIT licensed · github.com/m-moravcik/VibeRes",
+            attributes: [.font: NSFont.systemFont(ofSize: 11)]
+        )
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .credits: credits,
+            .applicationName: "VibeRes",
+            .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1",
+        ])
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 
@@ -267,9 +313,11 @@ private struct FooterBar: View {
 
 private struct ResolutionRow: View {
     let group: ResolutionGroup
-    let currentModeID: Int32?
+    let currentMode: CGDisplayMode?
     let apply: (CGDisplayMode) -> Void
     @State private var isHovering = false
+
+    private var currentModeID: Int32? { currentMode?.ioDisplayModeID }
 
     var body: some View {
         HStack(spacing: Design.Spacing.m) {
@@ -281,6 +329,15 @@ private struct ResolutionRow: View {
             Text(formatSize(group.pointWidth, group.pointHeight))
                 .font(isCurrentSize ? Design.Typography.rowBold : Design.Typography.row)
                 .fixedSize()
+
+            if !isCurrentSize, let cur = currentMode {
+                RealEstateBadge(
+                    currentWidth: cur.width,
+                    currentHeight: cur.height,
+                    proposedWidth: group.pointWidth,
+                    proposedHeight: group.pointHeight
+                )
+            }
 
             Spacer(minLength: Design.Spacing.s)
 
@@ -312,6 +369,18 @@ private struct ResolutionRow: View {
         .onTapGesture {
             if let best = group.modesByRefresh.last?.mode {
                 apply(best)
+            }
+        }
+        .popover(isPresented: .constant(isHovering && !isCurrentSize), arrowEdge: .trailing) {
+            if let cur = currentMode {
+                PreviewBox(
+                    currentWidth: cur.width,
+                    currentHeight: cur.height,
+                    proposedWidth: group.pointWidth,
+                    proposedHeight: group.pointHeight,
+                    maxSize: 120
+                )
+                .padding(8)
             }
         }
     }
