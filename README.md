@@ -12,10 +12,26 @@ A modern menubar resolution switcher for macOS. Native SwiftUI, multi-display pr
 
 ## Install
 
+### Menubar app
+
 Download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases), unzip into `/Applications`, and on first launch right-click the app → **Open** (the build is ad-hoc signed, so Gatekeeper asks once). Or:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/VibeRes.app
+```
+
+### CLI (`viberes`) via Homebrew
+
+```bash
+brew install m-moravcik/viberes/viberes
+```
+
+This builds the binary from source against the tagged release (formula lives at [m-moravcik/homebrew-viberes](https://github.com/m-moravcik/homebrew-viberes)). Requires Xcode 26; `xcodegen` is pulled in automatically. Upgrade later with `brew upgrade`.
+
+Or build the CLI from a local clone (no Homebrew needed):
+
+```bash
+make install-cli   # → /usr/local/bin/viberes
 ```
 
 ---
@@ -64,12 +80,7 @@ Right-click any pill to apply, update, rename, or delete. **Update with current 
 
 ## Command-line companion
 
-VibeRes ships with `viberes`, a sibling executable that links the same Core code as the GUI. Same profile store, same `CGDisplay` APIs, same scoring.
-
-```bash
-brew install xcodegen
-make install-cli   # → /usr/local/bin/viberes
-```
+VibeRes ships with `viberes`, a sibling executable that links the same Core code as the GUI. Same profile store, same `CGDisplay` APIs, same scoring. See [Install](#install) above for `brew` and `make` paths.
 
 Reference:
 
