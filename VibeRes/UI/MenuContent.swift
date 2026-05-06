@@ -12,7 +12,7 @@ struct MenuContent: View {
                 }
         }
         .frame(width: Design.Layout.popoverWidth)
-        .frame(minHeight: Design.Layout.popoverMinHeight, maxHeight: Design.Layout.popoverMaxHeight)
+        .frame(maxHeight: Design.Layout.popoverMaxHeight)
         .background(.ultraThinMaterial)
     }
 }
@@ -33,25 +33,24 @@ private struct RootView: View {
                     .padding(.top, Design.Spacing.m)
             }
 
-            ScrollView {
-                VStack(spacing: Design.Spacing.s) {
-                    if store.displays.isEmpty {
-                        Text("No displays detected.")
-                            .foregroundStyle(.secondary)
-                            .padding(Design.Spacing.xl)
-                    } else {
-                        ForEach(store.displays) { display in
-                            DisplayCard(display: display) {
-                                path.append(display.id)
-                            }
+            // Root list normally fits a few cards — let the popover hug content.
+            // Only show a ScrollView when the list overflows the cap height.
+            VStack(spacing: Design.Spacing.s) {
+                if store.displays.isEmpty {
+                    Text("No displays detected.")
+                        .foregroundStyle(.secondary)
+                        .padding(Design.Spacing.xl)
+                } else {
+                    ForEach(store.displays) { display in
+                        DisplayCard(display: display) {
+                            path.append(display.id)
                         }
                     }
                 }
-                .padding(.horizontal, Design.Spacing.m)
-                .padding(.top, Design.Spacing.m)
-                .padding(.bottom, Design.Spacing.s)
             }
-            .frame(maxHeight: .infinity)
+            .padding(.horizontal, Design.Spacing.m)
+            .padding(.top, Design.Spacing.m)
+            .padding(.bottom, Design.Spacing.s)
 
             FooterBar()
         }
