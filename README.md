@@ -24,11 +24,11 @@ xattr -dr com.apple.quarantine /Applications/VibeRes.app
 
 Click the menu-bar icon. The popover shows every connected display with its current mode.
 
-<p align="center"><img src="docs/screenshots/root.png" width="320" alt="Root popover with profile pills and display cards"></p>
+<p align="center"><img src="docs/screenshots/root-v2.png" width="320" alt="Root popover with profile pills and display cards"></p>
 
 Click a display card to drill in. Each row is one logical size; refresh rates appear as a segmented control on the right. Click anywhere on the row to apply the highest available rate, or click a specific rate. The current size is highlighted in accent colour with a **CURRENT** pill at the top.
 
-<p align="center"><img src="docs/screenshots/detail.png" width="320" alt="Per-display detail with current mode card and segmented refresh selector"></p>
+<p align="center"><img src="docs/screenshots/detail-v2.png" width="320" alt="Per-display detail with current mode card and segmented refresh selector"></p>
 
 **Scaled vs Native.** The toggle at the top switches between two families of modes:
 
@@ -43,7 +43,7 @@ VibeRes deduplicates NTSC drop-frame variants (59.94, 47.95) against their integ
 
 A profile is a named multi-display preset. Save once, switch with one click. The save form is a per-display checklist:
 
-<p align="center"><img src="docs/screenshots/save.png" width="320" alt="Save profile inline form with per-display checkboxes"></p>
+<p align="center"><img src="docs/screenshots/save-v2.png" width="320" alt="Save profile inline form with per-display checkboxes"></p>
 
 For each external display you choose:
 
