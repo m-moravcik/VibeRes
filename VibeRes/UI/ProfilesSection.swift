@@ -486,7 +486,8 @@ private struct ProfilePill: View {
         .onHover { isHovering = $0 }
         .help(tooltip)
         .contextMenu {
-            Button("Apply", action: onApply)
+            // Left-click on the pill already applies — no Apply item to duplicate it.
+            // Context menu is for actions without a dedicated UI control.
             Button("Update with current setup", action: onUpdateCurrent)
             Button(isCurrentlyFlexible ? "Make specific (lock to current monitors)" : "Make flexible (any external)",
                    action: onToggleFlexible)
