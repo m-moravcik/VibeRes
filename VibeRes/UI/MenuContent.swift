@@ -164,6 +164,7 @@ private struct DisplayDetailView: View {
     @Environment(DisplayStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var filter: ModeFilter = .hiDPIIfAvailable
+    @State private var showAll: Bool = false
 
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
@@ -176,24 +177,18 @@ private struct DisplayDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            navHeader
 
             if let display {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(visibleGroups(for: display)) { group in
-                            ResolutionRow(
-                                group: group,
-                                currentMode: display.currentMode,
-                                apply: { mode in store.apply(mode, to: display.id) }
-                            )
-                        }
+                    VStack(alignment: .leading, spacing: 0) {
+                        currentModeCard(for: display)
+                        filterToggle(for: display)
+                        sizeList(for: display)
+                        showAllToggle(for: display)
                     }
-                    .padding(.vertical, Design.Spacing.xs)
+                    .padding(.vertical, 8)
                 }
-                // Idealised height: large enough for ~14 mode rows. SwiftUI grants
-                // it when popoverMaxHeight allows; otherwise scrolls. No minHeight
-                // so popping back to root collapses the popover correctly.
                 .frame(idealHeight: 420)
             } else {
                 Text("Display unavailable.")
@@ -204,8 +199,10 @@ private struct DisplayDetailView: View {
         .navigationBarBackButtonHidden(true)
     }
 
-    private var header: some View {
-        VStack(spacing: Design.Spacing.s) {
+    // MARK: Header
+
+    private var navHeader: some View {
+        VStack(spacing: 0) {
             ZStack {
                 Text(display?.name ?? "Display")
                     .font(Design.Typography.navTitle)
@@ -213,41 +210,143 @@ private struct DisplayDetailView: View {
                     .frame(maxWidth: .infinity)
 
                 HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 1) {
-                            Image(systemName: "chevron.left")
-                                .font(.caption.weight(.semibold))
-                            Text("Back")
-                                .font(.system(size: 12))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-
+                    BackButton { dismiss() }
                     Spacer()
                 }
             }
             .padding(.horizontal, Design.Spacing.m)
-            .padding(.top, Design.Spacing.m)
-
-            if let display, hasBothKinds(for: display) {
-                Picker("", selection: $filter) {
-                    Text("HiDPI").tag(ModeFilter.hiDPIIfAvailable)
-                    Text("Native").tag(ModeFilter.allNative)
-                }
-                .pickerStyle(.segmented)
-                .controlSize(.small)
-                .labelsHidden()
-                .padding(.horizontal, Design.Spacing.l)
-                .padding(.bottom, Design.Spacing.xs)
-            }
+            .padding(.top, 10)
+            .padding(.bottom, 8)
 
             Rectangle()
                 .fill(Design.Palette.separator)
                 .frame(height: 1)
         }
     }
+
+    // MARK: Current mode card
+
+    @ViewBuilder
+    private func currentModeCard(for display: DisplayInfo) -> some View {
+        if let cur = display.currentMode {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: "rectangle.inset.filled")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 18)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("\(formatThousands(cur.width)) × \(formatThousands(cur.height))")
+                        .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                    HStack(spacing: 4) {
+                        if let hz = cur.refreshHz {
+                            Text("\(hz) Hz")
+                        }
+                        if cur.isHiDPI {
+                            Text("·").foregroundStyle(.tertiary)
+                            Text("HiDPI")
+                        }
+                    }
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("CURRENT")
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .tracking(0.6)
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(
+                        Capsule().fill(Color.accentColor.opacity(0.15))
+                    )
+            }
+            .padding(.horizontal, Design.Spacing.l)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentColor.opacity(0.08))
+                    .padding(.horizontal, Design.Spacing.m)
+            )
+            .padding(.bottom, 6)
+        }
+    }
+
+    // MARK: HiDPI / Native toggle
+
+    @ViewBuilder
+    private func filterToggle(for display: DisplayInfo) -> some View {
+        if hasBothKinds(for: display) {
+            HStack(spacing: 6) {
+                Picker("", selection: $filter) {
+                    Text("Looks like").tag(ModeFilter.hiDPIIfAvailable)
+                    Text("Pixel-perfect").tag(ModeFilter.allNative)
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .labelsHidden()
+                .help("'Looks like' uses HiDPI scaling so text stays sharp on Retina. 'Pixel-perfect' is 1:1 native — typical for non-Retina externals.")
+            }
+            .padding(.horizontal, Design.Spacing.l)
+            .padding(.bottom, 6)
+        }
+    }
+
+    // MARK: Resolution list
+
+    @ViewBuilder
+    private func sizeList(for display: DisplayInfo) -> some View {
+        let groups = visibleGroups(for: display)
+        let visible = showAll ? groups : Array(groups.prefix(defaultRowCount(for: groups, display: display)))
+
+        VStack(spacing: 0) {
+            ForEach(visible) { group in
+                CompactResolutionRow(
+                    group: group,
+                    currentMode: display.currentMode,
+                    apply: { mode in store.apply(mode, to: display.id) }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func showAllToggle(for display: DisplayInfo) -> some View {
+        let groups = visibleGroups(for: display)
+        let defaultCount = defaultRowCount(for: groups, display: display)
+        if groups.count > defaultCount {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) { showAll.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: showAll ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text(showAll ? "Show fewer" : "Show all (\(groups.count))")
+                        .font(.system(size: 11))
+                }
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// How many rows we show by default. Aim for the same shortlist System Settings
+    /// uses (~5-6 sensible "Looks like…" sizes). Always include the current size
+    /// so the user can confirm orientation.
+    private func defaultRowCount(for groups: [ResolutionGroup], display: DisplayInfo) -> Int {
+        let target = 6
+        guard let curID = display.currentMode?.ioDisplayModeID else { return min(target, groups.count) }
+        // Find current group index — make sure it's visible without expand.
+        if let curIdx = groups.firstIndex(where: { g in
+            g.modesByRefresh.contains { $0.mode.ioDisplayModeID == curID }
+        }), curIdx >= target {
+            return curIdx + 1
+        }
+        return min(target, groups.count)
+    }
+
+    // MARK: Filtering helpers
 
     private func allGroups(for display: DisplayInfo) -> [ResolutionGroup] {
         ResolutionGroup.build(from: display.modes)
@@ -391,6 +490,156 @@ private struct MenuRow: View {
 }
 
 // MARK: - Resolution row
+
+// MARK: - Back button
+
+private struct BackButton: View {
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Back")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(isHovering ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.primary))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(isHovering ? Color.accentColor : Color.secondary.opacity(0.18))
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .keyboardShortcut(.cancelAction)
+        .help("Return to display list")
+    }
+}
+
+// MARK: - Compact resolution row (new design)
+
+/// Cleaner replacement for ResolutionRow:
+/// - drops the inline real-estate badge (it was visually competing with the
+///   refresh chips and crowded the row)
+/// - bigger row padding, clearer typography
+/// - refresh rates as a native segmented Picker — readable, accessible,
+///   and consistent with other macOS controls
+private struct CompactResolutionRow: View {
+    let group: ResolutionGroup
+    let currentMode: CGDisplayMode?
+    let apply: (CGDisplayMode) -> Void
+    @State private var isHovering = false
+
+    private var currentModeID: Int32? { currentMode?.ioDisplayModeID }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text("\(formatThousands(group.pointWidth)) × \(formatThousands(group.pointHeight))")
+                .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
+                .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+                .frame(minWidth: 100, alignment: .leading)
+
+            Spacer(minLength: 6)
+
+            refreshSegment
+                .fixedSize()
+        }
+        .padding(.horizontal, Design.Spacing.l)
+        .padding(.vertical, 6)
+        .background(
+            isHovering && !isCurrentSize
+                ? Color.secondary.opacity(0.08)
+                : Color.clear
+        )
+        .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+        .help(tooltipText)
+    }
+
+    @ViewBuilder
+    private var refreshSegment: some View {
+        let entries = group.modesByRefresh
+        if entries.count == 1, let only = entries.first {
+            Button {
+                apply(only.mode)
+            } label: {
+                Text(only.hz > 0 ? "\(only.hz) Hz" : "—")
+                    .font(.system(size: 11, weight: only.mode.ioDisplayModeID == currentModeID ? .semibold : .regular).monospacedDigit())
+                    .foregroundStyle(only.mode.ioDisplayModeID == currentModeID ? Color.white : .secondary)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill(only.mode.ioDisplayModeID == currentModeID
+                                  ? Color.accentColor
+                                  : Color.secondary.opacity(0.16))
+                    )
+            }
+            .buttonStyle(.plain)
+        } else {
+            // Multi-rate: render as horizontally laid-out chips, but bigger and
+            // grouped in a single capsule "track" so they read as one control.
+            HStack(spacing: 0) {
+                ForEach(Array(entries.enumerated()), id: \.element.hz) { index, entry in
+                    let isActive = entry.mode.ioDisplayModeID == currentModeID
+                    Button {
+                        apply(entry.mode)
+                    } label: {
+                        Text("\(entry.hz)")
+                            .font(.system(size: 11, weight: isActive ? .bold : .regular).monospacedDigit())
+                            .foregroundStyle(isActive ? Color.white : .primary)
+                            .frame(minWidth: 22)
+                            .padding(.vertical, 3)
+                            .padding(.horizontal, 6)
+                            .background(
+                                isActive
+                                    ? AnyView(Capsule().fill(Color.accentColor))
+                                    : AnyView(Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("\(entry.hz) Hz")
+
+                    if index < entries.count - 1 {
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.18))
+                            .frame(width: 1, height: 12)
+                    }
+                }
+            }
+            .background(
+                Capsule().fill(Color.secondary.opacity(0.12))
+            )
+        }
+    }
+
+    private var isCurrentSize: Bool {
+        guard let id = currentModeID else { return false }
+        return group.modesByRefresh.contains { $0.mode.ioDisplayModeID == id }
+    }
+
+    private var tooltipText: String {
+        let kind = group.isHiDPI ? "Looks like" : "Pixel-perfect"
+        let pixels = "\(group.pixelWidth)×\(group.pixelHeight) pixels"
+        let area = areaDelta
+        return "\(kind) · \(pixels)\(area)"
+    }
+
+    private var areaDelta: String {
+        guard let cur = currentMode else { return "" }
+        let curArea = Double(cur.width) * Double(cur.height)
+        let propArea = Double(group.pointWidth) * Double(group.pointHeight)
+        guard curArea > 0 else { return "" }
+        let pct = Int(((propArea - curArea) / curArea * 100).rounded())
+        if pct == 0 { return "" }
+        let sign = pct > 0 ? "+" : "−"
+        return " · \(sign)\(abs(pct))% screen space"
+    }
+}
 
 private struct ResolutionRow: View {
     let group: ResolutionGroup
