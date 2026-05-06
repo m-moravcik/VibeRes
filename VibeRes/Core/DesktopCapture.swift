@@ -14,23 +14,37 @@ import CoreGraphics
 /// `SCScreenshotManager.captureImage(...)` is enough.
 @MainActor
 enum DesktopCapture {
-    /// Sticky session-level cache for the permission decision so we don't
-    /// hammer `CGPreflightScreenCaptureAccess` on every hover (and accidentally
-    /// re-trigger the system prompt on ad-hoc signed builds where TCC sometimes
-    /// loses the grant between bundle replacements).
-    private static var permissionGranted: Bool? = nil
+    /// Why Live Preview is fragile on ad-hoc signed builds:
+    /// macOS TCC keys Screen Recording grants by *code signature hash*, not
+    /// bundle ID. Ad-hoc signatures can drift between bundle replacements
+    /// (or even within a session), so even after the user clicks Allow in
+    /// System Settings, `CGPreflightScreenCaptureAccess` may keep returning
+    /// false. Calling `CGRequestScreenCaptureAccess` after a fresh grant is
+    /// supposed to return true — when it returns false twice in a row we
+    /// detect the loop and disable the feature for the rest of the session
+    /// instead of nagging the user with prompt after prompt.
 
-    /// Returns a still of the given display, or nil if capture isn't available
-    /// (permission denied, ScreenCaptureKit unavailable, no shareable content).
-    /// Will request permission exactly once per process if it hasn't been
-    /// asked before; subsequent calls re-use the cached decision.
+    enum Status: Equatable {
+        case unknown
+        case granted
+        case denied
+        /// User clicked Allow but the system keeps reporting "no access".
+        /// Symptom of TCC + ad-hoc signature drift; only a notarized build
+        /// will fix it permanently.
+        case stuckLoop
+    }
+
+    private(set) static var status: Status = .unknown
+    private static var deniedAttempts = 0
+
+    /// Returns a still of the given display, or nil when capture isn't
+    /// available. After a stuck-loop or hard denial we stop calling
+    /// ScreenCaptureKit altogether — caller falls back to the geometric
+    /// preview without any further prompts.
     static func snapshot(of displayID: CGDirectDisplayID, maxWidth: Int = 480) async -> NSImage? {
         guard await ensurePermission() else { return nil }
 
         do {
-            // `excludingDesktopWindows` keeps the System Settings → Screen
-            // Recording grant stable across calls; bare `.current` is
-            // documented but in macOS 26 occasionally re-prompts.
             let content = try await SCShareableContent.excludingDesktopWindows(
                 false,
                 onScreenWindowsOnly: true
@@ -51,39 +65,44 @@ enum DesktopCapture {
             )
             return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
         } catch {
-            // If a capture fails *after* we believed we had permission, assume
-            // the grant flipped (common on ad-hoc signed builds when the
-            // bundle is replaced) and clear the cache so the next opt-in
-            // request can re-prompt cleanly.
-            permissionGranted = nil
+            // Capture failed despite the cache saying we had permission —
+            // treat that as a TCC stuck-loop signal so the next attempt
+            // doesn't re-prompt.
+            status = .stuckLoop
             return nil
         }
     }
 
-    /// Manual reset hook for the "I just toggled Live Preview" flow — lets
-    /// the next snapshot attempt re-evaluate from scratch instead of trusting
-    /// a stale cache.
+    /// Manual reset hook for the "I just toggled Live Preview" flow.
     static func resetPermissionCache() {
-        permissionGranted = nil
+        status = .unknown
+        deniedAttempts = 0
     }
 
     /// Returns true once we know the user has granted Screen Recording.
-    /// Triggers exactly one `requestScreenCaptureAccess` call per process.
-    /// After a denial, returns false forever (until the user resets in
-    /// System Settings AND we receive a fresh `resetPermissionCache()`).
+    /// Tracks repeated denials so a TCC drift loop disables the feature
+    /// after the second failed grant rather than prompting forever.
     private static func ensurePermission() async -> Bool {
-        if let cached = permissionGranted { return cached }
+        switch status {
+        case .granted: return true
+        case .denied, .stuckLoop: return false
+        case .unknown: break
+        }
 
-        // CGPreflightScreenCaptureAccess returns true ONLY if the grant
-        // already exists; it never prompts. CGRequestScreenCaptureAccess
-        // either returns true immediately (already granted) or shows the
-        // system prompt and returns the user's decision.
         if CGPreflightScreenCaptureAccess() {
-            permissionGranted = true
+            status = .granted
             return true
         }
+        // Preflight false. Ask the system; if the user already clicked Allow
+        // earlier, this returns true immediately. If it keeps returning
+        // false despite clear user intent, we're in TCC drift territory.
         let granted = CGRequestScreenCaptureAccess()
-        permissionGranted = granted
-        return granted
+        if granted {
+            status = .granted
+            return true
+        }
+        deniedAttempts += 1
+        status = deniedAttempts >= 2 ? .stuckLoop : .denied
+        return false
     }
 }

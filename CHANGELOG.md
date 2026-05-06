@@ -4,6 +4,13 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] — 2026-05-06
+
+### Changed
+
+- **Live Preview self-detects a TCC drift loop** and gives up gracefully. After a `brew upgrade --cask` macOS sometimes ends up with multiple stale Screen Recording grant entries (ad-hoc signed bundles cycle their code-signature hash on every replacement). The classic symptom: every hover re-prompts even though Screen Recording is checked in System Settings. `DesktopCapture` now tracks consecutive denials, flips to a `.stuckLoop` status after the second failed grant, and stops calling ScreenCaptureKit for the rest of the session — the geometric preview takes over silently. Toggling Live Preview off and back on resets the counter.
+- README has a Troubleshooting section pointing at `tccutil reset ScreenCapture sk.moravcik.VibeRes` for users who want to break the loop on the spot.
+
 ## [0.4.1] — 2026-05-06
 
 ### Fixed

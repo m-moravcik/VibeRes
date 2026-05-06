@@ -154,6 +154,22 @@ automatically. Full process documented in [`.github/RELEASING.md`](.github/RELEA
 
 ---
 
+## Troubleshooting
+
+### Live Preview keeps re-prompting for Screen Recording
+
+After a `brew upgrade --cask` (or any time the app bundle is replaced) macOS may end up with multiple stale Screen Recording grant entries pointing at old code-signature hashes. Symptom: every hover over a resolution row triggers the Allow / Deny prompt again, even though VibeRes is already checked in System Settings → Privacy & Security → Screen Recording.
+
+The fix is one command:
+
+```bash
+tccutil reset ScreenCapture sk.moravcik.VibeRes
+```
+
+Then quit and relaunch VibeRes, click the menu-bar icon → drill into a display → hover a resolution row, and grant Screen Recording one last time. From then on it stays granted. (This is a known limitation of ad-hoc signed builds on macOS Tahoe; a notarized release will not have the issue.)
+
+VibeRes also self-detects this loop. After two failed grant attempts in a single session it stops calling `ScreenCaptureKit` altogether and falls back to the geometric preview — so you are not nagged with prompts indefinitely.
+
 ## Older macOS
 
 The current code targets macOS 26 because it leans on every modern API at once. Lowering the deployment target is mostly a one-line change in `project.yml` for **macOS 15 Sequoia** — everything compiles. **macOS 14 Sonoma** should also work as-is. **macOS 13 Ventura** needs a small refactor (~30 lines): `@Observable` is macOS 14+, so `DisplayStore` and `ProfileStore` would have to fall back to `ObservableObject` + `@Published`. **macOS 12 Monterey** and older would be a rewrite — `MenuBarExtra(.window)`, `NavigationStack`, `SMAppService.mainApp`, and AppIntents all arrived in 13.
