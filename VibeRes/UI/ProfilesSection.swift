@@ -36,24 +36,22 @@ struct ProfilesSection: View {
                 }
                 .padding(.horizontal, Design.Spacing.l)
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 4) {
-                        ForEach(profiles.profiles) { profile in
-                            ProfilePill(profile: profile) {
-                                let failures = profiles.apply(profile, displays: displays.displays)
-                                lastFailure = failures.isEmpty ? nil : failures.joined(separator: ", ")
-                            } onRename: {
-                                renamingProfile = profile
-                                newName = profile.name
-                                isNaming = true
-                            } onDelete: {
-                                profiles.delete(profile)
-                            }
+                FlowLayout(spacing: 4, lineSpacing: 4) {
+                    ForEach(profiles.profiles) { profile in
+                        ProfilePill(profile: profile) {
+                            let failures = profiles.apply(profile, displays: displays.displays)
+                            lastFailure = failures.isEmpty ? nil : failures.joined(separator: ", ")
+                        } onRename: {
+                            renamingProfile = profile
+                            newName = profile.name
+                            isNaming = true
+                        } onDelete: {
+                            profiles.delete(profile)
                         }
-                        saveButton
                     }
-                    .padding(.horizontal, Design.Spacing.l)
+                    saveButton
                 }
+                .padding(.horizontal, Design.Spacing.l)
             }
 
             if let lastFailure {

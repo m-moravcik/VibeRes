@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight runs for the same ref so PR pushes don't pile up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Run tests
+        run: |
+          xcodebuild test \
+            -project VibeRes.xcodeproj \
+            -scheme VibeRes \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            -resultBundlePath TestResults.xcresult \
+            | xcbeautify --renderer github-actions
+        shell: bash
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult
+
+  build-app:
+    name: Build app (Release)
+    runs-on: macos-26
+    timeout-minutes: 20
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build VibeRes.app
+        run: |
+          xcodebuild build \
+            -project VibeRes.xcodeproj \
+            -scheme VibeRes \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+        shell: bash
+
+  build-cli:
+    name: Build CLI (Release)
+    runs-on: macos-26
+    timeout-minutes: 15
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build viberes binary
+        run: |
+          xcodebuild build \
+            -project VibeRes.xcodeproj \
+            -scheme viberes-cli \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+        shell: bash
+
+      - name: Smoke-test help and parse paths (no display mutation)
+        run: |
+          BIN=$(find ~/Library/Developer/Xcode/DerivedData/VibeRes-* -name viberes -type f -path "*/Release/*" 2>/dev/null | head -1)
+          test -x "$BIN" || (echo "viberes binary not found"; exit 1)
+          "$BIN" help
+          echo "---"
+          # Smoke-test the parser by feeding garbage; we expect a non-zero exit and a
+          # message on stderr. We never call `set` because that would mutate the
+          # runner's display state.
+          ! "$BIN" set "Built-in" "garbage-spec" 2>/dev/null
+          echo "viberes CLI smoke OK"
+        shell: bash

@@ -4,7 +4,9 @@ A modern, native menubar resolution switcher for macOS — spiritual successor t
 
 > Requires **macOS 26 Tahoe** or later. Apple Silicon native.
 
-![Status](https://img.shields.io/badge/status-beta-orange) ![Tests](https://img.shields.io/badge/tests-30%20passing-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)
+[![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-42%20passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
 
