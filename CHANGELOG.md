@@ -4,6 +4,12 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.3] — 2026-05-06
+
+### Added
+
+- Release pipeline (`.github/workflows/release.yml`) — pushing a `vX.Y.Z` tag now builds VibeRes.app in Release configuration, packages it, attaches the ZIP to a fresh GitHub Release, and syncs the Homebrew formula and cask to the tap repo. Full setup documented in [`.github/RELEASING.md`](.github/RELEASING.md).
+
 ## [0.3.2] — 2026-05-06
 
 ### Fixed

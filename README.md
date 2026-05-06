@@ -143,6 +143,13 @@ make test         # 89 tests, 14 suites, Swift Testing
 
 `project.yml` is the source of truth. `*.xcodeproj` is regenerated and not committed.
 
+### Releasing
+
+Cutting a release is `git tag vX.Y.Z && git push --tags`. The
+[Release workflow](.github/workflows/release.yml) builds, packages, publishes
+to GitHub Releases, and syncs the Homebrew formula and cask to the tap repo
+automatically. Full process documented in [`.github/RELEASING.md`](.github/RELEASING.md).
+
 ---
 
 ## Older macOS
