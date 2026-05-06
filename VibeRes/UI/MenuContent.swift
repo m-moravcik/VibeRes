@@ -248,6 +248,7 @@ private struct DisplayDetailView: View {
 /// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
+    @State private var launchAtLogin: Bool = LoginItem.isEnabled
 
     var body: some View {
         VStack(spacing: 0) {
@@ -265,11 +266,20 @@ private struct FooterBar: View {
                 .keyboardShortcut("r")
 
                 MenuRow(
-                    icon: LoginItem.isEnabled ? "checkmark.circle" : "circle",
+                    icon: launchAtLogin ? "checkmark.circle.fill" : "circle",
                     label: "Launch at Login",
                     shortcut: nil,
-                    action: { _ = LoginItem.setEnabled(!LoginItem.isEnabled) }
+                    action: {
+                        let target = !launchAtLogin
+                        if LoginItem.setEnabled(target) {
+                            launchAtLogin = LoginItem.isEnabled
+                        }
+                    }
                 )
+                .onAppear {
+                    // Re-sync in case the user toggled it from System Settings → Login Items.
+                    launchAtLogin = LoginItem.isEnabled
+                }
 
                 MenuRow(
                     icon: "info.circle",

@@ -6,24 +6,28 @@ import SwiftUI
 struct ProfilesSection: View {
     @Environment(ProfileStore.self) private var profiles
     @Environment(DisplayStore.self) private var displays
-    @State private var isPromptingName = false
+    @State private var isNaming = false
     @State private var newName = ""
     @State private var lastFailure: String?
+    @FocusState private var nameFieldFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
+            HStack(spacing: 6) {
                 Text("PROFILES")
                     .font(.system(size: 9, weight: .semibold, design: .rounded))
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
+                infoTooltip
                 Spacer()
             }
             .padding(.horizontal, Design.Spacing.l)
 
-            if profiles.profiles.isEmpty {
+            if isNaming {
+                inlineNamePrompt
+            } else if profiles.profiles.isEmpty {
                 HStack {
-                    Text("No profiles yet")
+                    Text("Save a multi-display preset")
                         .font(Design.Typography.footer)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -36,9 +40,7 @@ struct ProfilesSection: View {
                         ForEach(profiles.profiles) { profile in
                             ProfilePill(profile: profile) {
                                 let failures = profiles.apply(profile, displays: displays.displays)
-                                if !failures.isEmpty {
-                                    lastFailure = failures.joined(separator: ", ")
-                                }
+                                lastFailure = failures.isEmpty ? nil : failures.joined(separator: ", ")
                             } onDelete: {
                                 profiles.delete(profile)
                             }
@@ -58,26 +60,49 @@ struct ProfilesSection: View {
             }
         }
         .padding(.bottom, Design.Spacing.s)
-        .alert("New profile", isPresented: $isPromptingName) {
-            TextField("Name", text: $newName)
-            Button("Cancel", role: .cancel) {
-                newName = ""
-            }
-            Button("Save") {
-                let trimmed = newName.trimmingCharacters(in: .whitespaces)
-                if !trimmed.isEmpty {
-                    profiles.captureCurrent(name: trimmed, displays: displays.displays)
-                }
-                newName = ""
-            }
-        } message: {
-            Text("Saves the current resolution of every connected display as a named preset.")
+    }
+
+    /// Inline prompt — replaces .alert which is unreliable inside MenuBarExtra
+    /// because clicking outside the popover dismisses both the menu bar window
+    /// and any anchored alert.
+    private var inlineNamePrompt: some View {
+        HStack(spacing: 6) {
+            TextField("Profile name", text: $newName)
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.small)
+                .focused($nameFieldFocused)
+                .onSubmit(commit)
+
+            Button("Save") { commit() }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
+
+            Button("Cancel") { cancel() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .keyboardShortcut(.cancelAction)
         }
+        .padding(.horizontal, Design.Spacing.l)
+        .onAppear { nameFieldFocused = true }
+    }
+
+    private func commit() {
+        let trimmed = newName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        profiles.captureCurrent(name: trimmed, displays: displays.displays)
+        cancel()
+    }
+
+    private func cancel() {
+        newName = ""
+        isNaming = false
     }
 
     private var saveButton: some View {
         Button {
-            isPromptingName = true
+            newName = suggestedName
+            isNaming = true
         } label: {
             HStack(spacing: 3) {
                 Image(systemName: "plus")
@@ -93,7 +118,21 @@ struct ProfilesSection: View {
             )
         }
         .buttonStyle(.plain)
-        .help("Save current state as a profile")
+        .help("Save the current state of every connected display as a named profile")
+    }
+
+    /// Suggests a name based on the connected display count so the user has something
+    /// to start typing over instead of staring at an empty field.
+    private var suggestedName: String {
+        let n = displays.displays.count
+        return n == 1 ? "Single Display" : "Setup \(profiles.profiles.count + 1)"
+    }
+
+    private var infoTooltip: some View {
+        Image(systemName: "info.circle")
+            .font(.system(size: 9))
+            .foregroundStyle(.tertiary)
+            .help("A profile remembers the resolution & refresh rate of every connected display. Tap a profile to apply it across all of them at once. Profiles match displays by EDID, so they survive reboots and USB-C reconnects.")
     }
 }
 
