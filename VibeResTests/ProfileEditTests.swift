@@ -76,7 +76,7 @@ struct ProfileEditTests {
     func updateFromCurrentPreservesIdentity() {
         let store = makeStore()
         let originalID = UUID()
-        var p = Profile(id: originalID, name: "Stable", entries: [
+        let p = Profile(id: originalID, name: "Stable", entries: [
             Profile.Entry(matcher: .anyExternal,
                           displayName: "Any external",
                           pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false),
