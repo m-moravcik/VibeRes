@@ -53,6 +53,7 @@ struct MenuContent: View {
 
 private struct RootView: View {
     @Environment(DisplayStore.self) private var store
+    @Environment(UpdateChecker.self) private var updateChecker
     @Binding var path: NavigationPath
 
     var body: some View {
@@ -62,23 +63,30 @@ private struct RootView: View {
                     .font(Design.Typography.footer)
                     .foregroundStyle(.red)
                     .padding(.horizontal, Design.Spacing.l)
-                    .padding(.top, Design.Spacing.m)
+                    .padding(.top, Design.Spacing.xs)
             }
 
-            // Root list normally fits a few cards — let the popover hug content.
+            if updateChecker.isUpdateAvailable, let url = updateChecker.releaseURL,
+               let latest = updateChecker.latestVersion {
+                UpdateBanner(latestVersion: latest, releaseURL: url)
+            }
+
+            // Tight against the popover top — MenuBarExtra(.window) wraps us
+            // in an NSPanel that already has ~8pt internal inset. Adding any
+            // .padding(.top) on top of that yields the visible whitespace
+            // gap users have called out.
             VStack(spacing: 0) {
                 ProfilesSection()
-                    .padding(.top, Design.Spacing.m)
 
                 Divider()
                     .padding(.horizontal, Design.Spacing.m)
-                    .padding(.vertical, Design.Spacing.s)
+                    .padding(.vertical, Design.Spacing.xs)
 
-                VStack(spacing: Design.Spacing.s) {
+                VStack(spacing: Design.Spacing.xs) {
                     if store.displays.isEmpty {
                         Text("No displays detected.")
                             .foregroundStyle(.secondary)
-                            .padding(Design.Spacing.xl)
+                            .padding(Design.Spacing.l)
                     } else {
                         ForEach(store.displays) { display in
                             DisplayCard(display: display) {
@@ -88,7 +96,6 @@ private struct RootView: View {
                     }
                 }
                 .padding(.horizontal, Design.Spacing.m)
-                .padding(.bottom, Design.Spacing.s)
             }
 
             FooterBar()
@@ -340,6 +347,7 @@ private struct DisplayDetailView: View {
 /// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
+    @Environment(UpdateChecker.self) private var updateChecker
     @State private var launchAtLogin: Bool = LoginItem.isEnabled
 
     var body: some View {
@@ -374,6 +382,13 @@ private struct FooterBar: View {
                 }
 
                 MenuRow(
+                    icon: updateChecker.isChecking ? "arrow.triangle.2.circlepath" : "arrow.down.circle",
+                    label: checkLabel,
+                    shortcut: nil,
+                    action: { Task { await updateChecker.checkNow() } }
+                )
+
+                MenuRow(
                     icon: "info.circle",
                     label: "About VibeRes",
                     shortcut: nil,
@@ -388,8 +403,23 @@ private struct FooterBar: View {
                 )
                 .keyboardShortcut("q")
             }
-            .padding(.vertical, 4)
+            .padding(.top, 4)
+            .padding(.bottom, 2)
         }
+    }
+
+    /// Human-friendly label for the manual update check row. Reflects current
+    /// state (idle / checking / up-to-date / outdated) so the row is informative
+    /// without occupying real estate with a separate banner.
+    private var checkLabel: String {
+        if updateChecker.isChecking { return "Checking…" }
+        if updateChecker.isUpdateAvailable {
+            return "Update available"
+        }
+        if updateChecker.lastCheckedAt != nil {
+            return "Up to date"
+        }
+        return "Check for Updates"
     }
 
     private func showAbout() {
@@ -455,6 +485,59 @@ private struct MenuRow: View {
 }
 
 // MARK: - Resolution row
+
+// MARK: - Update banner
+
+/// Subtle banner shown at the top of the root popover when GitHub has a newer
+/// release than the running app. Click → opens the release page in Safari.
+private struct UpdateBanner: View {
+    let latestVersion: String
+    let releaseURL: URL
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            NSWorkspace.shared.open(releaseURL)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.green)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Update available")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("\(versionLabel(latestVersion)) on GitHub — click to view")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: "arrow.up.right.square")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isHovering ? Color.green.opacity(0.16) : Color.green.opacity(0.10))
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .padding(.horizontal, Design.Spacing.m)
+        .padding(.top, Design.Spacing.s)
+        .accessibilityLabel("Update available — \(latestVersion) on GitHub")
+    }
+
+    /// Strip a leading "v" so the banner reads "0.3.0" rather than "v0.3.0",
+    /// matching the way the user thinks about app version numbers.
+    private func versionLabel(_ raw: String) -> String {
+        raw.hasPrefix("v") ? String(raw.dropFirst()) : raw
+    }
+}
 
 // MARK: - Back button
 

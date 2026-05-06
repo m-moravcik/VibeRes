@@ -46,10 +46,15 @@ struct ProfilesSection: View {
                     .font(.system(size: 9, weight: .semibold, design: .rounded))
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
-                infoTooltip
+                    // Tooltip moved off the standalone info-circle icon (which read
+                    // as "click me" but only reacted to hover) onto the label
+                    // itself. Power users still get the explanation on hover; the
+                    // header no longer mis-signals an interactive control.
+                    .help("Profiles save the resolution and refresh rate of each chosen display so you can apply them with one click. Externals can be locked to a specific monitor or set to match any external (handy for presentations).")
                 Spacer()
             }
             .padding(.horizontal, Design.Spacing.l)
+            .padding(.top, Design.Spacing.s)
 
             switch mode {
             case .idle:
@@ -72,7 +77,7 @@ struct ProfilesSection: View {
                 .padding(.top, 2)
             }
         }
-        .padding(.bottom, Design.Spacing.s)
+        .padding(.bottom, Design.Spacing.xs)
     }
 
     private var noteColor: Color {
@@ -157,14 +162,10 @@ struct ProfilesSection: View {
         .accessibilityLabel("Save current displays into a profile")
     }
 
-    private var infoTooltip: some View {
-        Image(systemName: "info.circle")
-            .font(.system(size: 9))
-            .foregroundStyle(.tertiary)
-            .help("A profile snapshots the resolution & refresh rate of each chosen display. Tap a profile to apply it. Externals can be saved as 'specific monitor' (locked to this exact display) or 'any external' (works with any monitor — handy for presentation mode).")
-            .accessibilityLabel("About profiles")
-            .accessibilityHint("A profile snapshots the resolution and refresh rate of each chosen display. Tap a profile to apply it.")
-    }
+    // Removed: previously rendered an info.circle icon that only fired
+    // on hover. Users read it as a clickable button (macOS convention)
+    // and tried to click — nothing happened. Tooltip moved to the
+    // PROFILES label above.
 
     private func buildInitialFormState() -> SaveFormState {
         var state = SaveFormState()
