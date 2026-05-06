@@ -103,6 +103,7 @@ jobs:
             -scheme viberes-cli \
             -configuration Release \
             -destination 'platform=macOS' \
+            -derivedDataPath ./build \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             | xcbeautify --renderer github-actions
@@ -110,8 +111,16 @@ jobs:
 
       - name: Smoke-test help and parse paths (no display mutation)
         run: |
-          BIN=$(find ~/Library/Developer/Xcode/DerivedData/VibeRes-* -name viberes -type f -path "*/Release/*" 2>/dev/null | head -1)
-          test -x "$BIN" || (echo "viberes binary not found"; exit 1)
+          # Use explicit derivedDataPath so the binary location is predictable
+          # across local and CI runs. Without it, CI uses ~/Library/Developer/...
+          # but only if the runner has that directory writable in this layout.
+          BIN=$(find ./build -name viberes -type f -perm +111 2>/dev/null | grep "/Release/" | head -1)
+          if [ -z "$BIN" ] || [ ! -x "$BIN" ]; then
+            echo "viberes binary not found in ./build"
+            find ./build -name viberes -type f 2>/dev/null || true
+            exit 1
+          fi
+          echo "Using binary: $BIN"
           "$BIN" help
           echo "---"
           # Smoke-test the parser by feeding garbage; we expect a non-zero exit and a
