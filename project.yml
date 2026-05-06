@@ -50,7 +50,9 @@ targets:
         LSUIElement: true
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: "Copyright © 2026 Michal Moravčík. MIT License."
-        NSScreenCaptureUsageDescription: "VibeRes shows a live preview of your desktop in the proposed resolution before you switch."
+        # Re-add NSScreenCaptureUsageDescription only when (and if) the live
+        # screenshot preview is actually implemented. Until then, declaring an
+        # unused permission is misleading and would trip privacy reviewers.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeRes

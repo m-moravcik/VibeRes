@@ -100,8 +100,17 @@ struct ProfilesSection: View {
             FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(profiles.profiles) { profile in
                     ProfilePill(profile: profile, isCurrentlyFlexible: isFlexible(profile)) {
-                        let outcomes = profiles.applyDetailed(profile, displays: displays.displays)
-                        announceOutcome(outcomes)
+                        // Apply runs scoring across all modes for every profile entry —
+                        // up to ~22 modes × 3 entries on a typical setup. Detach to a
+                        // background task so the popover stays responsive on click.
+                        let snapshotDisplays = displays.displays
+                        let target = profile
+                        Task.detached(priority: .userInitiated) {
+                            let outcomes = await MainActor.run {
+                                profiles.applyDetailed(target, displays: snapshotDisplays)
+                            }
+                            await MainActor.run { announceOutcome(outcomes) }
+                        }
                     } onRename: {
                         mode = .renaming(profileID: profile.id, newName: profile.name)
                     } onUpdateCurrent: {

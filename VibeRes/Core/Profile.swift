@@ -135,10 +135,17 @@ struct Profile: Identifiable, Codable, Hashable {
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
-            self.displayName = try c.decode(String.self, forKey: .displayName)
-            self.pointWidth = try c.decode(Int.self, forKey: .pointWidth)
-            self.pointHeight = try c.decode(Int.self, forKey: .pointHeight)
-            self.refreshHz = try c.decodeIfPresent(Int.self, forKey: .refreshHz)
+            // Validate untrusted inputs from a JSON file that may have been
+            // hand-edited or come from a different version of the app.
+            let rawName = try c.decode(String.self, forKey: .displayName)
+            self.displayName = String(rawName.prefix(256))
+            let w = try c.decode(Int.self, forKey: .pointWidth)
+            let h = try c.decode(Int.self, forKey: .pointHeight)
+            // Hard ceiling derived from current largest commercially-available
+            // display panels — anything beyond is almost certainly corrupt.
+            self.pointWidth = max(1, min(w, 16384))
+            self.pointHeight = max(1, min(h, 16384))
+            self.refreshHz = try c.decodeIfPresent(Int.self, forKey: .refreshHz).map { max(1, min($0, 1000)) }
             self.isHiDPI = try c.decode(Bool.self, forKey: .isHiDPI)
 
             if let m = try c.decodeIfPresent(DisplayMatcher.self, forKey: .matcher) {

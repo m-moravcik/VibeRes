@@ -108,6 +108,7 @@ private struct DisplayCard: View {
                     .font(.system(size: 18))
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: Design.Spacing.s) {
@@ -136,6 +137,7 @@ private struct DisplayCard: View {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, Design.Spacing.l)
             .padding(.vertical, Design.Spacing.m)
@@ -232,6 +234,7 @@ private struct DisplayDetailView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 18)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("\(formatThousands(cur.width)) × \(formatThousands(cur.height))")
@@ -250,7 +253,7 @@ private struct DisplayDetailView: View {
                 }
                 Spacer()
                 Text("CURRENT")
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(0.6)
                     .foregroundStyle(Color.accentColor)
                     .padding(.horizontal, 6).padding(.vertical, 2)
@@ -307,7 +310,8 @@ private struct DisplayDetailView: View {
     // MARK: Filtering helpers
 
     private func allGroups(for display: DisplayInfo) -> [ResolutionGroup] {
-        ResolutionGroup.build(from: display.modes)
+        // DisplayInfo.groups is pre-computed during snapshot — no rebuild on render.
+        display.groups
     }
 
     private func hasBothKinds(for display: DisplayInfo) -> Bool {
@@ -460,6 +464,7 @@ private struct BackButton: View {
             HStack(spacing: 3) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 11, weight: .bold))
+                    .accessibilityHidden(true)
                 Text("Back")
                     .font(.system(size: 12, weight: .medium))
             }
@@ -474,6 +479,8 @@ private struct BackButton: View {
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .keyboardShortcut(.cancelAction)
+        .accessibilityLabel("Back")
+        .accessibilityHint("Return to display list")
         .help("Return to display list")
     }
 }
@@ -500,6 +507,7 @@ private struct CompactResolutionRow: View {
                 .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
                 .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
                 .frame(minWidth: 100, alignment: .leading)
+                .accessibilityLabel("\(group.pointWidth) by \(group.pointHeight)\(isCurrentSize ? ", current" : "")")
 
             Spacer(minLength: 6)
 
@@ -516,6 +524,7 @@ private struct CompactResolutionRow: View {
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
         .help(tooltipText)
+        .accessibilityValue(tooltipText)
     }
 
     @ViewBuilder
@@ -542,8 +551,10 @@ private struct CompactResolutionRow: View {
             // Multi-rate: render as horizontally laid-out chips, but bigger and
             // grouped in a single capsule "track" so they read as one control.
             HStack(spacing: 0) {
-                ForEach(Array(entries.enumerated()), id: \.element.hz) { index, entry in
+                ForEach(entries.indices, id: \.self) { index in
+                    let entry = entries[index]
                     let isActive = entry.mode.ioDisplayModeID == currentModeID
+
                     Button {
                         apply(entry.mode)
                     } label: {
@@ -553,14 +564,11 @@ private struct CompactResolutionRow: View {
                             .frame(minWidth: 22)
                             .padding(.vertical, 3)
                             .padding(.horizontal, 6)
-                            .background(
-                                isActive
-                                    ? AnyView(Capsule().fill(Color.accentColor))
-                                    : AnyView(Color.clear)
-                            )
+                            .background(chipBackground(active: isActive))
                     }
                     .buttonStyle(.plain)
                     .help("\(entry.hz) Hz")
+                    .accessibilityLabel("\(entry.hz) Hertz")
 
                     if index < entries.count - 1 {
                         Rectangle()
@@ -572,6 +580,17 @@ private struct CompactResolutionRow: View {
             .background(
                 Capsule().fill(Color.secondary.opacity(0.12))
             )
+        }
+    }
+
+    /// Avoids `AnyView` type-erasure (which defeats SwiftUI's diffing) by using
+    /// `@ViewBuilder` with both branches typed as concrete shapes.
+    @ViewBuilder
+    private func chipBackground(active: Bool) -> some View {
+        if active {
+            Capsule().fill(Color.accentColor)
+        } else {
+            Color.clear
         }
     }
 
@@ -728,10 +747,17 @@ private struct RefreshChip: View {
 
 // MARK: - Number formatting (shared)
 
-private func formatThousands(_ n: Int) -> String {
+/// Cached formatter — instantiating NumberFormatter is surprisingly expensive
+/// (it pulls locale data) and we'd otherwise allocate one per cell per render
+/// for 22+ resolution rows.
+private let thousandsFormatter: NumberFormatter = {
     let f = NumberFormatter()
     f.numberStyle = .decimal
     f.groupingSeparator = "\u{202F}" // narrow no-break space
     f.usesGroupingSeparator = true
-    return f.string(from: NSNumber(value: n)) ?? "\(n)"
+    return f
+}()
+
+private func formatThousands(_ n: Int) -> String {
+    thousandsFormatter.string(from: NSNumber(value: n)) ?? "\(n)"
 }
