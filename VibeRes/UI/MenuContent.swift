@@ -34,23 +34,30 @@ private struct RootView: View {
             }
 
             // Root list normally fits a few cards — let the popover hug content.
-            // Only show a ScrollView when the list overflows the cap height.
-            VStack(spacing: Design.Spacing.s) {
-                if store.displays.isEmpty {
-                    Text("No displays detected.")
-                        .foregroundStyle(.secondary)
-                        .padding(Design.Spacing.xl)
-                } else {
-                    ForEach(store.displays) { display in
-                        DisplayCard(display: display) {
-                            path.append(display.id)
+            VStack(spacing: 0) {
+                ProfilesSection()
+                    .padding(.top, Design.Spacing.m)
+
+                Divider()
+                    .padding(.horizontal, Design.Spacing.m)
+                    .padding(.vertical, Design.Spacing.s)
+
+                VStack(spacing: Design.Spacing.s) {
+                    if store.displays.isEmpty {
+                        Text("No displays detected.")
+                            .foregroundStyle(.secondary)
+                            .padding(Design.Spacing.xl)
+                    } else {
+                        ForEach(store.displays) { display in
+                            DisplayCard(display: display) {
+                                path.append(display.id)
+                            }
                         }
                     }
                 }
+                .padding(.horizontal, Design.Spacing.m)
+                .padding(.bottom, Design.Spacing.s)
             }
-            .padding(.horizontal, Design.Spacing.m)
-            .padding(.top, Design.Spacing.m)
-            .padding(.bottom, Design.Spacing.s)
 
             FooterBar()
         }
