@@ -84,6 +84,77 @@ final class ProfileStore {
         save()
     }
 
+    /// Refreshes a profile's recorded resolution+refresh+HiDPI for each entry from
+    /// the displays currently connected. Keeps the profile's id, name, createdAt,
+    /// and matcher policy (specific/anyExternal/builtIn) — so toggling between
+    /// flexible and specific isn't lost. Entries whose matcher doesn't bind to
+    /// anything live are left as-is so a Q3279 entry doesn't disappear just
+    /// because the user is on the road.
+    @discardableResult
+    func updateFromCurrent(_ profile: Profile, displays: [DisplayInfo]) -> Profile? {
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return nil }
+        var updated = profiles[i]
+        updated.entries = updated.entries.map { entry -> Profile.Entry in
+            guard let info = displays.first(where: { entry.matcher.matches($0.id) }),
+                  let mode = info.currentMode
+            else { return entry } // no live match — keep prior snapshot
+            return Profile.Entry(
+                matcher: entry.matcher,
+                displayName: info.name,
+                pointWidth: mode.width,
+                pointHeight: mode.height,
+                refreshHz: mode.refreshHz,
+                isHiDPI: mode.isHiDPI
+            )
+        }
+        profiles[i] = updated
+        save()
+        return updated
+    }
+
+    /// Toggles each external entry between .edid (specific) and .anyExternal
+    /// (flexible). Built-in entries stay as-is — built-in is always exactly one
+    /// physical display, so the distinction is meaningless there. Returns true
+    /// if the resulting profile contains any flexible entry.
+    @discardableResult
+    func toggleFlexible(_ profile: Profile, displays: [DisplayInfo]) -> Bool {
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return false }
+        var updated = profiles[i]
+        let isCurrentlyFlexible = updated.entries.contains {
+            if case .anyExternal = $0.matcher { return true }
+            return false
+        }
+        updated.entries = updated.entries.map { entry -> Profile.Entry in
+            switch entry.matcher {
+            case .builtIn:
+                return entry
+            case .edid:
+                if !isCurrentlyFlexible {
+                    var e = entry
+                    e.matcher = .anyExternal
+                    return e
+                }
+                return entry
+            case .anyExternal:
+                if isCurrentlyFlexible {
+                    // Try to bind back to a connected external display by capturing its EDID.
+                    if let info = displays.first(where: { CGDisplayIsBuiltin($0.id) == 0 }) {
+                        let id = DisplayIdentity.capture(info.id)
+                        var e = entry
+                        e.matcher = .edid(vendor: id.vendor, model: id.model, serial: id.serial)
+                        e.displayName = info.name
+                        return e
+                    }
+                    return entry
+                }
+                return entry
+            }
+        }
+        profiles[i] = updated
+        save()
+        return !isCurrentlyFlexible
+    }
+
     /// Captures the current state of selected displays as a new profile.
     /// `selection` decides which physical displays to include and how to bind
     /// each entry — by EDID (specific) or by role (any external).
