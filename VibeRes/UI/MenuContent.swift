@@ -2,9 +2,28 @@ import SwiftUI
 
 struct MenuContent: View {
     @Environment(DisplayStore.self) private var store
+    @State private var path = NavigationPath()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        NavigationStack(path: $path) {
+            RootView(path: $path)
+                .navigationDestination(for: DisplayInfo.ID.self) { displayID in
+                    DisplayDetailView(displayID: displayID)
+                }
+        }
+        .frame(width: 320)
+        .frame(minHeight: 200, maxHeight: 560)
+    }
+}
+
+// MARK: - Root: list of displays
+
+private struct RootView: View {
+    @Environment(DisplayStore.self) private var store
+    @Binding var path: NavigationPath
+
+    var body: some View {
+        VStack(spacing: 0) {
             if let err = store.lastError {
                 Text(err)
                     .font(.caption)
@@ -13,20 +32,26 @@ struct MenuContent: View {
                     .padding(.top, 8)
             }
 
-            if store.displays.isEmpty {
-                Text("No displays detected.")
-                    .foregroundStyle(.secondary)
-                    .padding(12)
-            } else {
-                ForEach(Array(store.displays.enumerated()), id: \.element.id) { index, display in
-                    if index > 0 {
-                        Divider().padding(.vertical, 4)
+            ScrollView {
+                VStack(spacing: 6) {
+                    if store.displays.isEmpty {
+                        Text("No displays detected.")
+                            .foregroundStyle(.secondary)
+                            .padding(20)
+                    } else {
+                        ForEach(store.displays) { display in
+                            DisplayCard(display: display) {
+                                path.append(display.id)
+                            }
+                        }
                     }
-                    DisplaySection(display: display)
                 }
+                .padding(.horizontal, 10)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
             }
 
-            Divider().padding(.top, 4)
+            Divider()
 
             HStack {
                 Button {
@@ -46,82 +71,174 @@ struct MenuContent: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
         }
-        .padding(.top, 6)
-        .frame(width: 320)
     }
 }
 
-// MARK: - Display section
-
-private struct DisplaySection: View {
+private struct DisplayCard: View {
     let display: DisplayInfo
-    @State private var filter: ModeFilter = .hiDPIIfAvailable
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: display.isMain ? "laptopcomputer" : "display")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(display.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                        if display.isMain {
+                            Text("MAIN")
+                                .font(.caption2.bold())
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(.secondary.opacity(0.2), in: Capsule())
+                        }
+                    }
+                    if let cur = display.currentMode {
+                        Text(currentModeSubtitle(cur))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func currentModeSubtitle(_ m: CGDisplayMode) -> String {
+        var parts = ["\(m.width) × \(m.height)"]
+        if let hz = m.refreshHz { parts.append("@ \(hz) Hz") }
+        if m.isHiDPI { parts.append("HiDPI") }
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Detail: one display's modes
+
+private struct DisplayDetailView: View {
+    let displayID: CGDirectDisplayID
     @Environment(DisplayStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var filter: ModeFilter = .hiDPIIfAvailable
 
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
         case allNative
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Image(systemName: display.isMain ? "laptopcomputer" : "display")
-                    .foregroundStyle(.secondary)
-                Text(display.name).font(.headline)
-                if display.isMain {
-                    Text("MAIN")
-                        .font(.caption2.bold())
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(.secondary.opacity(0.2), in: Capsule())
-                }
-                Spacer()
-                if hasBothKinds {
-                    Picker("", selection: $filter) {
-                        Text("HiDPI").tag(ModeFilter.hiDPIIfAvailable)
-                        Text("Native").tag(ModeFilter.allNative)
-                    }
-                    .pickerStyle(.segmented)
-                    .controlSize(.mini)
-                    .labelsHidden()
-                    .frame(width: 110)
-                }
-            }
-            .padding(.horizontal, 12)
+    private var display: DisplayInfo? {
+        store.displays.first(where: { $0.id == displayID })
+    }
 
-            ForEach(visibleGroups) { group in
-                ResolutionRow(
-                    group: group,
-                    currentModeID: display.currentMode?.ioDisplayModeID,
-                    apply: { mode in store.apply(mode, to: display.id) }
-                )
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+
+            if let display {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(visibleGroups(for: display)) { group in
+                            ResolutionRow(
+                                group: group,
+                                currentModeID: display.currentMode?.ioDisplayModeID,
+                                apply: { mode in store.apply(mode, to: display.id) }
+                            )
+                            Divider().opacity(0.3)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            } else {
+                Text("Display unavailable.")
+                    .foregroundStyle(.secondary)
+                    .padding()
             }
+        }
+        .navigationBarBackButtonHidden(true)
+    }
+
+    private var header: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                }
+                .buttonStyle(.borderless)
+
+                Spacer()
+
+                Text(display?.name ?? "Display")
+                    .font(.headline)
+                    .lineLimit(1)
+
+                Spacer()
+
+                // Symmetric placeholder so the title stays centered.
+                Color.clear.frame(width: 44, height: 1)
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 6)
+
+            if let display, hasBothKinds(for: display) {
+                Picker("", selection: $filter) {
+                    Text("HiDPI").tag(ModeFilter.hiDPIIfAvailable)
+                    Text("Native").tag(ModeFilter.allNative)
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .labelsHidden()
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+            }
+
+            Divider()
         }
     }
 
-    private var allGroups: [ResolutionGroup] {
+    private func allGroups(for display: DisplayInfo) -> [ResolutionGroup] {
         ResolutionGroup.build(from: display.modes)
     }
 
-    private var hasBothKinds: Bool {
-        let kinds = Set(allGroups.map(\.isHiDPI))
+    private func hasBothKinds(for display: DisplayInfo) -> Bool {
+        let kinds = Set(allGroups(for: display).map(\.isHiDPI))
         return kinds.count > 1
     }
 
-    private var visibleGroups: [ResolutionGroup] {
+    private func visibleGroups(for display: DisplayInfo) -> [ResolutionGroup] {
+        let all = allGroups(for: display)
         switch filter {
         case .hiDPIIfAvailable:
-            let hidpi = allGroups.filter(\.isHiDPI)
-            return hidpi.isEmpty ? allGroups : hidpi
+            let hidpi = all.filter(\.isHiDPI)
+            return hidpi.isEmpty ? all : hidpi
         case .allNative:
-            let native = allGroups.filter { !$0.isHiDPI }
-            return native.isEmpty ? allGroups : native
+            let native = all.filter { !$0.isHiDPI }
+            return native.isEmpty ? all : native
         }
     }
 }
 
-// MARK: - Resolution row
+// MARK: - Resolution row + chip
 
 private struct ResolutionRow: View {
     let group: ResolutionGroup
@@ -135,17 +252,18 @@ private struct ResolutionRow: View {
                 .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                 .frame(width: 14)
 
-            Text("\(group.pointWidth) × \(group.pointHeight)")
-                .font(.system(.body, design: .default).monospacedDigit())
+            Text(formatSize(group.pointWidth, group.pointHeight))
+                .font(.system(.body).monospacedDigit())
+                .fixedSize()
 
             Spacer(minLength: 6)
 
-            if group.modesByRefresh.count == 1, let only = group.modesByRefresh.first {
-                // Single refresh rate — render as plain label, click whole row to apply.
-                if only.hz > 0 {
+            if group.modesByRefresh.count <= 1 {
+                if let only = group.modesByRefresh.first, only.hz > 0 {
                     Text("\(only.hz) Hz")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
+                        .fixedSize()
                 }
             } else {
                 HStack(spacing: 4) {
@@ -157,13 +275,13 @@ private struct ResolutionRow: View {
                         )
                     }
                 }
+                .fixedSize()
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 3)
+        .padding(.vertical, 5)
         .contentShape(Rectangle())
         .onTapGesture {
-            // Clicking outside chips applies the highest refresh rate of this size.
             if let best = group.modesByRefresh.last?.mode {
                 apply(best)
             }
@@ -173,6 +291,20 @@ private struct ResolutionRow: View {
     private var isCurrentSize: Bool {
         guard let id = currentModeID else { return false }
         return group.modesByRefresh.contains { $0.mode.ioDisplayModeID == id }
+    }
+
+    /// Formats numbers with NBSP thousand separator the way the user's locale shows them
+    /// in the screenshot (1 800 × 1 169) without taking a hard locale dependency.
+    private func formatSize(_ w: Int, _ h: Int) -> String {
+        "\(formatThousands(w)) × \(formatThousands(h))"
+    }
+
+    private func formatThousands(_ n: Int) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.groupingSeparator = "\u{202F}" // narrow no-break space
+        f.usesGroupingSeparator = true
+        return f.string(from: NSNumber(value: n)) ?? "\(n)"
     }
 }
 
@@ -185,12 +317,13 @@ private struct RefreshChip: View {
         Button(action: action) {
             Text(hz > 0 ? "\(hz)" : "—")
                 .font(.caption2.monospacedDigit().weight(isActive ? .bold : .regular))
+                .foregroundStyle(isActive ? Color.white : Color.primary)
+                .fixedSize()
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background(
-                    Capsule().fill(isActive ? Color.accentColor : Color.secondary.opacity(0.15))
+                    Capsule().fill(isActive ? Color.accentColor : Color.secondary.opacity(0.18))
                 )
-                .foregroundStyle(isActive ? Color.white : Color.primary)
         }
         .buttonStyle(.plain)
         .help(hz > 0 ? "\(hz) Hz" : "Unknown refresh rate")
