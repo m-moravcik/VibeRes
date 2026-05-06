@@ -141,6 +141,7 @@ struct ProfilesSection: View {
             HStack(spacing: 3) {
                 Image(systemName: "plus")
                     .font(.system(size: 9, weight: .semibold))
+                    .accessibilityHidden(true)
                 Text("Save")
                     .font(.system(size: 11))
             }
@@ -153,6 +154,7 @@ struct ProfilesSection: View {
         }
         .buttonStyle(.plain)
         .help("Save displays into a profile")
+        .accessibilityLabel("Save current displays into a profile")
     }
 
     private var infoTooltip: some View {
@@ -160,6 +162,8 @@ struct ProfilesSection: View {
             .font(.system(size: 9))
             .foregroundStyle(.tertiary)
             .help("A profile snapshots the resolution & refresh rate of each chosen display. Tap a profile to apply it. Externals can be saved as 'specific monitor' (locked to this exact display) or 'any external' (works with any monitor — handy for presentation mode).")
+            .accessibilityLabel("About profiles")
+            .accessibilityHint("A profile snapshots the resolution and refresh rate of each chosen display. Tap a profile to apply it.")
     }
 
     private func buildInitialFormState() -> SaveFormState {
@@ -236,10 +240,12 @@ struct ProfilesSection: View {
             Toggle(isOn: bindingForInclude(choice.displayID)) {
                 Image(systemName: choice.isBuiltIn ? "laptopcomputer" : "display")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
             }
             .toggleStyle(.checkbox)
             .controlSize(.small)
             .labelsHidden()
+            .accessibilityLabel("Include \(choice.displayName)")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(choice.displayName)

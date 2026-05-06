@@ -75,12 +75,19 @@ struct ResolutionSpec {
         guard let dim = parts.first else { return nil }
         let dims = dim.split(separator: "x", maxSplits: 1).map(String.init)
         guard dims.count == 2, let w = Int(dims[0]), let h = Int(dims[1]) else { return nil }
+        // Clamp to sane physical-display limits to keep scoring math safe even
+        // when the user feeds the CLI a number outside the realistic range.
+        guard (1...16384).contains(w), (1...16384).contains(h) else { return nil }
         spec.width = w
         spec.height = h
 
         if parts.count == 2 {
             let hz = parts[1].replacingOccurrences(of: "hz", with: "")
-            spec.refreshHz = Int(hz)
+            if let rate = Int(hz), (1...1000).contains(rate) {
+                spec.refreshHz = rate
+            } else {
+                return nil
+            }
         }
         return spec
     }

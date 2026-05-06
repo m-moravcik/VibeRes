@@ -4,7 +4,7 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] — 2026-05-06
 
 ### Added
 
@@ -39,6 +39,15 @@ adheres to [Semantic Versioning](https://semver.org/).
 - "Launch at Login" icon now updates immediately when toggled instead of requiring a popover restart.
 - `var p` → `let p` warning in `ProfileEditTests`.
 - CI smoke test could not locate the CLI binary; switched to an explicit `-derivedDataPath ./build`.
+- Bounds on profile names: control characters / null bytes stripped, length capped at 128.
+- ResolutionSpec parser in the CLI rejects out-of-range dimensions (>16384) and refresh rates (>1000).
+
+### Tests
+
+- Coverage expanded from 52 to 73 (+21):
+  - `ApplyOutcomeTests` — every `ApplyOutcome.Status` branch and `summary` formatting.
+  - `ProfileEdgeCaseTests` — `humanSummary` for 1/3/empty entries, name sanitiser (control chars, length cap, empty rejection), Profile.Entry decoder bounds (negative width clamped to 1, 99999 → 16384, 1MB displayName → 256 chars).
+  - `ResolutionGroupTests` — id format, 0Hz mode handling, descending sort guarantees, HiDPI boundary cases (equal pixel ratio, undersized pixelWidth).
 
 ## [0.1.0] — 2026-05-06
 

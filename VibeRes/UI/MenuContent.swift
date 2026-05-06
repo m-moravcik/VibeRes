@@ -421,6 +421,7 @@ private struct MenuRow: View {
                 Image(systemName: icon)
                     .font(.system(size: 12))
                     .frame(width: 16, alignment: .center)
+                    .accessibilityHidden(true)
 
                 Text(label)
                     .font(.system(size: 13))
@@ -430,7 +431,8 @@ private struct MenuRow: View {
                 if let shortcut {
                     Text(shortcut)
                         .font(.system(size: 12).monospacedDigit())
-                        .foregroundStyle(isHovering && isEnabled ? Color.white.opacity(0.85) : .secondary)
+                        .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.secondary))
+                        .accessibilityHidden(true) // VoiceOver already announces the keyboardShortcut
                 }
             }
             .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
@@ -448,6 +450,7 @@ private struct MenuRow: View {
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.4)
         .onHover { isHovering = $0 }
+        .accessibilityLabel(label)
     }
 }
 
