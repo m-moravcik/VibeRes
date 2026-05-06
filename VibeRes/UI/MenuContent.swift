@@ -13,6 +13,10 @@ struct MenuContent: View {
         }
         .frame(width: Design.Layout.popoverWidth)
         .frame(maxHeight: Design.Layout.popoverMaxHeight)
+        // Lock vertical size to intrinsic content. Without this, NavigationStack
+        // remembers the largest height any pushed view ever requested and the
+        // popover keeps that height even after popping back to the smaller root.
+        .fixedSize(horizontal: false, vertical: true)
         .background(.ultraThinMaterial)
     }
 }
@@ -159,17 +163,16 @@ private struct DisplayDetailView: View {
                     }
                     .padding(.vertical, Design.Spacing.xs)
                 }
-                .frame(maxHeight: .infinity)
+                // Idealised height: large enough for ~14 mode rows. SwiftUI grants
+                // it when popoverMaxHeight allows; otherwise scrolls. No minHeight
+                // so popping back to root collapses the popover correctly.
+                .frame(idealHeight: 420)
             } else {
                 Text("Display unavailable.")
                     .foregroundStyle(.secondary)
                     .padding()
             }
         }
-        // Detail screens are list-heavy: ask the popover for as much vertical space
-        // as our cap allows so all resolutions are reachable via scroll without
-        // any clipped or hidden rows.
-        .frame(minHeight: 420)
         .navigationBarBackButtonHidden(true)
     }
 
