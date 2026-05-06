@@ -18,6 +18,17 @@ struct MenuContent: View {
         // popover keeps that height even after popping back to the smaller root.
         .fixedSize(horizontal: false, vertical: true)
         .background(.ultraThinMaterial)
+        // Reset to root whenever the popover closes. Matches Apple's own menubar
+        // patterns (Control Center, Bluetooth, Wi-Fi): each open is a fresh task,
+        // not a continuation of an abandoned one. Avoids the "where am I?" moment
+        // when reopening hours later mid-detail.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { note in
+            guard let window = note.object as? NSWindow else { return }
+            let className = String(describing: type(of: window))
+            if className.contains("MenuBarExtra") || className.contains("StatusBar") || className.contains("Popover") {
+                path = NavigationPath()
+            }
+        }
     }
 }
 
