@@ -4,6 +4,23 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-05-06
+
+### Added
+
+- **Auto-apply matching profile on display change.** When you plug or unplug a monitor, VibeRes finds the saved profile that best fits the new layout and applies it silently. Mode-only changes (you manually pick a different resolution) don't trigger this — it's specifically for add/remove events. Toggle in the footer; on by default.
+- **Specificity hierarchy** when several profiles match the same setup: `.edid` external entries (3 points, locked to a specific monitor) > `.builtIn` (2 points) > `.anyExternal` (1 point). So if both "Work" (Built-in EDID + Q3279 EDID, score 6) and "Presentation" (Built-in EDID + any external, score 3) match the current setup, Work wins because it's the more precise match. Recency breaks ties at equal score.
+- **Live screenshot preview on hover.** Opt-in feature — turn it on in the footer to grant Screen Recording permission once. Then hovering a non-current resolution shows a real desktop snapshot scaled into the proposed mode's frame. Off by default so the macOS permission prompt only fires for users who asked for the feature.
+- New `Preferences` store backing both toggles via `UserDefaults`.
+
+### Changed
+
+- Apply behaviour skips the no-op case. When the chosen mode is already the display's current mode, `ResolutionSwitcher.apply` is no longer called and the entry reports `.alreadyApplied`. Auto-apply stays silent if every display is already at its target; manual clicks surface a quiet *"Already at the saved settings."* note.
+
+### Tests
+
+- 89 → 97 (+8): `AutoApplyTests` for specificity ranking and profile-level score sums; `PreferencesTests` for defaults and persistence.
+
 ## [0.3.5] — 2026-05-06
 
 ### Changed
