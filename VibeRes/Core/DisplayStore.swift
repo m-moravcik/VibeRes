@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Observation
 import SwiftUI
@@ -32,6 +33,24 @@ final class DisplayStore {
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled else { return }
             self?.refresh()
+            self?.dismissStaleMenuBarPopover()
+        }
+    }
+
+    /// MenuBarExtra(.window) caches its NSPanel frame from when it was first shown.
+    /// After a display reconfiguration the cached origin no longer aligns with the
+    /// status item, so the popover appears offset by ~50–200pt. Force-close any
+    /// visible status-bar window so the next click rebuilds the popover with fresh
+    /// coordinates derived from the updated screen geometry.
+    private func dismissStaleMenuBarPopover() {
+        for window in NSApp.windows where window.isVisible {
+            // MenuBarExtra panels are not standard NSWindows — they're internal
+            // _NSPopoverWindow / NSStatusBarWindow subclasses. Match by class
+            // name fragment so we don't depend on private types.
+            let className = String(describing: type(of: window))
+            if className.contains("MenuBarExtra") || className.contains("StatusBar") || className.contains("Popover") {
+                window.orderOut(nil)
+            }
         }
     }
 
