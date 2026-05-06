@@ -425,6 +425,11 @@ private struct FooterBar: View {
                     shortcut: nil,
                     action: {
                         preferences.livePreviewEnabled.toggle()
+                        // Drop the cached permission verdict so the very next
+                        // snapshot attempt re-evaluates from CGPreflight —
+                        // covers the case where the user just (un)checked the
+                        // app in System Settings → Screen Recording.
+                        DesktopCapture.resetPermissionCache()
                     }
                 )
 
