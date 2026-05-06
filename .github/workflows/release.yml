@@ -1,0 +1,209 @@
+name: Release
+
+# Triggers when you push a tag like v0.4.0. End-to-end:
+#   1. Verify the tag matches MARKETING_VERSION in project.yml
+#   2. Run the test suite (any failure cancels the release)
+#   3. Build VibeRes.app in Release configuration
+#   4. Package as VibeRes-X.Y.Z.zip
+#   5. Compute SHA256 of the ZIP
+#   6. Extract the matching CHANGELOG section as release notes
+#   7. Create the GitHub Release with the ZIP attached
+#   8. Sync Formula/viberes.rb and Casks/viberes-app.rb to the tap repo
+#
+# Required repo secrets:
+#   TAP_PUSH_TOKEN  — fine-grained PAT with contents:write scope on
+#                     m-moravcik/homebrew-viberes. Without it, the tap-sync
+#                     step fails — the release itself still publishes.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  # Manual trigger lets you re-run a release if something flaked, by passing
+  # the existing tag. Make sure the tag already exists on origin first.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.4.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, package, publish
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha256: ${{ steps.sha.outputs.sha256 }}
+
+    steps:
+      - name: Resolve tag (push vs workflow_dispatch)
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "ref=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout at tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.tag.outputs.ref }}
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          # Strip the leading "v" from the tag so version is "0.4.0", not "v0.4.0".
+          TAG="${{ steps.tag.outputs.ref }}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Releasing $VERSION (tag $TAG)"
+
+      - name: Verify tag matches project.yml version
+        run: |
+          PROJECT_VERSION=$(awk -F'"' '/MARKETING_VERSION:/ {print $2}' project.yml)
+          if [ "$PROJECT_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::project.yml says $PROJECT_VERSION but tag says ${{ steps.version.outputs.version }}"
+            exit 1
+          fi
+          echo "Version match: $PROJECT_VERSION"
+
+      - name: Install build tools
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Run tests
+        run: |
+          xcodebuild test \
+            -project VibeRes.xcodeproj \
+            -scheme VibeRes \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Build Release configuration
+        run: |
+          xcodebuild build \
+            -project VibeRes.xcodeproj \
+            -scheme VibeRes \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath ./build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Package VibeRes.app
+        id: package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p artifacts
+          cp -R "build/Build/Products/Release/VibeRes.app" artifacts/
+          cd artifacts
+          zip -ry "VibeRes-${VERSION}.zip" VibeRes.app
+          ls -lh "VibeRes-${VERSION}.zip"
+          echo "zip=artifacts/VibeRes-${VERSION}.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA=$(shasum -a 256 "artifacts/VibeRes-${VERSION}.zip" | awk '{print $1}')
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "ZIP SHA256: $SHA"
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Pull the section between "## [VERSION]" and the next "## [" header.
+          # If the section isn't found, fall back to a generic notes string.
+          NOTES=$(awk -v ver="## [$VERSION]" '
+            $0 ~ ver { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md)
+          if [ -z "$(echo "$NOTES" | tr -d '[:space:]')" ]; then
+            NOTES="See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md) for full notes."
+          fi
+          # Stash to a file because GITHUB_OUTPUT can't carry multi-line strings cleanly.
+          {
+            echo "notes<<RELEASE_NOTES_EOF"
+            echo "$NOTES"
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "v${VERSION}" \
+            "${{ steps.package.outputs.zip }}" \
+            --title "VibeRes ${VERSION}" \
+            --notes "${{ steps.notes.outputs.notes }}"
+
+  sync-tap:
+    name: Sync formula and cask to tap
+    needs: release
+    runs-on: macos-26
+    timeout-minutes: 5
+    # Don't fail the whole pipeline if the user hasn't set up the PAT yet —
+    # release itself already published. Tap can be synced manually.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+        with:
+          repository: m-moravcik/homebrew-viberes
+          token: ${{ secrets.TAP_PUSH_TOKEN }}
+          path: tap
+
+      - name: Update formula
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          # Replace `tag: "vOLD"` and `version "OLD"` lines.
+          sed -E -i '' \
+            -e "s|tag: \"v[0-9]+\.[0-9]+\.[0-9]+\"|tag: \"v${VERSION}\"|" \
+            -e "s|version \"[0-9]+\.[0-9]+\.[0-9]+\"|version \"${VERSION}\"|" \
+            tap/Formula/viberes.rb
+
+      - name: Update cask version + sha256
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          SHA="${{ needs.release.outputs.sha256 }}"
+          sed -E -i '' \
+            -e "s|version \"[0-9]+\.[0-9]+\.[0-9]+\"|version \"${VERSION}\"|" \
+            -e "s|sha256 \"[a-f0-9]{64}\"|sha256 \"${SHA}\"|" \
+            tap/Casks/viberes-app.rb
+
+      - name: Commit and push
+        working-directory: tap
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to tap (already in sync)."
+            exit 0
+          fi
+          git commit -m "viberes ${VERSION}: formula + cask"
+          git push
