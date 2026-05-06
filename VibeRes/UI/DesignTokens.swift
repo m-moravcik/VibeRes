@@ -19,10 +19,11 @@ enum Design {
 
     enum Layout {
         static let popoverWidth: CGFloat = 300
-        static let popoverMinHeight: CGFloat = 180
-        static let popoverMaxHeight: CGFloat = 540
+        static let popoverMinHeight: CGFloat = 320
+        static let popoverMaxHeight: CGFloat = 600
         static let rowVerticalPadding: CGFloat = 4
         static let chipMinWidth: CGFloat = 24
+        static let footerRowVerticalPadding: CGFloat = 3
     }
 
     enum Typography {

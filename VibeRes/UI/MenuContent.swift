@@ -51,6 +51,7 @@ private struct RootView: View {
                 .padding(.top, Design.Spacing.m)
                 .padding(.bottom, Design.Spacing.s)
             }
+            .frame(maxHeight: .infinity)
 
             FooterBar()
         }
@@ -152,6 +153,7 @@ private struct DisplayDetailView: View {
                     }
                     .padding(.vertical, Design.Spacing.xs)
                 }
+                .frame(maxHeight: .infinity)
             } else {
                 Text("Display unavailable.")
                     .foregroundStyle(.secondary)
@@ -324,7 +326,7 @@ private struct MenuRow: View {
             }
             .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
             .padding(.horizontal, Design.Spacing.l)
-            .padding(.vertical, 4)
+            .padding(.vertical, Design.Layout.footerRowVerticalPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
