@@ -52,7 +52,8 @@ final class ProfileStore {
         do {
             profiles = try JSONDecoder().decode([Profile].self, from: data)
         } catch {
-            lastError = "Failed to read profiles: \(error.localizedDescription)"
+            // Sanitised — don't surface JSONDecoder internals or file paths.
+            lastError = "Failed to read saved profiles."
             profiles = []
         }
     }
@@ -61,9 +62,16 @@ final class ProfileStore {
         do {
             let data = try JSONEncoder().encode(profiles)
             try data.write(to: storeURL, options: [.atomic])
+            // Restrict to owner read/write only — profiles contain EDID identifiers
+            // and resolution preferences which other users on the machine
+            // shouldn't read.
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o600],
+                ofItemAtPath: storeURL.path
+            )
             lastError = nil
         } catch {
-            lastError = "Failed to save profiles: \(error.localizedDescription)"
+            lastError = "Failed to save profiles."
         }
     }
 

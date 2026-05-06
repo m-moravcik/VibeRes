@@ -1,4 +1,3 @@
-import AppKit
 import CoreGraphics
 import Foundation
 
@@ -8,6 +7,9 @@ struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
     let isMain: Bool
     let modes: [CGDisplayMode]
     let currentMode: CGDisplayMode?
+    /// Pre-computed bucketed groups so the UI doesn't re-bucket on every render.
+    /// Built once during snapshot, stable across body recomputations.
+    let groups: [ResolutionGroup]
 
     static func == (lhs: DisplayInfo, rhs: DisplayInfo) -> Bool {
         lhs.id == rhs.id
@@ -22,22 +24,31 @@ struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
 }
 
 enum DisplayManager {
-    /// Returns every active display with its full list of modes (including HiDPI scaled variants).
+    /// Cap on simultaneously-active displays we'll honour. macOS supports more in theory,
+    /// but a sane upper bound prevents pathological allocations if `CGGetActiveDisplayList`
+    /// returns a corrupt count.
+    private static let maxDisplays: UInt32 = 32
+
+    /// Returns every active display with its full list of modes (including HiDPI scaled variants)
+    /// plus pre-bucketed `ResolutionGroup`s so the UI doesn't re-bucket on every render.
     static func snapshot() -> [DisplayInfo] {
         var count: UInt32 = 0
         guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else { return [] }
+        guard count <= maxDisplays else { return [] }
 
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
         guard CGGetActiveDisplayList(count, &ids, &count) == .success else { return [] }
 
         let mainID = CGMainDisplayID()
         return ids.map { id in
-            DisplayInfo(
+            let modes = usableModes(for: id)
+            return DisplayInfo(
                 id: id,
                 name: name(for: id),
                 isMain: id == mainID,
-                modes: usableModes(for: id),
-                currentMode: CGDisplayCopyDisplayMode(id)
+                modes: modes,
+                currentMode: CGDisplayCopyDisplayMode(id),
+                groups: ResolutionGroup.build(from: modes)
             )
         }
     }
@@ -51,18 +62,10 @@ enum DisplayManager {
         return raw.filter { $0.isUsableForDesktopGUI() }
     }
 
-    /// Localized display name as macOS shows it in System Settings → Displays
-    /// ("Studio Display", "LG UltraFine", "Built-in Retina Display"). The mapping
-    /// goes through NSScreen because CoreGraphics has no public name API; NSScreen
-    /// pulls the name from EDID + macOS's display database.
+    /// Resolves the human-readable display name. Delegates to `DisplayNamer.resolve`,
+    /// which the GUI app overrides at startup with an AppKit-backed implementation.
+    /// CLI and tests use the Foundation-only fallback.
     private static func name(for id: CGDirectDisplayID) -> String {
-        if let screen = NSScreen.screens.first(where: { screen in
-            let key = NSDeviceDescriptionKey("NSScreenNumber")
-            return (screen.deviceDescription[key] as? NSNumber)?.uint32Value == id
-        }) {
-            return screen.localizedName
-        }
-        // Fallback for displays not visible to AppKit (rare; e.g. mid-reconfiguration).
-        return CGDisplayIsBuiltin(id) != 0 ? "Built-in Display" : "External Display"
+        DisplayNamer.resolve(id)
     }
 }
