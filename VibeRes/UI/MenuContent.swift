@@ -361,7 +361,13 @@ private struct FooterBar: View {
                     icon: "arrow.clockwise",
                     label: "Refresh",
                     shortcut: "⌘R",
-                    action: { store.refresh() }
+                    action: {
+                        // Refresh both data sources the popover surfaces:
+                        // the display list (sync, fast) and the update
+                        // banner (async — fires off but doesn't block the UI).
+                        store.refresh()
+                        Task { await updateChecker.checkNow() }
+                    }
                 )
                 .keyboardShortcut("r")
 
