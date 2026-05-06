@@ -76,3 +76,19 @@ targets:
       testTargets:
         - VibeResTests
       gatherCoverageData: true
+
+  viberes-cli:
+    type: tool
+    platform: macOS
+    deploymentTarget: "26.0"
+    productName: viberes
+    sources:
+      # Reuse the Core layer instead of duplicating the logic.
+      - path: VibeRes/Core
+      - path: VibeResCLI
+    settings:
+      base:
+        PRODUCT_NAME: viberes
+        SWIFT_STRICT_CONCURRENCY: minimal
+        GENERATE_INFOPLIST_FILE: YES
+        ENABLE_HARDENED_RUNTIME: NO

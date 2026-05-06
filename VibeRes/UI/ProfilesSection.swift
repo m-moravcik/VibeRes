@@ -8,6 +8,7 @@ struct ProfilesSection: View {
     @Environment(DisplayStore.self) private var displays
     @State private var isNaming = false
     @State private var newName = ""
+    @State private var renamingProfile: Profile?
     @State private var lastFailure: String?
     @FocusState private var nameFieldFocused: Bool
 
@@ -41,6 +42,10 @@ struct ProfilesSection: View {
                             ProfilePill(profile: profile) {
                                 let failures = profiles.apply(profile, displays: displays.displays)
                                 lastFailure = failures.isEmpty ? nil : failures.joined(separator: ", ")
+                            } onRename: {
+                                renamingProfile = profile
+                                newName = profile.name
+                                isNaming = true
                             } onDelete: {
                                 profiles.delete(profile)
                             }
@@ -64,24 +69,31 @@ struct ProfilesSection: View {
 
     /// Inline prompt — replaces .alert which is unreliable inside MenuBarExtra
     /// because clicking outside the popover dismisses both the menu bar window
-    /// and any anchored alert.
+    /// and any anchored alert. Used for both Save (new profile) and Rename.
     private var inlineNamePrompt: some View {
-        HStack(spacing: 6) {
-            TextField("Profile name", text: $newName)
-                .textFieldStyle(.roundedBorder)
-                .controlSize(.small)
-                .focused($nameFieldFocused)
-                .onSubmit(commit)
+        VStack(alignment: .leading, spacing: 4) {
+            if renamingProfile != nil {
+                Text("Rename profile")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 6) {
+                TextField("Profile name", text: $newName)
+                    .textFieldStyle(.roundedBorder)
+                    .controlSize(.small)
+                    .focused($nameFieldFocused)
+                    .onSubmit(commit)
 
-            Button("Save") { commit() }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button(renamingProfile == nil ? "Save" : "Rename") { commit() }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
 
-            Button("Cancel") { cancel() }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .keyboardShortcut(.cancelAction)
+                Button("Cancel") { cancel() }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .keyboardShortcut(.cancelAction)
+            }
         }
         .padding(.horizontal, Design.Spacing.l)
         .onAppear { nameFieldFocused = true }
@@ -90,13 +102,19 @@ struct ProfilesSection: View {
     private func commit() {
         let trimmed = newName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        profiles.captureCurrent(name: trimmed, displays: displays.displays)
+        if var profile = renamingProfile {
+            profile.name = trimmed
+            profiles.update(profile)
+        } else {
+            profiles.captureCurrent(name: trimmed, displays: displays.displays)
+        }
         cancel()
     }
 
     private func cancel() {
         newName = ""
         isNaming = false
+        renamingProfile = nil
     }
 
     private var saveButton: some View {
@@ -139,6 +157,7 @@ struct ProfilesSection: View {
 private struct ProfilePill: View {
     let profile: Profile
     let onApply: () -> Void
+    let onRename: () -> Void
     let onDelete: () -> Void
     @State private var isHovering = false
 
@@ -160,9 +179,10 @@ private struct ProfilePill: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-        .help("Apply \(profile.name) (\(profile.entries.count) display\(profile.entries.count == 1 ? "" : "s"))")
+        .help("Apply \(profile.name) (\(profile.entries.count) display\(profile.entries.count == 1 ? "" : "s")). Right-click for more.")
         .contextMenu {
             Button("Apply", action: onApply)
+            Button("Rename…", action: onRename)
             Divider()
             Button("Delete", role: .destructive, action: onDelete)
         }
