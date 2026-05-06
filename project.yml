@@ -11,8 +11,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    MARKETING_VERSION: "0.3.3"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "0.3.4"
+    CURRENT_PROJECT_VERSION: "7"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
@@ -38,9 +38,6 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - path: VibeRes
-    resources:
-      - path: VibeRes/Assets.xcassets
-        optional: true
     info:
       path: VibeRes/Info.plist
       properties:
@@ -60,6 +57,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   VibeResTests:
     type: bundle.unit-test
