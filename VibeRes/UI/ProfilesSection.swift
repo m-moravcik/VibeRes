@@ -123,11 +123,15 @@ struct ProfilesSection: View {
                         // Apply runs scoring across all modes for every profile entry —
                         // up to ~22 modes × 3 entries on a typical setup. Detach to a
                         // background task so the popover stays responsive on click.
+                        // Pass the revert history so a user-initiated profile apply
+                        // can be undone with one click; auto-apply (display change)
+                        // skips revert so the system event isn't treated as undoable.
                         let snapshotDisplays = displays.displays
                         let target = profile
+                        let revert = displays.revert
                         Task.detached(priority: .userInitiated) {
                             let outcomes = await MainActor.run {
-                                profiles.applyDetailed(target, displays: snapshotDisplays)
+                                profiles.applyDetailed(target, displays: snapshotDisplays, revert: revert)
                             }
                             await MainActor.run { announceOutcome(outcomes) }
                         }

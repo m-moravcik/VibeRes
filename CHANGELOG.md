@@ -4,6 +4,18 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-05-06
+
+### Added
+
+- **Revert last change** (single-step undo). When you click a resolution and immediately realise it was the wrong call — text too small, refresh rate too low, anything — the menu-bar footer now shows a **Revert last change** row with `⌘Z`. One click puts every display the apply touched back where it was. Profile applies snapshot all affected displays atomically, so reverting an "applied Presentation" undoes the whole profile in one move, not just the last entry.
+- Auto-apply (display add/remove) deliberately does **not** create a revert entry — system events shouldn't be queued for undo.
+- Display set changes (a monitor unplugged, etc.) clear the history, since a saved "before" mode would otherwise reference a phantom display.
+
+### Tests
+
+- 97 → 100 (+3): `RevertHistoryTests` for empty state, no-op clear, no-op consume.
+
 ## [0.4.2] — 2026-05-06
 
 ### Changed
