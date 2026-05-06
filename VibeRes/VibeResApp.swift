@@ -5,6 +5,7 @@ import SwiftUI
 struct VibeResApp: App {
     @State private var displayStore: DisplayStore
     @State private var profileStore: ProfileStore
+    @State private var updateChecker: UpdateChecker
 
     init() {
         // Wire up the AppKit-backed display name resolver before any DisplayStore
@@ -21,6 +22,10 @@ struct VibeResApp: App {
         }
         _displayStore = State(initialValue: DisplayStore())
         _profileStore = State(initialValue: ProfileStore())
+        let checker = UpdateChecker()
+        // Schedule the first check on the next runloop tick so init stays fast.
+        Task { @MainActor in checker.checkIfDue() }
+        _updateChecker = State(initialValue: checker)
     }
 
     var body: some Scene {
@@ -28,6 +33,7 @@ struct VibeResApp: App {
             MenuContent()
                 .environment(displayStore)
                 .environment(profileStore)
+                .environment(updateChecker)
                 .frame(minWidth: 280)
         } label: {
             Image(systemName: "rectangle.on.rectangle.angled")

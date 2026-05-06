@@ -5,7 +5,7 @@ A modern menubar resolution switcher for macOS. Native SwiftUI, multi-display pr
 > Requires **macOS 26 Tahoe**, Apple Silicon. See [Older macOS](#older-macos) for backporting notes.
 
 [![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-73%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-89%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
@@ -135,7 +135,7 @@ Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.a
 brew install xcodegen
 make app          # GUI
 make cli          # viberes binary
-make test         # 73 tests, 12 suites, Swift Testing
+make test         # 89 tests, 14 suites, Swift Testing
 ```
 
 `project.yml` is the source of truth. `*.xcodeproj` is regenerated and not committed.

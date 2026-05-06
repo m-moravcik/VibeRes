@@ -4,6 +4,24 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-05-06
+
+### Added
+
+- **Update checker** — VibeRes pings GitHub Releases once a day and shows a green banner at the top of the popover when a newer version exists. Click the banner to open the release page in Safari. The footer also has a manual "Check for Updates / Up to date / Update available" row that triggers the same check on demand.
+- Footer label adapts to checker state: idle → "Check for Updates", in-flight → "Checking…", post-check → "Up to date" or "Update available".
+
+### Changed
+
+- Trimmed popover padding — removed redundant top/bottom whitespace around `RootView` so the content hugs the popover edges (~25pt saved vertically).
+- Removed the standalone `info.circle` icon next to the **PROFILES** label. It looked clickable but only fired on hover; the same tooltip is now attached to the **PROFILES** label itself.
+
+### Tests
+
+- 73 → 89 (+16):
+  - `UpdateCheckerTests` (8) — version comparison: patch / minor / major bumps, equal versions, older versions, pre-release suffix, mismatched component counts, garbage input.
+  - `ResolutionSpecBoundsTests` (8) — CLI parser bounds: zero / negative / overlarge dimensions and refresh rates rejected; boundary values 1 and 16384 still accepted.
+
 ## [0.2.0] — 2026-05-06
 
 ### Added
