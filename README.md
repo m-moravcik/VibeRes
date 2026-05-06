@@ -12,27 +12,30 @@ A modern menubar resolution switcher for macOS. Native SwiftUI, multi-display pr
 
 ## Install
 
-### Menubar app
+### Homebrew (recommended)
 
-Download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases), unzip into `/Applications`, and on first launch right-click the app → **Open** (the build is ad-hoc signed, so Gatekeeper asks once). Or:
+```bash
+brew install --cask m-moravcik/viberes/viberes-app   # GUI menu-bar app
+brew install        m-moravcik/viberes/viberes       # CLI companion
+```
+
+Upgrade later: `brew upgrade --cask m-moravcik/viberes/viberes-app` and `brew upgrade m-moravcik/viberes/viberes`. The Cask drops the quarantine attribute on install so Gatekeeper doesn't prompt on first launch. Both formula and cask live in [m-moravcik/homebrew-viberes](https://github.com/m-moravcik/homebrew-viberes).
+
+### Manual
+
+If you don't use Homebrew, download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases), unzip into `/Applications`, and on first launch right-click → **Open** (ad-hoc signed). Or strip the quarantine flag yourself:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/VibeRes.app
 ```
 
-### CLI (`viberes`) via Homebrew
-
-```bash
-brew install m-moravcik/viberes/viberes
-```
-
-This builds the binary from source against the tagged release (formula lives at [m-moravcik/homebrew-viberes](https://github.com/m-moravcik/homebrew-viberes)). Requires Xcode 26; `xcodegen` is pulled in automatically. Upgrade later with `brew upgrade`.
-
-Or build the CLI from a local clone (no Homebrew needed):
+### Build from source
 
 ```bash
 make install-cli   # → /usr/local/bin/viberes
 ```
+
+Or use Xcode (`make app`) — see [Build](#build) below.
 
 ---
 

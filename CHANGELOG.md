@@ -4,6 +4,16 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] — 2026-05-06
+
+### Fixed
+
+- Launch at Login icon could show "off" even when the app was registered, after a re-launch from a freshly-built bundle. Cause: `@State` initialiser ran once and we never re-read SMAppService status when the popover re-appeared. Now re-syncs on every popover open via `.task(id:)` and waits one runloop tick after toggling so we read the post-mutation value, not the pre-mutation one.
+
+### Added
+
+- **Homebrew Cask** for the GUI app: `brew install --cask m-moravcik/viberes/viberes-app`. Strips the quarantine attribute on install so Gatekeeper doesn't prompt on first launch. Upgrade later via `brew upgrade --cask`. Cask lives in the existing [m-moravcik/homebrew-viberes](https://github.com/m-moravcik/homebrew-viberes) tap alongside the CLI formula.
+
 ## [0.3.1] — 2026-05-06
 
 ### Changed

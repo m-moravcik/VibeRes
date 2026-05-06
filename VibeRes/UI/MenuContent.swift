@@ -378,12 +378,22 @@ private struct FooterBar: View {
                     action: {
                         let target = !launchAtLogin
                         if LoginItem.setEnabled(target) {
-                            launchAtLogin = LoginItem.isEnabled
+                            // SMAppService applies async — wait one runloop tick
+                            // before reading status back, otherwise we sometimes
+                            // get the pre-toggle value and the icon "snaps back".
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .milliseconds(150))
+                                launchAtLogin = LoginItem.isEnabled
+                            }
                         }
                     }
                 )
-                .onAppear {
-                    // Re-sync in case the user toggled it from System Settings → Login Items.
+                .task(id: store.displays) {
+                    // Re-sync on every popover open. SwiftUI rebuilds FooterBar
+                    // when DisplayStore mutates, which happens on each open via
+                    // refresh(), so we piggy-back on store.displays as the
+                    // identity. Catches the case where the user toggled it from
+                    // System Settings → Login Items between popover opens.
                     launchAtLogin = LoginItem.isEnabled
                 }
 
