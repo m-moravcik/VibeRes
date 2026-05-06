@@ -12,6 +12,12 @@ struct PreviewBox: View {
     /// Maximum bounding box (in points) for the preview frame in the popover.
     let maxSize: CGFloat
 
+    /// Optional cached desktop screenshot. When provided, the inner frame is
+    /// painted with this image clipped to the proposed mode's aspect ratio
+    /// instead of a flat accent fill. The outer frame still uses the bare
+    /// outline so the user reads "this is the chunk you'd actually see".
+    var desktopImage: NSImage? = nil
+
     var body: some View {
         let cur = CGSize(width: max(1, currentWidth), height: max(1, currentHeight))
         let prop = CGSize(width: max(1, proposedWidth), height: max(1, proposedHeight))
@@ -25,17 +31,33 @@ struct PreviewBox: View {
         let propFrame = CGSize(width: prop.width * scale, height: prop.height * scale)
 
         ZStack(alignment: .topLeading) {
+            // Outer (current mode) — outline only.
             RoundedRectangle(cornerRadius: 3, style: .continuous)
                 .strokeBorder(Color.secondary.opacity(0.45), lineWidth: 1)
                 .frame(width: curFrame.width, height: curFrame.height)
 
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .fill(Color.accentColor.opacity(0.22))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .strokeBorder(Color.accentColor, lineWidth: 1)
-                )
-                .frame(width: propFrame.width, height: propFrame.height)
+            // Inner (proposed mode) — either a flat tinted rect, or a
+            // cropped slice of the live desktop image scaled into the
+            // proposed mode's aspect.
+            if let image = desktopImage {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: propFrame.width, height: propFrame.height)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .strokeBorder(Color.accentColor, lineWidth: 1)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.22))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .strokeBorder(Color.accentColor, lineWidth: 1)
+                    )
+                    .frame(width: propFrame.width, height: propFrame.height)
+            }
         }
         .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
         .padding(6)

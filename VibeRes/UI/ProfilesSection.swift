@@ -6,9 +6,13 @@ import SwiftUI
 struct ProfilesSection: View {
     @Environment(ProfileStore.self) private var profiles
     @Environment(DisplayStore.self) private var displays
+    @Environment(Preferences.self) private var preferences
     @State private var mode: Mode = .idle
     @State private var lastNote: String?
     @State private var lastNoteTone: NoteTone = .info
+    /// Tracks the last `setChangeToken` we acted on so we don't re-apply the
+    /// same display add/remove event multiple times if the popover redraws.
+    @State private var lastObservedSetToken: Int = -1
     @FocusState private var nameFieldFocused: Bool
 
     enum NoteTone {
@@ -64,6 +68,17 @@ struct ProfilesSection: View {
             case .renaming:
                 renameForm
             }
+
+            // Watch for display add/remove events and auto-apply the matching
+            // profile when one exists. Mode-only changes (user manually picks
+            // a different resolution) don't bump the token, so they're ignored.
+            EmptyView()
+                .onChange(of: displays.setChangeToken) { _, newToken in
+                    guard preferences.autoApplyOnDisplayChange else { return }
+                    guard newToken != lastObservedSetToken else { return }
+                    lastObservedSetToken = newToken
+                    autoApplyMatchingProfile()
+                }
 
             if let note = lastNote {
                 HStack(alignment: .top, spacing: 4) {
@@ -404,6 +419,22 @@ struct ProfilesSection: View {
         }
     }
 
+    /// Triggered by DisplayStore.setChangeToken bumps. Looks for a saved
+    /// profile that matches the new display set and applies it. Silent on
+    /// no-match so users without saved profiles aren't bothered.
+    /// Also silent when every entry was already at its target mode — no
+    /// point announcing "applied" if nothing actually changed.
+    private func autoApplyMatchingProfile() {
+        guard let match = profiles.profileMatchingExactly(displays.displays) else {
+            return
+        }
+        let outcomes = profiles.applyDetailed(match, displays: displays.displays)
+        let didChangeAnything = outcomes.contains(where: \.didChange)
+        if didChangeAnything {
+            announce("Applied '\(match.name)' for the new display setup.", tone: .info)
+        }
+    }
+
     /// Sets a transient note with the given tone, auto-clearing after 6s.
     private func announce(_ text: String, tone: NoteTone) {
         lastNote = text
@@ -420,17 +451,22 @@ struct ProfilesSection: View {
     }
 
     /// Translates outcome list into a single coloured note shown under the pills.
-    /// Priority: any problem > any fallback > all-applied success.
+    /// Priority: any problem > any fallback > applied success > all already-at-target.
     private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
         let problems = outcomes.filter {
-            if case .applied = $0.status { return false }
-            if case .appliedWithFallback = $0.status { return false }
-            return true
+            switch $0.status {
+            case .skippedNoMatch, .skippedNoMode, .failed: return true
+            default: return false
+            }
         }
         let fallbacks = outcomes.filter {
             if case .appliedWithFallback = $0.status { return true }
             return false
         }
+        let applied = outcomes.first(where: {
+            if case .applied = $0.status { return true }
+            return false
+        })
 
         if !problems.isEmpty {
             lastNoteTone = .problem
@@ -438,12 +474,18 @@ struct ProfilesSection: View {
         } else if !fallbacks.isEmpty {
             lastNoteTone = .fallback
             lastNote = fallbacks.map(\.summary).joined(separator: "; ")
-        } else if let first = outcomes.first(where: {
-            if case .applied = $0.status { return true }
-            return false
-        }) {
+        } else if let first = applied {
             lastNoteTone = .info
             lastNote = first.summary + (outcomes.count > 1 ? " (+\(outcomes.count - 1) more)" : "")
+        } else if outcomes.allSatisfy({
+            if case .alreadyApplied = $0.status { return true }
+            return false
+        }) {
+            // Manual apply against an identical state — surface a quiet
+            // confirmation so the user knows the click registered, but
+            // don't pretend something changed.
+            lastNoteTone = .info
+            lastNote = "Already at the saved settings."
         } else {
             lastNote = nil
         }

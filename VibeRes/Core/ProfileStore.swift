@@ -222,6 +222,7 @@ final class ProfileStore {
         enum Status {
             case applied                  // exact request honoured
             case appliedWithFallback      // got close, see fallback fields
+            case alreadyApplied           // mode === current; nothing changed
             case skippedNoMatch           // nothing matched the matcher
             case skippedNoMode            // matched but no usable mode found
             case failed(String)           // ResolutionSwitcher threw
@@ -239,6 +240,8 @@ final class ProfileStore {
             case .applied:
                 let hz = appliedHz.map { " @ \($0)Hz" } ?? ""
                 return "\(displayName) → \(appliedSize.map { "\($0.0)×\($0.1)" } ?? "?")\(hz)"
+            case .alreadyApplied:
+                return "\(displayName) already at requested mode"
             case .appliedWithFallback:
                 let req = "\(requestedSize.0)×\(requestedSize.1)" + (requestedHz.map { " @\($0)Hz" } ?? "")
                 let got = (appliedSize.map { "\($0.0)×\($0.1)" } ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
@@ -254,8 +257,18 @@ final class ProfileStore {
 
         var isProblem: Bool {
             switch status {
-            case .applied: return false
+            case .applied, .alreadyApplied: return false
             case .appliedWithFallback, .skippedNoMatch, .skippedNoMode, .failed: return true
+            }
+        }
+
+        /// True when this entry actually mutated display state. Used by
+        /// auto-apply to suppress the "Applied 'Work'…" toast when nothing
+        /// in fact changed (every display was already at its target mode).
+        var didChange: Bool {
+            switch status {
+            case .applied, .appliedWithFallback: return true
+            case .alreadyApplied, .skippedNoMatch, .skippedNoMode, .failed: return false
             }
         }
     }
@@ -293,19 +306,30 @@ final class ProfileStore {
                     ))
                     continue
                 }
+                // If the picked mode is the display's current mode, switching
+                // is a no-op at the system level — but still surface a status
+                // so callers can distinguish "we did something" from "nothing
+                // to do". Auto-apply uses this to suppress redundant toasts.
+                let isAlready = mode.ioDisplayModeID == info.currentMode?.ioDisplayModeID
                 let isExact = mode.width == entry.pointWidth
                     && mode.height == entry.pointHeight
                     && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
                     && mode.isHiDPI == entry.isHiDPI
                 do {
-                    try ResolutionSwitcher.apply(mode, to: info.id)
+                    if !isAlready {
+                        try ResolutionSwitcher.apply(mode, to: info.id)
+                    }
+                    let status: ApplyOutcome.Status = {
+                        if isAlready { return .alreadyApplied }
+                        return isExact ? .applied : .appliedWithFallback
+                    }()
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         requestedSize: (entry.pointWidth, entry.pointHeight),
                         requestedHz: entry.refreshHz,
                         appliedSize: (mode.width, mode.height),
                         appliedHz: mode.refreshHz,
-                        status: isExact ? .applied : .appliedWithFallback
+                        status: status
                     ))
                 } catch {
                     outcomes.append(ApplyOutcome(
@@ -328,6 +352,55 @@ final class ProfileStore {
         applyDetailed(profile, displays: displays)
             .filter(\.isProblem)
             .map(\.summary)
+    }
+
+    /// Returns the saved profile that best fits the current display set, or
+    /// nil if none of the saved profiles can fully match.
+    ///
+    /// Hierarchy (CSS-style specificity — *more specific wins*):
+    ///   3 points per `.edid` external entry  (locked to one physical monitor)
+    ///   2 points per `.builtIn` entry        (the laptop's own panel)
+    ///   1 point  per `.anyExternal` entry    (role-based, any external)
+    ///
+    /// Tie-breaker: more recently saved profile wins (`createdAt desc`).
+    ///
+    /// Why specificity beats coverage: when both "Work" (Built-in + Q3279
+    /// EDID-locked) and "Presentation" (Built-in + any external) match the
+    /// same setup, the user's intent is "Work — that's *my* desk". Picking
+    /// the flexible variant would override their precise saved layout with
+    /// a generic fallback.
+    func profileMatchingExactly(_ liveDisplays: [DisplayInfo]) -> Profile? {
+        let scored: [(Profile, Int)] = profiles.compactMap { profile in
+            guard !profile.entries.isEmpty else { return nil }
+
+            // Every entry must bind to at least one live display, otherwise
+            // the profile isn't a clean fit and we skip it entirely.
+            for entry in profile.entries {
+                if !liveDisplays.contains(where: { entry.matcher.matches($0.id) }) {
+                    return nil
+                }
+            }
+
+            // Specificity score — higher = more "this exact setup".
+            let score = profile.entries.reduce(0) { acc, entry in
+                acc + Self.specificity(of: entry.matcher)
+            }
+            return (profile, score)
+        }
+
+        return scored.sorted { lhs, rhs in
+            if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+            return lhs.0.createdAt > rhs.0.createdAt
+        }.first?.0
+    }
+
+    /// Per-entry specificity weight. Exposed for tests.
+    static func specificity(of matcher: DisplayMatcher) -> Int {
+        switch matcher {
+        case .edid:        return 3   // locked to one physical external
+        case .builtIn:     return 2   // locked to the (single) built-in panel
+        case .anyExternal: return 1   // any external, role-based fallback
+        }
     }
 
     private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry) -> CGDisplayMode? {
