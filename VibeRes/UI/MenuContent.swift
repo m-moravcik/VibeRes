@@ -232,9 +232,10 @@ private struct DisplayDetailView: View {
 
 // MARK: - Footer
 
-/// Native-style menu in the popover footer. SwiftUI's `Menu` bridges to NSMenu so we get
-/// real macOS chrome: SF symbol icons on the left, labels in the middle, ⌘-shortcuts on
-/// the right — same look as standard menubar apps' dropdowns.
+/// Footer rendered as a native-looking vertical menu list directly in the popover.
+/// Each row mimics NSMenuItem chrome: SF symbol on the left, label in the middle,
+/// keyboard shortcut on the right, accent-color highlight on hover. Real ⌘-shortcuts
+/// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
 
@@ -244,54 +245,39 @@ private struct FooterBar: View {
                 .fill(Design.Palette.separator)
                 .frame(height: 1)
 
-            HStack(spacing: 0) {
-                Spacer()
+            VStack(spacing: 0) {
+                MenuRow(
+                    icon: "arrow.clockwise",
+                    label: "Refresh",
+                    shortcut: "⌘R",
+                    action: { store.refresh() }
+                )
+                .keyboardShortcut("r")
 
-                Menu {
-                    Button {
-                        store.refresh()
-                    } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                    .keyboardShortcut("r")
+                MenuRow(
+                    icon: "gearshape",
+                    label: "Settings…",
+                    shortcut: "⌘,",
+                    action: {},
+                    isEnabled: false
+                )
 
-                    Button {
-                        NSApp.activate(ignoringOtherApps: true)
-                        // Settings scene placeholder until Phase 4 lands.
-                    } label: {
-                        Label("Settings…", systemImage: "gearshape")
-                    }
-                    .keyboardShortcut(",")
-                    .disabled(true)
+                MenuRow(
+                    icon: "info.circle",
+                    label: "About VibeRes",
+                    shortcut: nil,
+                    action: { showAbout() }
+                )
 
-                    Divider()
-
-                    Button {
-                        showAbout()
-                    } label: {
-                        Label("About VibeRes", systemImage: "info.circle")
-                    }
-
-                    Divider()
-
-                    Button {
-                        NSApp.terminate(nil)
-                    } label: {
-                        Label("Quit", systemImage: "power")
-                    }
-                    .keyboardShortcut("q")
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help("More options")
+                MenuRow(
+                    icon: "power",
+                    label: "Quit",
+                    shortcut: "⌘Q",
+                    action: { NSApp.terminate(nil) }
+                )
+                .keyboardShortcut("q")
             }
-            .padding(.horizontal, Design.Spacing.m)
-            .padding(.vertical, Design.Spacing.xs + 2)
+            .padding(.vertical, 4)
         }
     }
 
@@ -306,6 +292,51 @@ private struct FooterBar: View {
             .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1",
         ])
         NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+private struct MenuRow: View {
+    let icon: String
+    let label: String
+    let shortcut: String?
+    let action: () -> Void
+    var isEnabled: Bool = true
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Design.Spacing.m) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .frame(width: 16, alignment: .center)
+
+                Text(label)
+                    .font(.system(size: 13))
+
+                Spacer()
+
+                if let shortcut {
+                    Text(shortcut)
+                        .font(.system(size: 12).monospacedDigit())
+                        .foregroundStyle(isHovering && isEnabled ? Color.white.opacity(0.85) : .secondary)
+                }
+            }
+            .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
+            .padding(.horizontal, Design.Spacing.l)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(isHovering && isEnabled ? Color.accentColor : Color.clear)
+                    .padding(.horizontal, 4)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.4)
+        .onHover { isHovering = $0 }
     }
 }
 
