@@ -32,7 +32,7 @@ struct ProfileRenameTests {
     func renamePreservesEntries() {
         let (store, dir) = makeStore()
         let entry = Profile.Entry(
-            displayVendor: 1, displayModel: 2, displaySerial: 3,
+            matcher: .edid(vendor: 1, model: 2, serial: 3),
             displayName: "Test", pointWidth: 1920, pointHeight: 1080,
             refreshHz: 60, isHiDPI: false
         )

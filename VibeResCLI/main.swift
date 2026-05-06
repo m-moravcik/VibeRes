@@ -218,7 +218,12 @@ func cmdProfileSave(_ name: String) {
     let store = ProfileStore()
     let displays = DisplayManager.snapshot()
     guard !displays.isEmpty else { fail("no displays connected") }
-    store.captureCurrent(name: name, displays: displays)
+    // CLI defaults to "specific" matching for every connected display.
+    // Users wanting flexible/built-in-only profiles use the GUI save dialog
+    // where it's a one-click toggle.
+    var selection: [CGDirectDisplayID: ProfileMatchKind] = [:]
+    for d in displays { selection[d.id] = .specific }
+    store.captureCurrent(name: name, displays: displays, selection: selection)
     print("saved profile \"\(name)\" with \(displays.count) display\(displays.count == 1 ? "" : "s")")
 }
 
