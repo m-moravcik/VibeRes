@@ -265,11 +265,10 @@ private struct FooterBar: View {
                 .keyboardShortcut("r")
 
                 MenuRow(
-                    icon: "gearshape",
-                    label: "Settings…",
-                    shortcut: "⌘,",
-                    action: {},
-                    isEnabled: false
+                    icon: LoginItem.isEnabled ? "checkmark.circle" : "circle",
+                    label: "Launch at Login",
+                    shortcut: nil,
+                    action: { _ = LoginItem.setEnabled(!LoginItem.isEnabled) }
                 )
 
                 MenuRow(
