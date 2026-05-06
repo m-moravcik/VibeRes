@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-struct DisplayInfo: Identifiable, Hashable {
+struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
     let id: CGDirectDisplayID
     let name: String
     let isMain: Bool
