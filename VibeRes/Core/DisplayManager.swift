@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 
@@ -50,12 +51,18 @@ enum DisplayManager {
         return raw.filter { $0.isUsableForDesktopGUI() }
     }
 
-    /// Best-effort localized display name. macOS 26 exposes `CGDisplayCopyDisplayName`
-    /// on Apple Silicon; we fall back to a generic label otherwise.
+    /// Localized display name as macOS shows it in System Settings → Displays
+    /// ("Studio Display", "LG UltraFine", "Built-in Retina Display"). The mapping
+    /// goes through NSScreen because CoreGraphics has no public name API; NSScreen
+    /// pulls the name from EDID + macOS's display database.
     private static func name(for id: CGDirectDisplayID) -> String {
-        if id == CGMainDisplayID() {
-            return "Built-in / Main Display"
+        if let screen = NSScreen.screens.first(where: { screen in
+            let key = NSDeviceDescriptionKey("NSScreenNumber")
+            return (screen.deviceDescription[key] as? NSNumber)?.uint32Value == id
+        }) {
+            return screen.localizedName
         }
-        return "Display \(id)"
+        // Fallback for displays not visible to AppKit (rare; e.g. mid-reconfiguration).
+        return CGDisplayIsBuiltin(id) != 0 ? "Built-in Display" : "External Display"
     }
 }
