@@ -18,6 +18,19 @@ settings:
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 
+schemes:
+  VibeRes:
+    build:
+      targets:
+        VibeRes: all
+        VibeResTests: [test]
+    test:
+      gatherCoverageData: true
+      coverageTargets:
+        - VibeRes
+      targets:
+        - VibeResTests
+
 targets:
   VibeRes:
     type: application
@@ -45,3 +58,21 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
+
+  VibeResTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VibeResTests
+    dependencies:
+      - target: VibeRes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeResTests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_STRICT_CONCURRENCY: minimal
+    scheme:
+      testTargets:
+        - VibeResTests
+      gatherCoverageData: true

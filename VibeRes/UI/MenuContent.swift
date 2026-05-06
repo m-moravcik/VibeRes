@@ -158,9 +158,11 @@ private struct DisplayDetailView: View {
                     .foregroundStyle(.secondary)
                     .padding()
             }
-
-            FooterBar()
         }
+        // Detail screens are list-heavy: ask the popover for as much vertical space
+        // as our cap allows so all resolutions are reachable via scroll without
+        // any clipped or hidden rows.
+        .frame(minHeight: 420)
         .navigationBarBackButtonHidden(true)
     }
 
