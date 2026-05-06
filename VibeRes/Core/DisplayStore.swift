@@ -12,6 +12,7 @@ final class DisplayStore {
     private(set) var lastError: String?
 
     private var registered = false
+    private var pendingRefresh: Task<Void, Never>?
 
     init() {
         refresh()
@@ -20,6 +21,18 @@ final class DisplayStore {
 
     func refresh() {
         displays = DisplayManager.snapshot()
+    }
+
+    /// Coalesces bursts of reconfiguration callbacks (macOS often fires several in rapid
+    /// succession during a single mode change) into one refresh ~200ms after the last event.
+    /// This also avoids briefly seeing transient/ghost displays during the change.
+    fileprivate func scheduleRefresh() {
+        pendingRefresh?.cancel()
+        pendingRefresh = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !Task.isCancelled else { return }
+            self?.refresh()
+        }
     }
 
     func apply(_ mode: CGDisplayMode, to display: CGDirectDisplayID) {
@@ -49,5 +62,5 @@ private func displayReconfigCallback(
     let store = Unmanaged<DisplayStore>.fromOpaque(userInfo).takeUnretainedValue()
     // The "after" notification is the safe one to act on — "begin" fires before the change lands.
     guard !flags.contains(.beginConfigurationFlag) else { return }
-    Task { @MainActor in store.refresh() }
+    Task { @MainActor in store.scheduleRefresh() }
 }
