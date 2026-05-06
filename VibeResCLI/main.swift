@@ -301,6 +301,7 @@ func cmdProfileApply(_ name: String) {
         let icon: String
         switch o.status {
         case .applied: icon = "✓"
+        case .alreadyApplied: icon = "="
         case .appliedWithFallback: icon = "~"; hadProblem = true
         case .skippedNoMatch, .skippedNoMode, .failed: icon = "✗"; hadProblem = true
         }

@@ -4,6 +4,13 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] — 2026-05-06
+
+### Fixed
+
+- CI was building VibeRes.app fine but Build CLI (Release) failed because the new `.alreadyApplied` outcome status was not handled in `viberes profile apply`'s switch. Added the missing case (renders as `=` next to the display name in CLI output).
+- Live Preview was re-prompting for Screen Recording permission on every hover. Cause: `SCShareableContent.current` re-evaluates TCC on each call, and on ad-hoc signed builds the grant occasionally appears to TCC as "different app" between accesses, triggering the prompt again. Now we cache the permission verdict per process, switch to `SCShareableContent.excludingDesktopWindows(_:onScreenWindowsOnly:)` (more stable on macOS 26), and only request permission once via `CGRequestScreenCaptureAccess`. Toggling Live Preview off and back on resets the cache so a stale verdict from a previous session is not held against the user.
+
 ## [0.4.0] — 2026-05-06
 
 ### Added
