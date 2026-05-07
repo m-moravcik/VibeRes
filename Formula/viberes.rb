@@ -10,8 +10,8 @@
 class Viberes < Formula
   desc "Command-line companion for VibeRes (macOS resolution switcher)"
   homepage "https://github.com/m-moravcik/VibeRes"
-  url "https://github.com/m-moravcik/VibeRes.git", tag: "v0.5.0", revision: nil
-  version "0.5.0"
+  url "https://github.com/m-moravcik/VibeRes.git", tag: "v0.6.0", revision: nil
+  version "0.6.0"
   license "MIT"
   head "https://github.com/m-moravcik/VibeRes.git", branch: "main"
 

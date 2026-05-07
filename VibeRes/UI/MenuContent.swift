@@ -168,6 +168,16 @@ private struct DisplayCard: View {
 
 // MARK: - Detail: one display's modes
 
+/// Carries per-row Y-midpoints from individual `CompactResolutionRow`
+/// backgrounds up to `DisplayDetailView`, where the side popover anchor
+/// reads the hovered row's Y synchronously.
+private struct RowFramePreferenceKey: PreferenceKey {
+    static let defaultValue: [String: CGFloat] = [:]
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
 private struct DisplayDetailView: View {
     let displayID: CGDirectDisplayID
     @Environment(DisplayStore.self) private var store
@@ -177,6 +187,16 @@ private struct DisplayDetailView: View {
     /// Single desktop snapshot, fetched once per detail-view appearance
     /// when the user has Live Preview enabled. Reused by every hover row.
     @State private var desktopSnapshot: NSImage?
+    /// Which row the cursor is currently over. Drives the side popover
+    /// preview anchored vertically to that row.
+    @State private var hoveredGroupID: String?
+    /// Y-coordinate of the hovered row inside this detail view's coordinate
+    /// space, used by the side popover anchor.
+    @State private var hoveredRowY: CGFloat = 40
+    /// Per-row Y midpoints, keyed by ResolutionGroup.id. Updated each
+    /// render via PreferenceKey so onHoverChange can read the right Y
+    /// for the row being entered without an async onChange round trip.
+    @State private var rowFrames: [String: CGFloat] = [:]
 
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
@@ -201,6 +221,31 @@ private struct DisplayDetailView: View {
                     .padding(.vertical, 8)
                 }
                 .frame(idealHeight: 480)
+                // Floating preview pinned to the top-right of the list.
+                // After several attempts at "popover next to the hovered
+                // row" (each tripped on SwiftUI popover dismiss/recreate
+                // behaviour or coordinate-space lag), this fixed overlay
+                // wins on stability: no flicker, no lag, no first-click-
+                // eaten bug. The trade-off — preview is in the corner
+                // rather than next to the row — is small in a popover this
+                // narrow, and it's at least always in the same place so
+                // users find it predictably.
+                .overlay(alignment: .topTrailing) {
+                    if let resolved = previewTarget(for: display) {
+                        PreviewBox(
+                            currentWidth: resolved.cur.width,
+                            currentHeight: resolved.cur.height,
+                            proposedWidth: resolved.group.pointWidth,
+                            proposedHeight: resolved.group.pointHeight,
+                            maxSize: 90,
+                            desktopImage: preferences.livePreviewEnabled ? desktopSnapshot : nil
+                        )
+                        .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
+                        .padding(.top, 12)
+                        .padding(.trailing, 12)
+                        .allowsHitTesting(false)
+                    }
+                }
             } else {
                 Text("Display unavailable.")
                     .foregroundStyle(.secondary)
@@ -309,10 +354,23 @@ private struct DisplayDetailView: View {
     private func sizeList(for display: DisplayInfo) -> some View {
         VStack(spacing: 0) {
             ForEach(visibleGroups(for: display)) { group in
+                let isCurrent = group.modesByRefresh.contains {
+                    $0.mode.ioDisplayModeID == display.currentMode?.ioDisplayModeID
+                }
+                // GeometryReader background reports each row's Y to the
+                // shared `rowFrames` map every render. The popover anchor
+                // then reads the hovered row's Y synchronously, avoiding
+                // the "preview opens at the top, then jumps" lag from the
+                // previous onChange-based implementation.
                 CompactResolutionRow(
                     group: group,
                     currentMode: display.currentMode,
-                    desktopImage: desktopSnapshot,
+                    isHovered: hoveredGroupID == group.id,
+                    simpleMode: preferences.simpleMode,
+                    onHoverChange: { hovering in
+                        guard !isCurrent else { return }
+                        hoveredGroupID = hovering ? group.id : (hoveredGroupID == group.id ? nil : hoveredGroupID)
+                    },
                     apply: { mode in store.apply(mode, to: display.id) }
                 )
             }
@@ -324,6 +382,47 @@ private struct DisplayDetailView: View {
             guard preferences.livePreviewEnabled else { return }
             desktopSnapshot = await DesktopCapture.snapshot(of: displayID)
         }
+    }
+
+    /// Content of the side popover. Wrapped in a Group so we can attach
+    /// `.interactiveDismissDisabled()` (macOS 13+ modifier that stops the
+    /// popover from auto-dismissing when the user clicks anywhere "outside"
+    /// the visible content — including, importantly, on a refresh chip
+    /// underneath this popover's window). Without it the first click on
+    /// any chip triggered popover-dismiss instead of the chip action.
+    @ViewBuilder
+    private func previewPopoverContent(for display: DisplayInfo) -> some View {
+        if let resolved = previewTarget(for: display) {
+            PreviewBox(
+                currentWidth: resolved.cur.width,
+                currentHeight: resolved.cur.height,
+                proposedWidth: resolved.group.pointWidth,
+                proposedHeight: resolved.group.pointHeight,
+                maxSize: 110,
+                desktopImage: preferences.livePreviewEnabled ? desktopSnapshot : nil
+            )
+            .padding(8)
+            .interactiveDismissDisabled()
+            .allowsHitTesting(false)
+        } else {
+            // Empty placeholder — popover is briefly opened with no target
+            // during hover transitions; rendering an empty 1pt view keeps
+            // the system from logging a SwiftUI warning.
+            Color.clear.frame(width: 1, height: 1)
+        }
+    }
+
+    /// Returns the (current mode, hovered group) pair we should preview,
+    /// or nil if there's nothing to show. Encapsulates the "is the cursor
+    /// over a real previewable row?" check so the preview slot and its
+    /// height stay in lockstep — no slot reserved when nothing is hovered.
+    private func previewTarget(for display: DisplayInfo) -> (cur: CGDisplayMode, group: ResolutionGroup)? {
+        guard let cur = display.currentMode,
+              let id = hoveredGroupID,
+              let group = visibleGroups(for: display).first(where: { $0.id == id }),
+              !group.modesByRefresh.contains(where: { $0.mode.ioDisplayModeID == cur.ioDisplayModeID })
+        else { return nil }
+        return (cur, group)
     }
 
     // MARK: Filtering helpers
@@ -360,8 +459,7 @@ private struct DisplayDetailView: View {
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
     @Environment(UpdateChecker.self) private var updateChecker
-    @Environment(Preferences.self) private var preferences
-    @State private var launchAtLogin: Bool = LoginItem.isEnabled
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(spacing: 0) {
@@ -374,15 +472,21 @@ private struct FooterBar: View {
                     MenuRow(
                         icon: "arrow.uturn.backward.circle",
                         label: revertLabel,
-                        shortcut: "⌘Z",
+                        // No shortcut label: ⌘Z would only work while the
+                        // popover holds key focus, and the act of applying
+                        // a resolution typically dismisses it. Showing the
+                        // shortcut text would advertise a behaviour that
+                        // fails most of the time. Click the row instead.
+                        shortcut: nil,
                         action: {
-                            let n = store.performRevert()
-                            // No toast — the user already knows what they
-                            // just clicked. Their displays jump back, the
-                            // row disappears, that's the feedback.
-                            _ = n
+                            store.performRevert()
+                            // No toast — displays jump back, the row
+                            // disappears, that's the feedback.
                         }
                     )
+                    // Keep the binding so power users who reopen the
+                    // popover and hit ⌘Z still get the revert; we just
+                    // don't promise it in the label.
                     .keyboardShortcut("z")
                 }
 
@@ -401,60 +505,18 @@ private struct FooterBar: View {
                 .keyboardShortcut("r")
 
                 MenuRow(
-                    icon: launchAtLogin ? "checkmark.circle.fill" : "circle",
-                    label: "Launch at Login",
-                    shortcut: nil,
+                    icon: "gearshape",
+                    label: "Settings…",
+                    shortcut: "⌘,",
                     action: {
-                        let target = !launchAtLogin
-                        if LoginItem.setEnabled(target) {
-                            // SMAppService applies async — wait one runloop tick
-                            // before reading status back, otherwise we sometimes
-                            // get the pre-toggle value and the icon "snaps back".
-                            Task { @MainActor in
-                                try? await Task.sleep(for: .milliseconds(150))
-                                launchAtLogin = LoginItem.isEnabled
-                            }
-                        }
+                        // Open the standard Settings scene. Activate the app
+                        // first because MenuBarExtra(.window) doesn't bring
+                        // the new window forward by itself.
+                        NSApp.activate(ignoringOtherApps: true)
+                        openSettings()
                     }
                 )
-                .task(id: store.displays) {
-                    // Re-sync on every popover open. SwiftUI rebuilds FooterBar
-                    // when DisplayStore mutates, which happens on each open via
-                    // refresh(), so we piggy-back on store.displays as the
-                    // identity. Catches the case where the user toggled it from
-                    // System Settings → Login Items between popover opens.
-                    launchAtLogin = LoginItem.isEnabled
-                }
-
-                MenuRow(
-                    icon: preferences.autoApplyOnDisplayChange ? "checkmark.circle.fill" : "circle",
-                    label: "Auto-apply Matching Profile",
-                    shortcut: nil,
-                    action: {
-                        preferences.autoApplyOnDisplayChange.toggle()
-                    }
-                )
-
-                MenuRow(
-                    icon: preferences.livePreviewEnabled ? "checkmark.circle.fill" : "circle",
-                    label: "Live Preview on Hover",
-                    shortcut: nil,
-                    action: {
-                        preferences.livePreviewEnabled.toggle()
-                        // Drop the cached permission verdict so the very next
-                        // snapshot attempt re-evaluates from CGPreflight —
-                        // covers the case where the user just (un)checked the
-                        // app in System Settings → Screen Recording.
-                        DesktopCapture.resetPermissionCache()
-                    }
-                )
-
-                MenuRow(
-                    icon: updateChecker.isChecking ? "arrow.triangle.2.circlepath" : "arrow.down.circle",
-                    label: checkLabel,
-                    shortcut: nil,
-                    action: { Task { await updateChecker.checkNow() } }
-                )
+                .keyboardShortcut(",")
 
                 MenuRow(
                     icon: "info.circle",
@@ -486,20 +548,6 @@ private struct FooterBar: View {
         case 1: return "Revert \(store.revert.summary)"
         default: return "Revert last change (\(n) displays)"
         }
-    }
-
-    /// Human-friendly label for the manual update check row. Reflects current
-    /// state (idle / checking / up-to-date / outdated) so the row is informative
-    /// without occupying real estate with a separate banner.
-    private var checkLabel: String {
-        if updateChecker.isChecking { return "Checking…" }
-        if updateChecker.isUpdateAvailable {
-            return "Update available"
-        }
-        if updateChecker.lastCheckedAt != nil {
-            return "Up to date"
-        }
-        return "Check for Updates"
     }
 
     private func showAbout() {
@@ -662,14 +710,24 @@ private struct BackButton: View {
 private struct CompactResolutionRow: View {
     let group: ResolutionGroup
     let currentMode: CGDisplayMode?
-    /// Cached desktop snapshot from the parent. When non-nil and the user
-    /// hovers the row, a popover shows the proposed mode framed against the
-    /// current one with this image clipped into the inner rectangle.
-    let desktopImage: NSImage?
+    /// Whether the cursor is currently over this row. Hover state lives in
+    /// the parent view so it can render a single shared preview banner
+    /// rather than a per-row popover (which would steal the first click).
+    let isHovered: Bool
+    /// When true, the per-rate chip group is hidden and a click on the row
+    /// applies the highest available refresh rate for the size. Driven by
+    /// `Preferences.simpleMode`.
+    let simpleMode: Bool
+    let onHoverChange: (Bool) -> Void
     let apply: (CGDisplayMode) -> Void
-    @State private var isHovering = false
 
     private var currentModeID: Int32? { currentMode?.ioDisplayModeID }
+
+    /// Highest available refresh rate for this size — what Simple Mode
+    /// applies on a row click.
+    private var preferredMode: CGDisplayMode? {
+        group.modesByRefresh.last?.mode
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -681,32 +739,51 @@ private struct CompactResolutionRow: View {
 
             Spacer(minLength: 6)
 
-            refreshSegment
-                .fixedSize()
+            if simpleMode {
+                simpleHzLabel
+            } else {
+                refreshSegment
+                    .fixedSize()
+            }
         }
         .padding(.horizontal, Design.Spacing.l)
         .padding(.vertical, 6)
         .background(
-            isHovering && !isCurrentSize
+            isHovered && !isCurrentSize
                 ? Color.secondary.opacity(0.08)
                 : Color.clear
         )
         .contentShape(Rectangle())
-        .onHover { isHovering = $0 }
+        .onHover { onHoverChange($0) }
         .help(tooltipText)
         .accessibilityValue(tooltipText)
-        .popover(isPresented: .constant(isHovering && !isCurrentSize), arrowEdge: .trailing) {
-            if let cur = currentMode {
-                PreviewBox(
-                    currentWidth: cur.width,
-                    currentHeight: cur.height,
-                    proposedWidth: group.pointWidth,
-                    proposedHeight: group.pointHeight,
-                    maxSize: 140,
-                    desktopImage: desktopImage
-                )
-                .padding(8)
+        .onTapGesture {
+            // Tap anywhere on the row applies the highest available rate
+            // for this size. This works in both modes:
+            //  - Simple Mode hides chips entirely → row tap is the only
+            //    interaction.
+            //  - Advanced Mode shows chips for explicit refresh-rate picks,
+            //    but a click on the row body (e.g. on the "1800 × 1169"
+            //    text or the gap between text and chip group) shouldn't be
+            //    a dead zone — it just means "I don't care, give me the
+            //    best rate". Particularly important on displays with one
+            //    refresh rate (M2 Air, plain 60 Hz externals) where the
+            //    chip group is a tiny target.
+            if let mode = preferredMode {
+                apply(mode)
             }
+        }
+    }
+
+    /// Subtle Hz hint shown in Simple Mode — communicates the preferred
+    /// refresh rate without the chip group's chrome.
+    @ViewBuilder
+    private var simpleHzLabel: some View {
+        if let preferred = preferredMode {
+            Text(preferred.refreshHz.map { "\($0) Hz" } ?? "")
+                .font(.system(size: 11).monospacedDigit())
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
         }
     }
 
