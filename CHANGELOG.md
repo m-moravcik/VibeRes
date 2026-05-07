@@ -4,6 +4,28 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-05-07
+
+### Added
+
+- **Settings window** (open via `⌘,` or the footer's Settings… row). Three tabs:
+  - **General** — Launch at login, Auto-apply matching profile.
+  - **Display** — Simple Mode toggle, Live Preview on Hover.
+  - **Updates** — current version, latest on GitHub, last-checked timestamp, manual Check now button.
+  Always opens on the General tab to keep behaviour predictable across re-opens.
+- **Simple Mode** (default ON for fresh installs). Hides the per-row refresh-rate chip group and applies the highest available rate when the user clicks the row. Power users turn it off in Settings → Display to get the chip group back.
+- **Click anywhere on a resolution row** to apply the highest available refresh rate for that size. Works in both Simple and Advanced Mode — particularly important on displays with a single rate (M2 Air's built-in, plain 60 Hz externals) where the chip group is a tiny target. Explicit chip clicks still pick a specific rate.
+- **Live Preview** moved to a floating overlay in the top-right corner of the resolution list. Several earlier attempts at "popover next to the hovered row" tripped on SwiftUI popover dismiss/recreate behaviour — corner overlay is stable, no flicker, no first-click-eaten bug.
+
+### Changed
+
+- Footer trimmed to five entries (Revert, Settings, Refresh, About, Quit). Auto-apply, Live Preview, and Launch at Login moved to Settings → General/Display where there's room for descriptions.
+- Hover state on the current-mode row no longer triggers the preview banner — fixed an oscillation where the appearing/disappearing preview shifted layout and re-triggered hover on adjacent rows.
+
+### Tests
+
+- 100 → 102 (+2): Simple Mode default-on and persistence across `Preferences` instances.
+
 ## [0.5.0] — 2026-05-06
 
 ### Added

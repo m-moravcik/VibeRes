@@ -43,5 +43,17 @@ struct VibeResApp: App {
                 .accessibilityLabel("VibeRes")
         }
         .menuBarExtraStyle(.window)
+
+        // Standard macOS Settings scene — opens via ⌘, from anywhere in
+        // the app, including the footer's Settings… row. Categorised tabs
+        // give the preferences surface room to grow without bloating the
+        // menu-bar popover.
+        Settings {
+            SettingsView()
+                .environment(displayStore)
+                .environment(profileStore)
+                .environment(updateChecker)
+                .environment(preferences)
+        }
     }
 }
