@@ -11,8 +11,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    MARKETING_VERSION: "0.6.0"
-    CURRENT_PROJECT_VERSION: "13"
+    MARKETING_VERSION: "0.7.0"
+    CURRENT_PROJECT_VERSION: "14"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
@@ -47,6 +47,15 @@ targets:
         LSUIElement: true
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: "Copyright © 2026 Michal Moravčík. MIT License."
+        # Tell macOS which UI languages the bundle ships. The String Catalog
+        # at VibeRes/Resources/Localizable.xcstrings provides en/sk/de copy;
+        # without this list, the system will only ever pick the development
+        # language and translated catalog entries are silently ignored.
+        CFBundleLocalizations:
+          - en
+          - sk
+          - de
+        CFBundleAllowMixedLocalizations: true
         # Re-add NSScreenCaptureUsageDescription only when (and if) the live
         # screenshot preview is actually implemented. Until then, declaring an
         # unused permission is misleading and would trip privacy reviewers.
@@ -58,6 +67,8 @@ targets:
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 
   VibeResTests:
     type: bundle.unit-test

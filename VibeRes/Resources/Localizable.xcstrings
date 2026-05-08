@@ -1,0 +1,423 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Auto-apply matching profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passendes Profil automatisch anwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-apply matching profile"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automaticky použiť zhodný profil"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zurück" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Back" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Späť" } }
+      }
+    },
+    "Cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abbrechen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Zrušiť" } }
+      }
+    },
+    "Check now" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Jetzt prüfen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check now" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Skontrolovať" } }
+      }
+    },
+    "Current version" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktuelle Version" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Current version" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktuálna verzia" } }
+      }
+    },
+    "Display" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bildschirm" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Displej" } }
+      }
+    },
+    "Done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fertig" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Hotovo" } }
+      }
+    },
+    "General" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Allgemein" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "General" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Všeobecné" } }
+      }
+    },
+    "Hide the per-row refresh-rate chips. Clicking a resolution applies it at the highest available refresh rate for your display. Turn off if you want to pick refresh rates manually." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blendet die einzelnen Bildwiederholraten-Chips aus. Ein Klick auf eine Auflösung wendet sie mit der höchsten verfügbaren Bildwiederholrate an. Deaktivieren, um Bildwiederholraten manuell auszuwählen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide the per-row refresh-rate chips. Clicking a resolution applies it at the highest available refresh rate for your display. Turn off if you want to pick refresh rates manually."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skryje chipy s obnovovacou frekvenciou pri každom riadku. Kliknutie na rozlíšenie ho použije s najvyššou dostupnou frekvenciou pre tvoj displej. Vypni, ak chceš vyberať Hz manuálne."
+          }
+        }
+      }
+    },
+    "Hovering a resolution row shows a real screenshot of your desktop scaled into the proposed mode. Requires Screen Recording permission, which is requested the first time you hover with this turned on." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Überfahren einer Auflösungszeile wird ein echter Screenshot deines Desktops in der vorgeschlagenen Auflösung angezeigt. Erfordert die Berechtigung „Bildschirmaufnahme“, die beim ersten Überfahren angefordert wird."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hovering a resolution row shows a real screenshot of your desktop scaled into the proposed mode. Requires Screen Recording permission, which is requested the first time you hover with this turned on."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pri prejdení myšou nad rozlíšením sa zobrazí skutočný snímok plochy v navrhovanom režime. Vyžaduje povolenie Nahrávanie obrazovky, ktoré sa žiada pri prvom prejdení po zapnutí."
+          }
+        }
+      }
+    },
+    "Last checked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zuletzt geprüft" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last checked" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Naposledy kontrolované" } }
+      }
+    },
+    "Latest on GitHub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktuellste auf GitHub" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Latest on GitHub" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Najnovšia na GitHube" } }
+      }
+    },
+    "Launch at login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beim Anmelden öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Launch at login" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Spustiť pri prihlásení" } }
+      }
+    },
+    "Live preview on hover" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Live-Vorschau beim Überfahren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live preview on hover" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Živý náhľad pri prejdení" } }
+      }
+    },
+    "Next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weiter" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ďalej" } }
+      }
+    },
+    "Open release" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Release öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open release" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Otvoriť verziu" } }
+      }
+    },
+    "Preview" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorschau" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preview" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Náhľad" } }
+      }
+    },
+    "Profiles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profiles" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Profily" } }
+      }
+    },
+    "Quit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beenden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quit" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ukončiť" } }
+      }
+    },
+    "Refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktualisieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Obnoviť" } }
+      }
+    },
+    "Replay welcome tour" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Begrüßungstour erneut anzeigen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replay welcome tour" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Spustiť uvítací sprievodca znova" } }
+      }
+    },
+    "Resolutions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Auflösungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resolutions" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Rozlíšenia" } }
+      }
+    },
+    "Save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uložiť" } }
+      }
+    },
+    "Settings…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einstellungen…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings…" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nastavenia…" } }
+      }
+    },
+    "Simple mode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einfacher Modus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Simple mode" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Jednoduchý režim" } }
+      }
+    },
+    "Skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Überspringen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Preskočiť" } }
+      }
+    },
+    "Startup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Start" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Startup" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Spustenie" } }
+      }
+    },
+    "Status" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Status" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Status" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Stav" } }
+      }
+    },
+    "Update available" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Update verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Update available" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Dostupná aktualizácia" } }
+      }
+    },
+    "Updates" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktualisierungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizácie" } }
+      }
+    },
+    "When you plug or unplug a monitor, VibeRes finds the saved profile that best fits the new layout and applies it silently. Mode-only changes don't trigger this." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn du einen Monitor anschließt oder trennst, findet VibeRes das passendste gespeicherte Profil und wendet es lautlos an. Reine Auflösungsänderungen lösen das nicht aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you plug or unplug a monitor, VibeRes finds the saved profile that best fits the new layout and applies it silently. Mode-only changes don't trigger this."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keď pripojíš alebo odpojíš monitor, VibeRes nájde uložený profil, ktorý najlepšie vyhovuje novému usporiadaniu, a tichu ho použije. Zmeny iba režimu (rozlíšenia) tento mechanizmus nespustia."
+          }
+        }
+      }
+    },
+
+    "onboarding.welcome.title" : {
+      "comment" : "Onboarding step 1 title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Willkommen bei VibeRes" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome to VibeRes" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Vitaj vo VibeRes" } }
+      }
+    },
+    "onboarding.welcome.body" : {
+      "comment" : "Onboarding step 1 body",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wechsle Auflösung und Bildwiederholrate jedes angeschlossenen Bildschirms direkt aus der Menüleiste. Drei kurze Schritte zeigen dir, wie."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch resolution and refresh rate on every connected display, straight from the menu bar. Three quick steps will show you how."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prepínaj rozlíšenie a obnovovaciu frekvenciu pre každý pripojený monitor priamo z menubar. Tri krátke kroky ti ukážu, ako na to."
+          }
+        }
+      }
+    },
+    "onboarding.profiles.title" : {
+      "comment" : "Onboarding step 2 title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profile sparen Zeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profiles save you time" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Profily ti šetria čas" } }
+      }
+    },
+    "onboarding.profiles.body" : {
+      "comment" : "Onboarding step 2 body",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichere dein gesamtes Mehrbildschirm-Setup als „Arbeit“, „Präsentation“ oder „Reise“. Ein Klick wendet alles wieder an. VibeRes kann das beste Profil auch automatisch nach dem Anschließen eines Monitors auswählen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save your whole multi-display setup as “Work”, “Presentation”, or “Travel”. One click applies everything again. VibeRes can also pick the best profile automatically after a monitor is plugged in."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ulož si celé multi-display nastavenie ako „Práca“, „Prezentácia“ alebo „Cesty“. Jeden klik všetko opäť aplikuje. VibeRes vie po pripojení monitora aj sám vybrať najvhodnejší profil."
+          }
+        }
+      }
+    },
+    "onboarding.simple.title" : {
+      "comment" : "Onboarding step 3 title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einfacher Modus & Einstellungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Simple Mode & Settings" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Jednoduchý režim & Nastavenia" } }
+      }
+    },
+    "onboarding.simple.body" : {
+      "comment" : "Onboarding step 3 body",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Einfachen Modus genügt ein Klick auf eine Auflösung – die höchste verfügbare Bildwiederholrate wird automatisch gewählt. Profis können das in den Einstellungen (⌘,) ausschalten und dort auch die Live-Vorschau und automatische Updates regeln."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Simple Mode one click on a resolution applies it at the highest refresh rate. Power users can turn it off in Settings (⌘,), where Live Preview and update preferences live too."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "V Jednoduchom režime stačí jeden klik na rozlíšenie — použije sa s najvyššou Hz. Pokročilí ho môžu vypnúť v Nastaveniach (⌘,), kde sú aj možnosti živého náhľadu a aktualizácií."
+          }
+        }
+      }
+    },
+    "onboarding.step" : {
+      "comment" : "Step indicator, e.g. 'Step 2 of 3'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schritt %1$d von %2$d" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step %1$d of %2$d" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Krok %1$d z %2$d" } }
+      }
+    }
+  }
+}

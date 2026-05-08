@@ -41,12 +41,18 @@ struct ApplyOutcomeTests {
         #expect(outcomes.first?.summary == "Phantom Monitor not connected")
     }
 
-    @Test("anyExternal entry without externals reports skippedNoMatch")
+    @Test("anyExternal skip says 'no external monitor connected', not the saved label")
     func anyExternalNoLiveExternal() {
         let store = makeStore()
+        // Snapshotted displayName here is "Q3279WG5B" — what the user saw
+        // when the profile was first saved. After they toggled the entry to
+        // `.anyExternal`, that label is misleading: the entry now matches
+        // *any* external. The summary must reflect the matcher, not the
+        // stale snapshot, otherwise users see "Q3279WG5B not connected" on
+        // a flexible profile where Q3279WG5B is no longer the binding.
         let p = Profile(name: "Travel", entries: [
             Profile.Entry(matcher: .anyExternal,
-                          displayName: "Any external",
+                          displayName: "Q3279WG5B",
                           pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false),
         ])
         let outcomes = store.applyDetailed(p, displays: [])
@@ -54,33 +60,31 @@ struct ApplyOutcomeTests {
         if case .skippedNoMatch = outcomes.first?.status {} else {
             Issue.record("expected .skippedNoMatch")
         }
-        // The outcome surfaces the entry's displayName, not the matcher kind.
-        // ("no external monitor connected" lives on DisplayMatcher.notConnectedDescription
-        // which the UI doesn't currently use — kept for future routing.)
-        #expect(outcomes.first?.summary.contains("not connected") == true)
+        #expect(outcomes.first?.summary == "no external monitor connected")
+        #expect(outcomes.first?.summary.contains("Q3279WG5B") == false)
     }
 
     @Test("ApplyOutcome.isProblem flags every non-applied status")
     func isProblemFlag() {
         // .applied is the only non-problem status; everything else surfaces.
         let applied = ProfileStore.ApplyOutcome(
-            displayName: "X", requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
             appliedSize: (0, 0), appliedHz: nil, status: .applied
         )
         let fallback = ProfileStore.ApplyOutcome(
-            displayName: "X", requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
             appliedSize: (0, 0), appliedHz: nil, status: .appliedWithFallback
         )
         let skip1 = ProfileStore.ApplyOutcome(
-            displayName: "X", requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
             appliedSize: nil, appliedHz: nil, status: .skippedNoMatch
         )
         let skip2 = ProfileStore.ApplyOutcome(
-            displayName: "X", requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
             appliedSize: nil, appliedHz: nil, status: .skippedNoMode
         )
         let failed = ProfileStore.ApplyOutcome(
-            displayName: "X", requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
             appliedSize: nil, appliedHz: nil, status: .failed("boom")
         )
         #expect(applied.isProblem == false)
@@ -94,6 +98,7 @@ struct ApplyOutcomeTests {
     func summaryFallbackText() {
         let outcome = ProfileStore.ApplyOutcome(
             displayName: "LG UltraFine",
+            matcherKind: .specific,
             requestedSize: (2560, 1440),
             requestedHz: 75,
             appliedSize: (2560, 1440),

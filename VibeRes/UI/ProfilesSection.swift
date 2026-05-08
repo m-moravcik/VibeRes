@@ -24,6 +24,7 @@ struct ProfilesSection: View {
         case idle
         case saving(SaveFormState)
         case renaming(profileID: UUID, newName: String)
+        case editing(EditFormState)
     }
 
     /// State of the inline "Save profile" form.
@@ -41,6 +42,51 @@ struct ProfilesSection: View {
         var isIncluded: Bool
         var matchAnyExternal: Bool   // only meaningful for non-built-in
         var id: CGDirectDisplayID { displayID }
+    }
+
+    /// State of the inline "Edit profile" form. Each row corresponds to one
+    /// existing Profile.Entry; the user can flip its include flag, switch
+    /// between specific/anyExternal matchers (externals only), and tweak
+    /// the recorded mode (point size + Hz + HiDPI). When the matched live
+    /// display is connected we offer real available modes; when it isn't,
+    /// we let the user keep or hand-edit the snapshotted values.
+    struct EditFormState: Equatable {
+        let profileID: UUID
+        var name: String
+        var entries: [EntryEdit]
+    }
+
+    struct EntryEdit: Equatable, Identifiable {
+        let id: UUID  // synthesised per-row, stable across binding renders
+        var matcherKind: MatcherKind     // specific (edid/builtIn) vs anyExternal
+        var isBuiltIn: Bool              // immutable — derived from original matcher
+        var vendor: UInt32               // remembered for restore on specific switch
+        var model: UInt32
+        var serial: UInt32
+        var displayName: String
+        var pointWidth: Int
+        var pointHeight: Int
+        var refreshHz: Int?
+        var isHiDPI: Bool
+        var isIncluded: Bool
+        /// Live modes available right now for the bound display, if any. Empty
+        /// when the matcher doesn't bind to a connected display — user keeps
+        /// the snapshotted values without a picker.
+        var availableModes: [LiveMode]
+    }
+
+    enum MatcherKind: Equatable {
+        case specific
+        case anyExternal
+    }
+
+    /// Trimmed CGDisplayMode info captured at form-build time so the picker
+    /// menus don't keep CG references alive across re-renders.
+    struct LiveMode: Equatable, Hashable {
+        let pointWidth: Int
+        let pointHeight: Int
+        let refreshHz: Int?
+        let isHiDPI: Bool
     }
 
     var body: some View {
@@ -67,6 +113,8 @@ struct ProfilesSection: View {
                 saveForm
             case .renaming:
                 renameForm
+            case .editing:
+                editForm
             }
 
             // Watch for display add/remove events and auto-apply the matching
@@ -141,13 +189,17 @@ struct ProfilesSection: View {
                         _ = profiles.updateFromCurrent(profile, displays: displays.displays)
                         announce("Updated '\(profile.name)' with current setup", tone: .info)
                     } onToggleFlexible: {
-                        let nowFlex = profiles.toggleFlexible(profile, displays: displays.displays)
-                        announce(
-                            nowFlex
-                                ? "'\(profile.name)' now matches any external monitor"
-                                : "'\(profile.name)' is locked to current monitors",
-                            tone: .info
-                        )
+                        let result = profiles.toggleFlexible(profile, displays: displays.displays)
+                        switch result {
+                        case .madeFlexible:
+                            announce("'\(profile.name)' now matches any external monitor", tone: .info)
+                        case .madeSpecific:
+                            announce("'\(profile.name)' is locked to current monitors", tone: .info)
+                        case .blockedNoExternal:
+                            announce("Connect the external monitor first to lock '\(profile.name)' to it.", tone: .problem)
+                        }
+                    } onEdit: {
+                        mode = .editing(buildInitialEditState(for: profile))
                     } onDelete: {
                         profiles.delete(profile)
                     }
@@ -389,6 +441,412 @@ struct ProfilesSection: View {
         )
     }
 
+    // MARK: - Edit form
+
+    @ViewBuilder
+    private var editForm: some View {
+        if case .editing(let state) = mode {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    TextField("Profile name", text: bindingForEditName)
+                        .textFieldStyle(.roundedBorder)
+                        .controlSize(.small)
+                        .focused($nameFieldFocused)
+                        .onSubmit(commitEdit)
+                }
+
+                Text("ENTRIES")
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.tertiary)
+                    .tracking(0.5)
+
+                ForEach(state.entries) { entry in
+                    editEntryRow(entry)
+                }
+
+                if state.entries.allSatisfy({ !$0.isIncluded }) {
+                    Text("At least one entry must remain to save.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                }
+
+                HStack {
+                    Spacer()
+                    Button("Cancel") { mode = .idle }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .keyboardShortcut(.cancelAction)
+                    Button("Save") { commitEdit() }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(!canCommitEdit)
+                }
+            }
+            .padding(.horizontal, Design.Spacing.l)
+            .onAppear { nameFieldFocused = true }
+        }
+    }
+
+    @ViewBuilder
+    private func editEntryRow(_ entry: EntryEdit) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Toggle(isOn: bindingForEditInclude(entry.id)) {
+                Image(systemName: entry.isBuiltIn ? "laptopcomputer" : "display")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+            .toggleStyle(.checkbox)
+            .controlSize(.small)
+            .labelsHidden()
+            .accessibilityLabel("Keep \(entry.displayName)")
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(displayNameLabel(for: entry))
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
+                    if !entry.isBuiltIn && entry.matcherKind == .anyExternal {
+                        Text("✱ flex")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.tint)
+                    }
+                    if !isMatcherConnected(entry) {
+                        Text("not connected")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                if entry.isIncluded {
+                    if !entry.isBuiltIn {
+                        Toggle(isOn: bindingForEditAnyExternal(entry.id)) {
+                            Text("Match any external monitor")
+                                .font(.system(size: 10))
+                        }
+                        .toggleStyle(.checkbox)
+                        .controlSize(.mini)
+                    }
+
+                    modeRowPicker(entry)
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private func modeRowPicker(_ entry: EntryEdit) -> some View {
+        if entry.availableModes.isEmpty {
+            // No connected display to enumerate modes from — show the saved
+            // values as plain text so the user knows what'll be applied when
+            // a matching display becomes available again.
+            Text(savedModeDescription(entry))
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+        } else {
+            // Two-step: pick a (size, HiDPI) bucket, then pick refresh Hz.
+            let buckets = uniqueBuckets(entry.availableModes)
+            HStack(spacing: 6) {
+                Picker(
+                    "Size",
+                    selection: bindingForEditSize(entry.id)
+                ) {
+                    ForEach(buckets, id: \.self) { b in
+                        Text(bucketLabel(b)).tag(b)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.mini)
+
+                let hzOptions = refreshOptions(in: entry.availableModes,
+                                               width: entry.pointWidth,
+                                               height: entry.pointHeight,
+                                               isHiDPI: entry.isHiDPI)
+                if !hzOptions.isEmpty {
+                    Picker(
+                        "Hz",
+                        selection: bindingForEditHz(entry.id)
+                    ) {
+                        ForEach(hzOptions, id: \.self) { hz in
+                            Text(hz.map { "\($0) Hz" } ?? "—").tag(hz)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .controlSize(.mini)
+                }
+            }
+        }
+    }
+
+    private struct Bucket: Hashable {
+        let pointWidth: Int
+        let pointHeight: Int
+        let isHiDPI: Bool
+    }
+
+    private func uniqueBuckets(_ modes: [LiveMode]) -> [Bucket] {
+        var seen: Set<Bucket> = []
+        var out: [Bucket] = []
+        for m in modes {
+            let b = Bucket(pointWidth: m.pointWidth, pointHeight: m.pointHeight, isHiDPI: m.isHiDPI)
+            if seen.insert(b).inserted { out.append(b) }
+        }
+        return out.sorted { lhs, rhs in
+            if lhs.pointWidth != rhs.pointWidth { return lhs.pointWidth > rhs.pointWidth }
+            if lhs.pointHeight != rhs.pointHeight { return lhs.pointHeight > rhs.pointHeight }
+            return lhs.isHiDPI && !rhs.isHiDPI
+        }
+    }
+
+    private func bucketLabel(_ b: Bucket) -> String {
+        let suffix = b.isHiDPI ? " HiDPI" : ""
+        return "\(b.pointWidth)×\(b.pointHeight)\(suffix)"
+    }
+
+    private func refreshOptions(in modes: [LiveMode], width: Int, height: Int, isHiDPI: Bool) -> [Int?] {
+        let matching = modes.filter { $0.pointWidth == width && $0.pointHeight == height && $0.isHiDPI == isHiDPI }
+        let hzs = Set(matching.map(\.refreshHz))
+        return hzs.sorted { (a, b) in
+            switch (a, b) {
+            case (nil, nil): return false
+            case (nil, _): return true
+            case (_, nil): return false
+            case let (.some(x), .some(y)): return x < y
+            }
+        }
+    }
+
+    private func savedModeDescription(_ e: EntryEdit) -> String {
+        var parts = ["\(e.pointWidth)×\(e.pointHeight)"]
+        if let hz = e.refreshHz { parts.append("\(hz) Hz") }
+        if e.isHiDPI { parts.append("HiDPI") }
+        return parts.joined(separator: " · ")
+    }
+
+    private func displayNameLabel(for entry: EntryEdit) -> String {
+        if entry.matcherKind == .anyExternal { return "Any external" }
+        return entry.displayName
+    }
+
+    private func isMatcherConnected(_ entry: EntryEdit) -> Bool {
+        switch entry.matcherKind {
+        case .anyExternal:
+            return displays.displays.contains { CGDisplayIsBuiltin($0.id) == 0 }
+        case .specific:
+            if entry.isBuiltIn {
+                return displays.displays.contains { CGDisplayIsBuiltin($0.id) != 0 }
+            }
+            return displays.displays.contains {
+                CGDisplayVendorNumber($0.id) == entry.vendor
+                    && CGDisplayModelNumber($0.id) == entry.model
+                    && CGDisplaySerialNumber($0.id) == entry.serial
+            }
+        }
+    }
+
+    private func buildInitialEditState(for profile: Profile) -> EditFormState {
+        let entries: [EntryEdit] = profile.entries.map { e -> EntryEdit in
+            let isBuiltIn: Bool = {
+                if case .builtIn = e.matcher { return true }
+                return false
+            }()
+            let kind: MatcherKind = {
+                if case .anyExternal = e.matcher { return .anyExternal }
+                return .specific
+            }()
+            let (vendor, model, serial): (UInt32, UInt32, UInt32) = {
+                switch e.matcher {
+                case let .edid(v, m, s): return (v, m, s)
+                case let .builtIn(v, m, s): return (v, m, s)
+                case .anyExternal: return (0, 0, 0)
+                }
+            }()
+            // Find the live display the matcher binds to (if any) so we can
+            // populate the mode picker. anyExternal binds to the first
+            // external; specific binds via EDID; builtIn binds to the laptop.
+            let bound: DisplayInfo? = displays.displays.first { d in
+                switch e.matcher {
+                case .anyExternal: return CGDisplayIsBuiltin(d.id) == 0
+                case .builtIn: return CGDisplayIsBuiltin(d.id) != 0
+                case let .edid(v, m, s):
+                    return CGDisplayVendorNumber(d.id) == v
+                        && CGDisplayModelNumber(d.id) == m
+                        && CGDisplaySerialNumber(d.id) == s
+                }
+            }
+            let live: [LiveMode] = bound?.modes.map {
+                LiveMode(pointWidth: $0.width, pointHeight: $0.height,
+                         refreshHz: $0.refreshHz, isHiDPI: $0.isHiDPI)
+            } ?? []
+            return EntryEdit(
+                id: UUID(),
+                matcherKind: kind,
+                isBuiltIn: isBuiltIn,
+                vendor: vendor,
+                model: model,
+                serial: serial,
+                displayName: e.displayName,
+                pointWidth: e.pointWidth,
+                pointHeight: e.pointHeight,
+                refreshHz: e.refreshHz,
+                isHiDPI: e.isHiDPI,
+                isIncluded: true,
+                availableModes: live
+            )
+        }
+        return EditFormState(profileID: profile.id, name: profile.name, entries: entries)
+    }
+
+    // MARK: - Edit bindings
+
+    private var bindingForEditName: Binding<String> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode { return s.name }
+                return ""
+            },
+            set: { newValue in
+                if case .editing(var s) = mode {
+                    s.name = newValue
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private func bindingForEditInclude(_ rowID: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode {
+                    return s.entries.first(where: { $0.id == rowID })?.isIncluded ?? false
+                }
+                return false
+            },
+            set: { newValue in
+                if case .editing(var s) = mode,
+                   let i = s.entries.firstIndex(where: { $0.id == rowID }) {
+                    s.entries[i].isIncluded = newValue
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private func bindingForEditAnyExternal(_ rowID: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode {
+                    return s.entries.first(where: { $0.id == rowID })?.matcherKind == .anyExternal
+                }
+                return false
+            },
+            set: { newValue in
+                if case .editing(var s) = mode,
+                   let i = s.entries.firstIndex(where: { $0.id == rowID }) {
+                    s.entries[i].matcherKind = newValue ? .anyExternal : .specific
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private func bindingForEditSize(_ rowID: UUID) -> Binding<Bucket> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode,
+                   let e = s.entries.first(where: { $0.id == rowID }) {
+                    return Bucket(pointWidth: e.pointWidth, pointHeight: e.pointHeight, isHiDPI: e.isHiDPI)
+                }
+                return Bucket(pointWidth: 0, pointHeight: 0, isHiDPI: false)
+            },
+            set: { newValue in
+                if case .editing(var s) = mode,
+                   let i = s.entries.firstIndex(where: { $0.id == rowID }) {
+                    s.entries[i].pointWidth = newValue.pointWidth
+                    s.entries[i].pointHeight = newValue.pointHeight
+                    s.entries[i].isHiDPI = newValue.isHiDPI
+                    // Reset Hz to the highest available for the new bucket so
+                    // we don't keep a stale value that's no longer offered.
+                    let hzs = refreshOptions(
+                        in: s.entries[i].availableModes,
+                        width: newValue.pointWidth,
+                        height: newValue.pointHeight,
+                        isHiDPI: newValue.isHiDPI
+                    )
+                    s.entries[i].refreshHz = hzs.compactMap { $0 }.max() ?? hzs.first ?? nil
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private func bindingForEditHz(_ rowID: UUID) -> Binding<Int?> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode {
+                    return s.entries.first(where: { $0.id == rowID })?.refreshHz
+                }
+                return nil
+            },
+            set: { newValue in
+                if case .editing(var s) = mode,
+                   let i = s.entries.firstIndex(where: { $0.id == rowID }) {
+                    s.entries[i].refreshHz = newValue
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private var canCommitEdit: Bool {
+        if case .editing(let s) = mode {
+            let nameOK = !s.name.trimmingCharacters(in: .whitespaces).isEmpty
+            let anyKept = s.entries.contains(where: \.isIncluded)
+            return nameOK && anyKept
+        }
+        return false
+    }
+
+    private func commitEdit() {
+        guard case .editing(let s) = mode else { return }
+        let trimmed = s.name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        guard var profile = profiles.profiles.first(where: { $0.id == s.profileID }) else {
+            mode = .idle
+            return
+        }
+        let kept = s.entries.filter(\.isIncluded)
+        guard !kept.isEmpty else { return }
+
+        let newEntries: [Profile.Entry] = kept.map { e in
+            let matcher: DisplayMatcher = {
+                switch e.matcherKind {
+                case .anyExternal: return .anyExternal
+                case .specific:
+                    return e.isBuiltIn
+                        ? .builtIn(vendor: e.vendor, model: e.model, serial: e.serial)
+                        : .edid(vendor: e.vendor, model: e.model, serial: e.serial)
+                }
+            }()
+            return Profile.Entry(
+                matcher: matcher,
+                displayName: e.displayName,
+                pointWidth: e.pointWidth,
+                pointHeight: e.pointHeight,
+                refreshHz: e.refreshHz,
+                isHiDPI: e.isHiDPI
+            )
+        }
+        profile.name = trimmed
+        profiles.update(profile)
+        profiles.replaceEntries(profile, with: newEntries)
+        announce("Updated '\(trimmed)'", tone: .info)
+        mode = .idle
+    }
+
     // MARK: - Commit
 
     private var canSave: Bool {
@@ -520,6 +978,7 @@ private struct ProfilePill: View {
     let onRename: () -> Void
     let onUpdateCurrent: () -> Void
     let onToggleFlexible: () -> Void
+    let onEdit: () -> Void
     let onDelete: () -> Void
     @State private var isHovering = false
 
@@ -550,6 +1009,7 @@ private struct ProfilePill: View {
         .contextMenu {
             // Left-click on the pill already applies — no Apply item to duplicate it.
             // Context menu is for actions without a dedicated UI control.
+            Button("Edit…", action: onEdit)
             Button("Update with current setup", action: onUpdateCurrent)
             Button(isCurrentlyFlexible ? "Make specific (lock to current monitors)" : "Make flexible (any external)",
                    action: onToggleFlexible)
