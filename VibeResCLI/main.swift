@@ -341,8 +341,14 @@ func cmdProfileFlex(_ name: String) {
         fail("no profile named \"\(name)\"")
     }
     let displays = DisplayManager.snapshot()
-    let nowFlex = store.toggleFlexible(profile, displays: displays)
-    print("\"\(profile.name)\" is now " + (nowFlex ? "flexible (any external)" : "specific (locked to monitors)"))
+    switch store.toggleFlexible(profile, displays: displays) {
+    case .madeFlexible:
+        print("\"\(profile.name)\" is now flexible (any external)")
+    case .madeSpecific:
+        print("\"\(profile.name)\" is now specific (locked to monitors)")
+    case .blockedNoExternal:
+        fail("can't lock \"\(profile.name)\" — connect the external monitor first")
+    }
 }
 
 @MainActor

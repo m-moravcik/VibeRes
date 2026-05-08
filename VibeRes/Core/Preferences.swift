@@ -10,6 +10,7 @@ final class Preferences {
     private static let autoApplyKey = "VibeRes.AutoApplyOnDisplayChange"
     private static let livePreviewKey = "VibeRes.LivePreviewEnabled"
     private static let simpleModeKey = "VibeRes.SimpleMode"
+    private static let onboardingShownKey = "VibeRes.OnboardingShown"
 
     var autoApplyOnDisplayChange: Bool {
         didSet {
@@ -38,6 +39,15 @@ final class Preferences {
         }
     }
 
+    /// True once the welcome tour has been completed (or skipped). Stays true
+    /// across re-launches; toggled back to false by the "Replay welcome tour"
+    /// button in Settings, or implicitly false on a fresh install.
+    var onboardingShown: Bool {
+        didSet {
+            UserDefaults.standard.set(onboardingShown, forKey: Self.onboardingShownKey)
+        }
+    }
+
     init() {
         if UserDefaults.standard.object(forKey: Self.autoApplyKey) == nil {
             self.autoApplyOnDisplayChange = true
@@ -56,5 +66,8 @@ final class Preferences {
         } else {
             self.simpleMode = UserDefaults.standard.bool(forKey: Self.simpleModeKey)
         }
+        // First-launch detection: bool(forKey:) returns false when missing,
+        // which is exactly what we want — fresh installs see the tour.
+        self.onboardingShown = UserDefaults.standard.bool(forKey: Self.onboardingShownKey)
     }
 }

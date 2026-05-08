@@ -2,15 +2,27 @@ import SwiftUI
 
 struct MenuContent: View {
     @Environment(DisplayStore.self) private var store
+    @Environment(Preferences.self) private var preferences
     @State private var path = NavigationPath()
     @State private var menuTracking = false
 
     var body: some View {
-        NavigationStack(path: $path) {
-            RootView(path: $path)
-                .navigationDestination(for: DisplayInfo.ID.self) { displayID in
-                    DisplayDetailView(displayID: displayID)
+        Group {
+            // First-launch onboarding takes over the popover entirely until
+            // the user finishes or skips. Drawing it as a peer of the
+            // navigation stack (instead of a SwiftUI sheet) keeps it inside
+            // the menu-bar window — sheets pop out into a separate panel
+            // that breaks the "dropdown" mental model.
+            if !preferences.onboardingShown {
+                OnboardingView()
+            } else {
+                NavigationStack(path: $path) {
+                    RootView(path: $path)
+                        .navigationDestination(for: DisplayInfo.ID.self) { displayID in
+                            DisplayDetailView(displayID: displayID)
+                        }
                 }
+            }
         }
         .frame(width: Design.Layout.popoverWidth)
         .frame(maxHeight: Design.Layout.popoverMaxHeight)

@@ -136,18 +136,37 @@ final class ProfileStore {
         return updated
     }
 
+    /// Outcome of a flexible/specific toggle. `.blockedNoExternal` is returned
+    /// when the user asks to lock an .anyExternal profile to current monitors
+    /// but no external display is currently connected — without one we have
+    /// no EDID to capture, so silently leaving the profile flexible would be
+    /// misleading. The UI surfaces this as a problem-tone announcement.
+    enum LockResult {
+        case madeFlexible
+        case madeSpecific
+        case blockedNoExternal
+    }
+
     /// Toggles each external entry between .edid (specific) and .anyExternal
     /// (flexible). Built-in entries stay as-is — built-in is always exactly one
-    /// physical display, so the distinction is meaningless there. Returns true
-    /// if the resulting profile contains any flexible entry.
+    /// physical display, so the distinction is meaningless there.
     @discardableResult
-    func toggleFlexible(_ profile: Profile, displays: [DisplayInfo]) -> Bool {
-        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return false }
+    func toggleFlexible(_ profile: Profile, displays: [DisplayInfo]) -> LockResult {
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .madeFlexible }
         var updated = profiles[i]
         let isCurrentlyFlexible = updated.entries.contains {
             if case .anyExternal = $0.matcher { return true }
             return false
         }
+
+        // Locking a flexible profile requires a connected external to capture
+        // its EDID. Without one, refuse the action so the profile doesn't end
+        // up silently still flexible after a "lock to current monitors" click.
+        if isCurrentlyFlexible {
+            let hasExternal = displays.contains { CGDisplayIsBuiltin($0.id) == 0 }
+            if !hasExternal { return .blockedNoExternal }
+        }
+
         updated.entries = updated.entries.map { entry -> Profile.Entry in
             switch entry.matcher {
             case .builtIn:
@@ -161,7 +180,6 @@ final class ProfileStore {
                 return entry
             case .anyExternal:
                 if isCurrentlyFlexible {
-                    // Try to bind back to a connected external display by capturing its EDID.
                     if let info = displays.first(where: { CGDisplayIsBuiltin($0.id) == 0 }) {
                         let id = DisplayIdentity.capture(info.id)
                         var e = entry
@@ -176,7 +194,22 @@ final class ProfileStore {
         }
         profiles[i] = updated
         save()
-        return !isCurrentlyFlexible
+        return isCurrentlyFlexible ? .madeSpecific : .madeFlexible
+    }
+
+    /// Replaces a profile's entries wholesale while preserving id/name/createdAt.
+    /// Used by the inline Edit form so per-entry tweaks (resolution, Hz, HiDPI,
+    /// matcher kind, removal) save in one shot rather than as a sequence of
+    /// targeted mutations. Empty input clears nothing — the call is rejected.
+    @discardableResult
+    func replaceEntries(_ profile: Profile, with newEntries: [Profile.Entry]) -> Profile? {
+        guard !newEntries.isEmpty else { return nil }
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return nil }
+        var updated = profiles[i]
+        updated.entries = newEntries
+        profiles[i] = updated
+        save()
+        return updated
     }
 
     /// Captures the current state of selected displays as a new profile.
@@ -228,11 +261,23 @@ final class ProfileStore {
             case failed(String)           // ResolutionSwitcher threw
         }
         let displayName: String
+        let matcherKind: MatcherKind
         let requestedSize: (Int, Int)
         let requestedHz: Int?
         let appliedSize: (Int, Int)?
         let appliedHz: Int?
         let status: Status
+
+        /// Slim mirror of DisplayMatcher kept on outcomes so summary copy can
+        /// adapt to the matcher style without holding EDID identifiers in UI
+        /// payloads. Crucially distinguishes `.anyExternal` from `.specific`,
+        /// so a flexible profile with no external connected reads as "no
+        /// external monitor connected" rather than the misleading
+        /// "<savedName> not connected".
+        enum MatcherKind {
+            case specific      // .edid or .builtIn — bound to one identity
+            case anyExternal
+        }
 
         /// Human-readable summary used in tooltips and CLI output.
         var summary: String {
@@ -247,7 +292,10 @@ final class ProfileStore {
                 let got = (appliedSize.map { "\($0.0)×\($0.1)" } ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
                 return "\(displayName): wanted \(req), used \(got) (closest available)"
             case .skippedNoMatch:
-                return "\(displayName) not connected"
+                switch matcherKind {
+                case .anyExternal: return "no external monitor connected"
+                case .specific: return "\(displayName) not connected"
+                }
             case .skippedNoMode:
                 return "\(displayName): no usable mode for \(requestedSize.0)×\(requestedSize.1)"
             case .failed(let err):
@@ -289,10 +337,15 @@ final class ProfileStore {
         var batchSnapshot: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
 
         for entry in profile.entries {
+            let mk: ApplyOutcome.MatcherKind = {
+                if case .anyExternal = entry.matcher { return .anyExternal }
+                return .specific
+            }()
             let matches = displays.filter { entry.matcher.matches($0.id) }
             if matches.isEmpty {
                 outcomes.append(ApplyOutcome(
                     displayName: entry.displayName,
+                    matcherKind: mk,
                     requestedSize: (entry.pointWidth, entry.pointHeight),
                     requestedHz: entry.refreshHz,
                     appliedSize: nil,
@@ -305,6 +358,7 @@ final class ProfileStore {
                 guard let mode = bestMatch(in: info.modes, entry: entry) else {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
+                        matcherKind: mk,
                         requestedSize: (entry.pointWidth, entry.pointHeight),
                         requestedHz: entry.refreshHz,
                         appliedSize: nil,
@@ -335,6 +389,7 @@ final class ProfileStore {
                     }()
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
+                        matcherKind: mk,
                         requestedSize: (entry.pointWidth, entry.pointHeight),
                         requestedHz: entry.refreshHz,
                         appliedSize: (mode.width, mode.height),
@@ -344,6 +399,7 @@ final class ProfileStore {
                 } catch {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
+                        matcherKind: mk,
                         requestedSize: (entry.pointWidth, entry.pointHeight),
                         requestedHz: entry.refreshHz,
                         appliedSize: nil,

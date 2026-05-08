@@ -4,6 +4,25 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-05-08
+
+**Highlights:** First-launch welcome tour and full localisation (en/sk/de). Profiles can now be edited inline.
+
+### Added
+
+- **Welcome tour** — three-step onboarding shown the first time the menu-bar popover opens after a fresh install. Steps cover what VibeRes does, how profiles work, and where Simple Mode / Settings live (`⌘,`). Skipped or completed once, the tour does not re-appear; replay from Settings → General → "Replay welcome tour".
+- **Localisation** — VibeRes now ships in **English, Slovak, and German**. Built on Apple's String Catalog (`Localizable.xcstrings`) so future translations can drop in without code changes. Onboarding, Settings tab labels, and General preferences are fully translated; the rest of the UI auto-extracts at build time and falls back to English where translations are still pending.
+- **Profile editor** — right-click any profile pill → **Edit…** opens an inline form letting you toggle individual entries (built-in vs external), flip `specific ↔ any external` per entry, change the recorded resolution / Hz / HiDPI from a dropdown, or remove an entry entirely. Keeps id/name/createdAt stable so the rest of the app sees the "same" profile after a tweak.
+
+### Changed
+
+- **Lock-to-current-monitors** is now refused (with a clear orange note) when the user asks to lock a flexible profile but no external monitor is currently connected. Previously the action silently did nothing — you got a `*` flex pill that misled you into thinking it was specific. The new behaviour: *"Connect the external monitor first to lock 'Presentation' to it."*
+- **Apply outcome copy** for flexible profiles no longer surfaces stale display names. A profile that was saved when *Q3279WG5B* was connected and later toggled to `.anyExternal` now reads as *"no external monitor connected"* on apply with no external present, instead of the misleading *"Q3279WG5B not connected"*.
+
+### Tests
+
+- 102 → 104 (+2): `replaceEntries` preserves identity / refuses empty input. The `anyExternal` skip-no-match summary is locked down with strict-equality so the bug above can't regress silently.
+
 ## [0.6.0] — 2026-05-07
 
 ### Added

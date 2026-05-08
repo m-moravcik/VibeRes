@@ -77,6 +77,18 @@ struct SettingsView: View {
             } header: {
                 Text("Profiles")
             }
+
+            // Welcome tour replay — surfaces only after the tour has been
+            // dismissed at least once. On a fresh install the user is
+            // already inside the tour, so showing the button there would
+            // be confusingly redundant.
+            if preferences.onboardingShown {
+                Section {
+                    Button("Replay welcome tour") {
+                        preferences.onboardingShown = false
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
