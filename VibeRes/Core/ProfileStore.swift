@@ -197,29 +197,58 @@ final class ProfileStore {
         return isCurrentlyFlexible ? .madeSpecific : .madeFlexible
     }
 
+    /// Validation outcomes for profile-mutating calls. Distinct from
+    /// ApplyOutcome — those describe what happened at apply time, these
+    /// describe whether the save itself was accepted.
+    enum SaveResult: Equatable {
+        case saved
+        case rejectedEmpty
+        case rejectedMultipleAnyExternal  // more than one `.anyExternal` entry
+    }
+
+    /// True if a list of entries contains more than one `.anyExternal` matcher.
+    /// Multiple flexible externals cause conflicting applies (each entry
+    /// matches every external, so the last entry "wins" after blinking
+    /// through the earlier ones). The UI surfaces this as a hard error
+    /// rather than letting users save a profile that visibly misbehaves.
+    static func hasMultipleAnyExternal(_ entries: [Profile.Entry]) -> Bool {
+        var seen = 0
+        for e in entries {
+            if case .anyExternal = e.matcher {
+                seen += 1
+                if seen > 1 { return true }
+            }
+        }
+        return false
+    }
+
     /// Replaces a profile's entries wholesale while preserving id/name/createdAt.
     /// Used by the inline Edit form so per-entry tweaks (resolution, Hz, HiDPI,
     /// matcher kind, removal) save in one shot rather than as a sequence of
-    /// targeted mutations. Empty input clears nothing — the call is rejected.
+    /// targeted mutations. Rejected when the list is empty or contains more
+    /// than one `.anyExternal` matcher (the latter would cause conflicting
+    /// applies at runtime).
     @discardableResult
-    func replaceEntries(_ profile: Profile, with newEntries: [Profile.Entry]) -> Profile? {
-        guard !newEntries.isEmpty else { return nil }
-        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return nil }
+    func replaceEntries(_ profile: Profile, with newEntries: [Profile.Entry]) -> SaveResult {
+        guard !newEntries.isEmpty else { return .rejectedEmpty }
+        guard !Self.hasMultipleAnyExternal(newEntries) else { return .rejectedMultipleAnyExternal }
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedEmpty }
         var updated = profiles[i]
         updated.entries = newEntries
         profiles[i] = updated
         save()
-        return updated
+        return .saved
     }
 
     /// Captures the current state of selected displays as a new profile.
     /// `selection` decides which physical displays to include and how to bind
     /// each entry — by EDID (specific) or by role (any external).
+    @discardableResult
     func captureCurrent(
         name: String,
         displays: [DisplayInfo],
         selection: [CGDirectDisplayID: ProfileMatchKind]
-    ) {
+    ) -> SaveResult {
         let entries: [Profile.Entry] = displays.compactMap { info in
             guard let mode = info.currentMode else { return nil }
             guard let kind = selection[info.id] else { return nil }
@@ -244,8 +273,10 @@ final class ProfileStore {
                 isHiDPI: mode.isHiDPI
             )
         }
-        guard !entries.isEmpty else { return }
+        guard !entries.isEmpty else { return .rejectedEmpty }
+        guard !Self.hasMultipleAnyExternal(entries) else { return .rejectedMultipleAnyExternal }
         add(Profile(name: name, entries: entries))
+        return .saved
     }
 
     /// Outcome of applying a single profile entry. Lets the UI explain *what*
@@ -472,6 +503,71 @@ final class ProfileStore {
         case .builtIn:     return 2   // locked to the (single) built-in panel
         case .anyExternal: return 1   // any external, role-based fallback
         }
+    }
+
+    /// Compute a "what would happen" preview without mutating any display.
+    /// Used by the hover tooltip and the partial-match confirmation panel so
+    /// the user sees the exact set of changes before committing.
+    func previewApply(_ profile: Profile, against displays: [DisplayInfo]) -> ProfileApplyPreview {
+        var rows: [ProfileApplyPreview.Row] = []
+        var touchedIDs: Set<CGDirectDisplayID> = []
+
+        for entry in profile.entries {
+            let matches = displays.filter { entry.matcher.matches($0.id) }
+            if matches.isEmpty {
+                rows.append(ProfileApplyPreview.Row(
+                    id: UUID(),
+                    displayName: entry.displayName,
+                    action: .skippedNotConnected,
+                    savedWidth: entry.pointWidth,
+                    savedHeight: entry.pointHeight,
+                    savedHz: entry.refreshHz,
+                    savedIsHiDPI: entry.isHiDPI
+                ))
+                continue
+            }
+            for info in matches {
+                touchedIDs.insert(info.id)
+                guard let mode = bestMatch(in: info.modes, entry: entry) else {
+                    rows.append(ProfileApplyPreview.Row(
+                        id: UUID(),
+                        displayName: info.name,
+                        action: .skippedNoMode,
+                        savedWidth: entry.pointWidth,
+                        savedHeight: entry.pointHeight,
+                        savedHz: entry.refreshHz,
+                        savedIsHiDPI: entry.isHiDPI
+                    ))
+                    continue
+                }
+                let isAlready = mode.ioDisplayModeID == info.currentMode?.ioDisplayModeID
+                let isExact = mode.width == entry.pointWidth
+                    && mode.height == entry.pointHeight
+                    && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
+                    && mode.isHiDPI == entry.isHiDPI
+                let action: ProfileApplyPreview.Row.Action = {
+                    if isAlready { return .alreadyApplied }
+                    if isExact { return .willApplyExact }
+                    return .willApplyFallback(
+                        targetWidth: mode.width,
+                        targetHeight: mode.height,
+                        targetHz: mode.refreshHz
+                    )
+                }()
+                rows.append(ProfileApplyPreview.Row(
+                    id: UUID(),
+                    displayName: info.name,
+                    action: action,
+                    savedWidth: entry.pointWidth,
+                    savedHeight: entry.pointHeight,
+                    savedHz: entry.refreshHz,
+                    savedIsHiDPI: entry.isHiDPI
+                ))
+            }
+        }
+
+        let untouched = displays.filter { !touchedIDs.contains($0.id) }.map(\.name)
+        return ProfileApplyPreview(rows: rows, untouched: untouched)
     }
 
     private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry) -> CGDisplayMode? {

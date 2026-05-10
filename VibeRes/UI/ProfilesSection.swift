@@ -25,6 +25,18 @@ struct ProfilesSection: View {
         case saving(SaveFormState)
         case renaming(profileID: UUID, newName: String)
         case editing(EditFormState)
+        /// Partial-match warning before a manual apply commits. Shows which
+        /// entries will be skipped / which live displays go untouched, plus
+        /// Apply Anyway / Cancel buttons. Kept inline (not NSAlert) so the
+        /// popover doesn't dismiss while the user reads.
+        case confirmingApply(ConfirmApplyState)
+    }
+
+    struct ConfirmApplyState: Equatable {
+        let profileID: UUID
+        let profileName: String
+        let preview: ProfileApplyPreview
+        let classification: DisplaySetClassifier.Classification
     }
 
     /// State of the inline "Save profile" form.
@@ -115,6 +127,8 @@ struct ProfilesSection: View {
                 renameForm
             case .editing:
                 editForm
+            case .confirmingApply:
+                confirmApplyPanel
             }
 
             // Watch for display add/remove events and auto-apply the matching
@@ -167,21 +181,27 @@ struct ProfilesSection: View {
         } else {
             FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(profiles.profiles) { profile in
-                    ProfilePill(profile: profile, isCurrentlyFlexible: isFlexible(profile)) {
-                        // Apply runs scoring across all modes for every profile entry —
-                        // up to ~22 modes × 3 entries on a typical setup. Detach to a
-                        // background task so the popover stays responsive on click.
-                        // Pass the revert history so a user-initiated profile apply
-                        // can be undone with one click; auto-apply (display change)
-                        // skips revert so the system event isn't treated as undoable.
-                        let snapshotDisplays = displays.displays
-                        let target = profile
-                        let revert = displays.revert
-                        Task.detached(priority: .userInitiated) {
-                            let outcomes = await MainActor.run {
-                                profiles.applyDetailed(target, displays: snapshotDisplays, revert: revert)
-                            }
-                            await MainActor.run { announceOutcome(outcomes) }
+                    ProfilePill(
+                        profile: profile,
+                        isCurrentlyFlexible: isFlexible(profile),
+                        previewProvider: { profiles.previewApply(profile, against: displays.displays) }
+                    ) {
+                        // Classify before applying. Clean fit (.exactMatch)
+                        // commits immediately. Anything else routes through
+                        // the inline confirmation panel so the user sees
+                        // what will be skipped or left alone before the
+                        // apply mutates display state.
+                        let classification = DisplaySetClassifier.classify(profile, against: displays.displays)
+                        if DisplaySetClassifier.isCleanApply(classification) {
+                            commitApply(profile)
+                        } else {
+                            let preview = profiles.previewApply(profile, against: displays.displays)
+                            mode = .confirmingApply(ConfirmApplyState(
+                                profileID: profile.id,
+                                profileName: profile.name,
+                                preview: preview,
+                                classification: classification
+                            ))
                         }
                     } onRename: {
                         mode = .renaming(profileID: profile.id, newName: profile.name)
@@ -266,6 +286,179 @@ struct ProfilesSection: View {
         return parts.joined(separator: " · ")
     }
 
+    /// Performs the actual apply on a background task and announces the
+    /// outcome. Extracted so both the clean-apply path and the
+    /// "Apply anyway" confirmation button share the same code.
+    private func commitApply(_ profile: Profile) {
+        let snapshotDisplays = displays.displays
+        let revert = displays.revert
+        Task.detached(priority: .userInitiated) {
+            let outcomes = await MainActor.run {
+                profiles.applyDetailed(profile, displays: snapshotDisplays, revert: revert)
+            }
+            await MainActor.run { announceOutcome(outcomes) }
+        }
+    }
+
+    // MARK: - Confirm apply panel
+
+    @ViewBuilder
+    private var confirmApplyPanel: some View {
+        if case .confirmingApply(let state) = mode {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: warningIcon(for: state.classification))
+                        .foregroundStyle(warningTint(for: state.classification))
+                    Text("Apply '\(state.profileName)'?")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+
+                Text(headline(for: state.classification))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(state.preview.rows) { row in
+                        previewRow(row)
+                    }
+                    if !state.preview.untouched.isEmpty {
+                        HStack(alignment: .top, spacing: 6) {
+                            Image(systemName: "circle.dotted")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.tertiary)
+                            Text("Untouched: " + state.preview.untouched.joined(separator: ", "))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+
+                HStack {
+                    Spacer()
+                    Button("Cancel") { mode = .idle }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .keyboardShortcut(.cancelAction)
+                    Button(applyButtonLabel(for: state.classification)) {
+                        if let p = profiles.profiles.first(where: { $0.id == state.profileID }) {
+                            commitApply(p)
+                        }
+                        mode = .idle
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(isDisjoint(state.classification))
+                }
+            }
+            .padding(Design.Spacing.l)
+        }
+    }
+
+    @ViewBuilder
+    private func previewRow(_ row: ProfileApplyPreview.Row) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Image(systemName: rowIcon(row.action))
+                .foregroundStyle(rowTint(row.action))
+                .font(.system(size: 10))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                Text(rowDetail(row))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func rowIcon(_ action: ProfileApplyPreview.Row.Action) -> String {
+        switch action {
+        case .willApplyExact: return "checkmark.circle.fill"
+        case .willApplyFallback: return "arrow.triangle.2.circlepath"
+        case .alreadyApplied: return "equal.circle"
+        case .skippedNotConnected: return "exclamationmark.triangle.fill"
+        case .skippedNoMode: return "questionmark.circle.fill"
+        }
+    }
+
+    private func rowTint(_ action: ProfileApplyPreview.Row.Action) -> Color {
+        switch action {
+        case .willApplyExact: return .green
+        case .willApplyFallback: return .orange
+        case .alreadyApplied: return .secondary
+        case .skippedNotConnected: return .red
+        case .skippedNoMode: return .orange
+        }
+    }
+
+    private func rowDetail(_ row: ProfileApplyPreview.Row) -> String {
+        let saved = "\(row.savedWidth)×\(row.savedHeight)"
+            + (row.savedHz.map { " @ \($0)Hz" } ?? "")
+            + (row.savedIsHiDPI ? " HiDPI" : "")
+        switch row.action {
+        case .willApplyExact:
+            return "→ \(saved)"
+        case .willApplyFallback(let w, let h, let hz):
+            let got = "\(w)×\(h)" + (hz.map { " @ \($0)Hz" } ?? "")
+            return "wanted \(saved), will use \(got)"
+        case .alreadyApplied:
+            return "already at \(saved)"
+        case .skippedNotConnected:
+            return "not connected — skip"
+        case .skippedNoMode:
+            return "no usable mode for \(row.savedWidth)×\(row.savedHeight)"
+        }
+    }
+
+    private func warningIcon(for c: DisplaySetClassifier.Classification) -> String {
+        switch c {
+        case .exactMatch: return "checkmark.seal.fill"
+        case .partialMatch, .partialWithExtras: return "exclamationmark.triangle.fill"
+        case .supersetMatch: return "info.circle.fill"
+        case .disjoint: return "xmark.octagon.fill"
+        }
+    }
+
+    private func warningTint(for c: DisplaySetClassifier.Classification) -> Color {
+        switch c {
+        case .exactMatch: return .green
+        case .partialMatch, .partialWithExtras: return .orange
+        case .supersetMatch: return .accentColor
+        case .disjoint: return .red
+        }
+    }
+
+    private func headline(for c: DisplaySetClassifier.Classification) -> String {
+        switch c {
+        case .exactMatch:
+            return "Display setup matches the profile."
+        case .partialMatch(let missing):
+            let names = missing.map(\.displayName).joined(separator: ", ")
+            return "\(missing.count) of the profile's displays is not connected (\(names)). Other entries will apply as saved."
+        case .supersetMatch(let extra):
+            let names = extra.map(\.name).joined(separator: ", ")
+            return "You have \(extra.count) extra monitor(s) connected (\(names)). They will be left untouched."
+        case .partialWithExtras(let missing, let extra):
+            return "\(missing.count) saved display(s) missing, \(extra.count) extra connected. Only matched entries will apply."
+        case .disjoint:
+            return "None of this profile's monitors are connected. There's nothing to apply."
+        }
+    }
+
+    private func applyButtonLabel(for c: DisplaySetClassifier.Classification) -> String {
+        if case .exactMatch = c { return "Apply" }
+        if case .disjoint = c { return "Apply" }
+        return "Apply anyway"
+    }
+
+    private func isDisjoint(_ c: DisplaySetClassifier.Classification) -> Bool {
+        if case .disjoint = c { return true }
+        return false
+    }
+
     // MARK: - Save form
 
     @ViewBuilder
@@ -329,12 +522,17 @@ struct ProfilesSection: View {
 
                 // Only externals can be flexible. Built-in is always specific.
                 if !choice.isBuiltIn && choice.isIncluded {
+                    let isBlockedByOther = saveFormAnyExternalConflict(currentID: choice.displayID)
                     Toggle(isOn: bindingForAnyExternal(choice.displayID)) {
                         Text("Match any external monitor")
                             .font(.system(size: 10))
                     }
                     .toggleStyle(.checkbox)
                     .controlSize(.mini)
+                    .disabled(isBlockedByOther)
+                    .help(isBlockedByOther
+                          ? "Only one display per profile can match 'any external monitor'. Uncheck the other first."
+                          : "")
                 }
             }
             Spacer()
@@ -430,6 +628,28 @@ struct ProfilesSection: View {
         )
     }
 
+    /// True when another included external in the Save form is already set
+    /// to `matchAnyExternal`. Used to disable the second checkbox so the
+    /// user can't enter the conflicting-flexible state in the first place.
+    private func saveFormAnyExternalConflict(currentID: CGDirectDisplayID) -> Bool {
+        guard case .saving(let s) = mode else { return false }
+        return s.perDisplay.contains { other in
+            other.id != currentID && other.isIncluded && other.matchAnyExternal
+        }
+    }
+
+    /// True when another kept entry in the Edit form is already `.anyExternal`.
+    /// Disables the second toggle so the user can't create a conflicting
+    /// profile from the editor.
+    private func editFormAnyExternalConflict(currentRowID: UUID) -> Bool {
+        guard case .editing(let s) = mode else { return false }
+        return s.entries.contains { other in
+            other.id != currentRowID
+                && other.isIncluded
+                && other.matcherKind == .anyExternal
+        }
+    }
+
     private var bindingForRenameText: Binding<String> {
         Binding(
             get: { currentRenameText },
@@ -519,12 +739,17 @@ struct ProfilesSection: View {
 
                 if entry.isIncluded {
                     if !entry.isBuiltIn {
+                        let isBlockedByOther = editFormAnyExternalConflict(currentRowID: entry.id)
                         Toggle(isOn: bindingForEditAnyExternal(entry.id)) {
                             Text("Match any external monitor")
                                 .font(.system(size: 10))
                         }
                         .toggleStyle(.checkbox)
                         .controlSize(.mini)
+                        .disabled(isBlockedByOther)
+                        .help(isBlockedByOther
+                              ? "Only one entry per profile can match 'any external monitor'."
+                              : "")
                     }
 
                     modeRowPicker(entry)
@@ -664,10 +889,19 @@ struct ProfilesSection: View {
                 case .anyExternal: return (0, 0, 0)
                 }
             }()
-            // Find the live display the matcher binds to (if any) so we can
-            // populate the mode picker. anyExternal binds to the first
-            // external; specific binds via EDID; builtIn binds to the laptop.
-            let bound: DisplayInfo? = displays.displays.first { d in
+            // Find the live displays the matcher binds to so we can populate
+            // the mode picker. .specific and .builtIn bind to exactly one
+            // monitor (or none if unplugged). .anyExternal binds to *every*
+            // connected external — we union all their mode lists so the user
+            // sees every resolution any connected external can do.
+            //
+            // Union (not intersection) reflects how applyDetailed actually
+            // behaves: it picks the closest available mode per monitor via
+            // bestMatch() scoring. So a user saving 2560×1440 for "any
+            // external" on a setup with both a 4K and a 1080p monitor will
+            // get 2560×1440 on the 4K monitor and a fallback to 1920×1080
+            // on the 1080p one — exactly what they expect.
+            let boundDisplays: [DisplayInfo] = displays.displays.filter { d in
                 switch e.matcher {
                 case .anyExternal: return CGDisplayIsBuiltin(d.id) == 0
                 case .builtIn: return CGDisplayIsBuiltin(d.id) != 0
@@ -677,10 +911,21 @@ struct ProfilesSection: View {
                         && CGDisplaySerialNumber(d.id) == s
                 }
             }
-            let live: [LiveMode] = bound?.modes.map {
-                LiveMode(pointWidth: $0.width, pointHeight: $0.height,
-                         refreshHz: $0.refreshHz, isHiDPI: $0.isHiDPI)
-            } ?? []
+            // Dedup by (size, refresh, HiDPI) so the picker doesn't show
+            // the same resolution twice when multiple monitors support it.
+            var seen: Set<LiveMode> = []
+            var live: [LiveMode] = []
+            for d in boundDisplays {
+                for m in d.modes {
+                    let mode = LiveMode(
+                        pointWidth: m.width,
+                        pointHeight: m.height,
+                        refreshHz: m.refreshHz,
+                        isHiDPI: m.isHiDPI
+                    )
+                    if seen.insert(mode).inserted { live.append(mode) }
+                }
+            }
             return EntryEdit(
                 id: UUID(),
                 matcherKind: kind,
@@ -840,11 +1085,20 @@ struct ProfilesSection: View {
                 isHiDPI: e.isHiDPI
             )
         }
-        profile.name = trimmed
-        profiles.update(profile)
-        profiles.replaceEntries(profile, with: newEntries)
-        announce("Updated '\(trimmed)'", tone: .info)
-        mode = .idle
+        // Replace entries first so the multiple-anyExternal guard fires
+        // before we rename. If save is rejected, surface the reason and
+        // keep the user in the form so they can fix the conflict.
+        switch profiles.replaceEntries(profile, with: newEntries) {
+        case .saved:
+            profile.name = trimmed
+            profiles.update(profile)
+            announce("Updated '\(trimmed)'", tone: .info)
+            mode = .idle
+        case .rejectedMultipleAnyExternal:
+            announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
+        case .rejectedEmpty:
+            announce("Keep at least one entry to save the profile.", tone: .problem)
+        }
     }
 
     // MARK: - Commit
@@ -869,8 +1123,14 @@ struct ProfilesSection: View {
         }
         guard !selection.isEmpty else { return }
 
-        profiles.captureCurrent(name: trimmed, displays: displays.displays, selection: selection)
-        mode = .idle
+        switch profiles.captureCurrent(name: trimmed, displays: displays.displays, selection: selection) {
+        case .saved:
+            mode = .idle
+        case .rejectedMultipleAnyExternal:
+            announce("Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.", tone: .problem)
+        case .rejectedEmpty:
+            announce("Pick at least one display to save.", tone: .problem)
+        }
     }
 
     /// Whether the profile contains any .anyExternal matcher.
@@ -974,6 +1234,10 @@ struct ProfilesSection: View {
 private struct ProfilePill: View {
     let profile: Profile
     let isCurrentlyFlexible: Bool
+    /// Lazily computed preview shown on hover so the user knows *before*
+    /// clicking what the apply will do. Re-evaluated on each hover so the
+    /// preview reflects live display state, not a stale snapshot.
+    let previewProvider: () -> ProfileApplyPreview
     let onApply: () -> Void
     let onRename: () -> Void
     let onUpdateCurrent: () -> Void
@@ -981,6 +1245,7 @@ private struct ProfilePill: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     @State private var isHovering = false
+    @State private var cachedPreview: ProfileApplyPreview?
 
     var body: some View {
         Button(action: onApply) {
@@ -1004,8 +1269,19 @@ private struct ProfilePill: View {
             )
         }
         .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-        .help(tooltip)
+        .onHover { hover in
+            isHovering = hover
+            // Refresh the preview on each hover-in so it reflects the
+            // current display set, not a snapshot from the last hover.
+            // Cleared on hover-out to keep the cache small.
+            cachedPreview = hover ? previewProvider() : nil
+        }
+        .popover(isPresented: $isHovering, arrowEdge: .top) {
+            if let preview = cachedPreview {
+                hoverPreviewContent(preview)
+                    .allowsHitTesting(false)
+            }
+        }
         .contextMenu {
             // Left-click on the pill already applies — no Apply item to duplicate it.
             // Context menu is for actions without a dedicated UI control.
@@ -1016,6 +1292,76 @@ private struct ProfilePill: View {
             Button("Rename…", action: onRename)
             Divider()
             Button("Delete", role: .destructive, action: onDelete)
+        }
+    }
+
+    @ViewBuilder
+    private func hoverPreviewContent(_ preview: ProfileApplyPreview) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Applying '\(profile.name)' will:")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 2)
+            ForEach(preview.rows) { row in
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: previewIcon(row.action))
+                        .foregroundStyle(previewTint(row.action))
+                        .font(.system(size: 10))
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(row.displayName)
+                            .font(.system(size: 11, weight: .medium))
+                        Text(previewDetail(row))
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            if !preview.untouched.isEmpty {
+                Divider().padding(.vertical, 1)
+                Text("Leaves untouched: " + preview.untouched.joined(separator: ", "))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: 280)
+    }
+
+    private func previewIcon(_ action: ProfileApplyPreview.Row.Action) -> String {
+        switch action {
+        case .willApplyExact: return "checkmark.circle.fill"
+        case .willApplyFallback: return "arrow.triangle.2.circlepath"
+        case .alreadyApplied: return "equal.circle"
+        case .skippedNotConnected: return "exclamationmark.triangle.fill"
+        case .skippedNoMode: return "questionmark.circle.fill"
+        }
+    }
+
+    private func previewTint(_ action: ProfileApplyPreview.Row.Action) -> Color {
+        switch action {
+        case .willApplyExact: return .green
+        case .willApplyFallback: return .orange
+        case .alreadyApplied: return .secondary
+        case .skippedNotConnected: return .red
+        case .skippedNoMode: return .orange
+        }
+    }
+
+    private func previewDetail(_ row: ProfileApplyPreview.Row) -> String {
+        let saved = "\(row.savedWidth)×\(row.savedHeight)"
+            + (row.savedHz.map { " @ \($0)Hz" } ?? "")
+        switch row.action {
+        case .willApplyExact:
+            return "→ \(saved)"
+        case .willApplyFallback(let w, let h, let hz):
+            let got = "\(w)×\(h)" + (hz.map { " @ \($0)Hz" } ?? "")
+            return "wanted \(saved), will use \(got)"
+        case .alreadyApplied:
+            return "already at \(saved)"
+        case .skippedNotConnected:
+            return "not connected — skip"
+        case .skippedNoMode:
+            return "no usable mode for \(row.savedWidth)×\(row.savedHeight)"
         }
     }
 

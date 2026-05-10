@@ -93,11 +93,14 @@ struct ProfileEditTests {
                           displayName: "Built-in",
                           pointWidth: 1800, pointHeight: 1169, refreshHz: 60, isHiDPI: true),
         ]
-        let updated = store.replaceEntries(p, with: newEntries)
-        #expect(updated?.id == originalID)
-        #expect(updated?.name == "Editable")
-        #expect(updated?.entries.count == 1)
-        #expect(updated?.entries[0].refreshHz == 60)
+        let result = store.replaceEntries(p, with: newEntries)
+        #expect(result == .saved)
+        // ID, name and createdAt preserved on the live record.
+        let updated = store.profiles[0]
+        #expect(updated.id == originalID)
+        #expect(updated.name == "Editable")
+        #expect(updated.entries.count == 1)
+        #expect(updated.entries[0].refreshHz == 60)
     }
 
     @Test("replaceEntries refuses an empty entry list")
@@ -111,9 +114,67 @@ struct ProfileEditTests {
         store.add(p)
 
         let result = store.replaceEntries(p, with: [])
-        #expect(result == nil)
+        #expect(result == .rejectedEmpty)
         // Original profile unaffected.
         #expect(store.profiles[0].entries.count == 1)
+    }
+
+    @Test("replaceEntries refuses 2+ anyExternal entries")
+    func replaceEntriesRejectsMultipleAnyExternal() {
+        let store = makeStore()
+        let p = Profile(name: "Conflict", entries: [
+            Profile.Entry(matcher: .builtIn(vendor: 1, model: 2, serial: 3),
+                          displayName: "Built-in",
+                          pointWidth: 1800, pointHeight: 1169, refreshHz: 120, isHiDPI: true),
+        ])
+        store.add(p)
+
+        let badEntries = [
+            Profile.Entry(matcher: .anyExternal,
+                          displayName: "External A",
+                          pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false),
+            Profile.Entry(matcher: .anyExternal,
+                          displayName: "External B",
+                          pointWidth: 2560, pointHeight: 1440, refreshHz: 60, isHiDPI: false),
+        ]
+        let result = store.replaceEntries(p, with: badEntries)
+        #expect(result == .rejectedMultipleAnyExternal)
+        // Original profile untouched.
+        #expect(store.profiles[0].entries.count == 1)
+        if case .builtIn = store.profiles[0].entries[0].matcher {} else {
+            Issue.record("Original entry should remain after rejected replace")
+        }
+    }
+
+    @Test("hasMultipleAnyExternal helper detects conflicting entry lists")
+    func hasMultipleAnyExternalHelper() {
+        let safe: [Profile.Entry] = [
+            Profile.Entry(matcher: .builtIn(vendor: 1, model: 2, serial: 3),
+                          displayName: "Built-in",
+                          pointWidth: 1800, pointHeight: 1169, refreshHz: 120, isHiDPI: true),
+            Profile.Entry(matcher: .anyExternal,
+                          displayName: "External",
+                          pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false),
+        ]
+        #expect(ProfileStore.hasMultipleAnyExternal(safe) == false)
+
+        let conflicting: [Profile.Entry] = safe + [
+            Profile.Entry(matcher: .anyExternal,
+                          displayName: "Another flex",
+                          pointWidth: 2560, pointHeight: 1440, refreshHz: 60, isHiDPI: false),
+        ]
+        #expect(ProfileStore.hasMultipleAnyExternal(conflicting) == true)
+
+        // All-specific profile is fine.
+        let allSpecific: [Profile.Entry] = [
+            Profile.Entry(matcher: .edid(vendor: 1, model: 1, serial: 1),
+                          displayName: "A",
+                          pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false),
+            Profile.Entry(matcher: .edid(vendor: 2, model: 2, serial: 2),
+                          displayName: "B",
+                          pointWidth: 2560, pointHeight: 1440, refreshHz: 60, isHiDPI: false),
+        ]
+        #expect(ProfileStore.hasMultipleAnyExternal(allSpecific) == false)
     }
 
     @Test("updateFromCurrent preserves matcher policy + name + id")
