@@ -4,6 +4,25 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — 2026-05-10
+
+**Highlights:** Apply preview on hover, partial-match warnings for multi-monitor setups, and impossible-to-misconfigure flexible profiles.
+
+### Added
+
+- **Hover preview on profile pills.** Move the pointer over any profile and a tooltip appears showing exactly what an apply would do — per display, with one of five outcomes: will apply exactly, will fall back to the closest available mode, already at the saved mode, will skip (not connected), or no usable mode. Lets you see what will happen before you click instead of finding out after.
+- **Display set classification before apply.** When you click a profile, VibeRes first checks how well it fits the currently-connected displays. A clean match applies immediately. A partial match (some saved displays missing), superset match (extra monitors connected), or disjoint set (nothing matches) opens an inline confirmation panel listing every change with an Apply Anyway / Cancel choice. Auto-apply (after a monitor is plugged or unplugged) keeps its silent flow — the panel only appears for manual clicks.
+- **Edit form mode picker covers every connected external** when an entry is `.anyExternal`. Previously the picker only listed modes from the first matched monitor, so on a dual-external setup you couldn't pick a resolution that only the second monitor supported. The picker now unions all external monitors' modes and deduplicates, so a flexible "Presentation" entry can target 2560×1440 even if one of the externals only does 1920×1080 (at apply time the lower-spec monitor falls back to its closest available mode).
+
+### Changed
+
+- **Profiles can have at most one "any external" entry.** A profile with two flexible externals at runtime applied both modes to *every* external in sequence — the last entry won after the earlier ones briefly took effect, causing visible flicker and order-dependent results. The Save and Edit forms now disable the second "Match any external monitor" checkbox automatically, and the store rejects any save that slips through with a clear error. The CLI's `viberes profile save --any-external` likewise exits with an explanation when used on more than one monitor.
+- `ProfileStore.captureCurrent` and `ProfileStore.replaceEntries` now return a `SaveResult` enum (`saved | rejectedEmpty | rejectedMultipleAnyExternal`) so callers can distinguish a save from a refused one. Internal API change only — JSON profiles on disk are untouched.
+
+### Tests
+
+- 104 → 110 (+6): `DisplaySetClassifier` exact / partial / superset / disjoint cases (4), `replaceEntries` rejects 2+ `.anyExternal` entries, `hasMultipleAnyExternal` helper covers built-in + flex, two-flex, all-specific shapes.
+
 ## [0.7.0] — 2026-05-08
 
 **Highlights:** First-launch welcome tour and full localisation (en/sk/de). Profiles can now be edited inline.

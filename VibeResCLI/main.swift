@@ -263,8 +263,14 @@ func cmdProfileSave(_ name: String, args: [String]) {
     }
     guard !selection.isEmpty else { fail("no displays matched the --only filter") }
 
-    store.captureCurrent(name: name, displays: displays, selection: selection)
-    print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
+    switch store.captureCurrent(name: name, displays: displays, selection: selection) {
+    case .saved:
+        print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
+    case .rejectedMultipleAnyExternal:
+        fail("a profile can have at most one 'any external' entry — remove --any-external from one of the displays")
+    case .rejectedEmpty:
+        fail("no displays selected for the profile")
+    }
 }
 
 @MainActor
