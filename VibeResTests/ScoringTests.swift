@@ -5,25 +5,6 @@ import Testing
 /// exercise it without depending on AppIntents runtime.
 @Suite("SetResolutionIntent scoring")
 struct ScoringTests {
-    /// Same weights as production code.
-    private func score(
-        mode: StubDisplayMode,
-        wantW: Int,
-        wantH: Int,
-        wantHz: Int? = nil,
-        preferHiDPI: Bool = true
-    ) -> Double {
-        let sizeDelta = abs(mode.width - wantW) + abs(mode.height - wantH)
-        let hidpiPenalty = (mode.isHiDPI == preferHiDPI) ? 0 : 50
-        var hzPenalty = 0
-        if let want = wantHz, let got = mode.refreshHz {
-            hzPenalty = abs(want - got) * 2
-        } else if let want = wantHz, mode.refreshHz == nil {
-            hzPenalty = want
-        }
-        return Double(sizeDelta + hidpiPenalty + hzPenalty)
-    }
-
     private func best(
         modes: [StubDisplayMode],
         wantW: Int,
@@ -31,8 +12,15 @@ struct ScoringTests {
         wantHz: Int? = nil,
         preferHiDPI: Bool = true
     ) -> StubDisplayMode? {
-        modes.min { score(mode: $0, wantW: wantW, wantH: wantH, wantHz: wantHz, preferHiDPI: preferHiDPI)
-                  < score(mode: $1, wantW: wantW, wantH: wantH, wantHz: wantHz, preferHiDPI: preferHiDPI) }
+        ModeScoring.bestMatch(
+            in: modes,
+            request: ModeScoring.Request(
+                width: wantW,
+                height: wantH,
+                refreshHz: wantHz,
+                preferHiDPI: preferHiDPI
+            )
+        )
     }
 
     @Test("Exact match wins over near matches")
@@ -73,6 +61,15 @@ struct ScoringTests {
         ]
         #expect(best(modes: modes, wantW: 1800, wantH: 1169, wantHz: 120)?.ioDisplayModeID == 2)
         #expect(best(modes: modes, wantW: 1800, wantH: 1169, wantHz: 60)?.ioDisplayModeID == 1)
+    }
+
+    @Test("Highest refresh wins when refresh is omitted and size/scale are tied")
+    func highestRefreshWinsWhenOmitted() {
+        let modes = [
+            StubDisplayMode.hiDPI(width: 1800, height: 1169, hz: 60, id: 1),
+            StubDisplayMode.hiDPI(width: 1800, height: 1169, hz: 120, id: 2),
+        ]
+        #expect(best(modes: modes, wantW: 1800, wantH: 1169)?.ioDisplayModeID == 2)
     }
 
     @Test("Empty mode list returns nil")

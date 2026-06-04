@@ -96,19 +96,15 @@ struct ResolutionSpec {
 // MARK: - Best-match scoring (mirrors SetResolutionIntent)
 
 func bestMatch(in modes: [CGDisplayMode], spec: ResolutionSpec) -> CGDisplayMode? {
-    modes.min { lhs, rhs in score(lhs, spec: spec) < score(rhs, spec: spec) }
-}
-
-func score(_ m: CGDisplayMode, spec: ResolutionSpec) -> Int {
-    let sizeDelta = abs(m.width - spec.width) + abs(m.height - spec.height)
-    let hidpi = (m.isHiDPI == spec.preferHiDPI) ? 0 : 50
-    var hz = 0
-    if let want = spec.refreshHz, let got = m.refreshHz {
-        hz = abs(want - got) * 2
-    } else if let want = spec.refreshHz, m.refreshHz == nil {
-        hz = want
-    }
-    return sizeDelta + hidpi + hz
+    ModeScoring.bestMatch(
+        in: modes,
+        request: ModeScoring.Request(
+            width: spec.width,
+            height: spec.height,
+            refreshHz: spec.refreshHz,
+            preferHiDPI: spec.preferHiDPI
+        )
+    )
 }
 
 // MARK: - Commands

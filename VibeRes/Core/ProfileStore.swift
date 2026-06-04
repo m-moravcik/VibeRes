@@ -1,6 +1,9 @@
 import CoreGraphics
 import Foundation
 import Observation
+import os.log
+
+private let viberesLog = Logger(subsystem: "sk.moravcik.VibeRes", category: "apply")
 
 /// User-facing intent at save time: should this entry match a specific
 /// physical display (EDID-locked) or any monitor of that role.
@@ -412,7 +415,14 @@ final class ProfileStore {
                         if let cur = info.currentMode {
                             batchSnapshot.append((info.id, info.name, cur))
                         }
+                        // Diagnostic logging — when apply silently fails the
+                        // user has zero visibility into why. The print goes
+                        // to Console.app under sk.moravcik.VibeRes; remove
+                        // once the multi-monitor apply gotcha is fully
+                        // understood and surfaced as a structured outcome.
+                        viberesLog.notice("apply \(info.name, privacy: .public): \(info.currentMode?.width ?? 0)×\(info.currentMode?.height ?? 0) → \(mode.width)×\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) modeID=\(mode.ioDisplayModeID)")
                         try ResolutionSwitcher.apply(mode, to: info.id)
+                        viberesLog.notice("apply \(info.name, privacy: .public): SUCCESS")
                     }
                     let status: ApplyOutcome.Status = {
                         if isAlready { return .alreadyApplied }
@@ -428,6 +438,7 @@ final class ProfileStore {
                         status: status
                     ))
                 } catch {
+                    viberesLog.error("apply \(info.name, privacy: .public): FAILED with \(String(describing: error), privacy: .public)")
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
@@ -472,16 +483,30 @@ final class ProfileStore {
     /// the flexible variant would override their precise saved layout with
     /// a generic fallback.
     func profileMatchingExactly(_ liveDisplays: [DisplayInfo]) -> Profile? {
+        profileMatchingExactly(liveDisplays) { entry, display in
+            entry.matcher.matches(display.id)
+        }
+    }
+
+    func profileMatchingExactly(
+        _ liveDisplays: [DisplayInfo],
+        entryMatchesDisplay: (Profile.Entry, DisplayInfo) -> Bool
+    ) -> Profile? {
+        let liveIDs = Set(liveDisplays.map(\.id))
         let scored: [(Profile, Int)] = profiles.compactMap { profile in
             guard !profile.entries.isEmpty else { return nil }
 
-            // Every entry must bind to at least one live display, otherwise
-            // the profile isn't a clean fit and we skip it entirely.
+            var matchedIDs: Set<CGDirectDisplayID> = []
+
+            // Every entry must bind to at least one live display, and every
+            // live display must be covered. Auto-apply must not run a profile
+            // that would leave extra monitors untouched.
             for entry in profile.entries {
-                if !liveDisplays.contains(where: { entry.matcher.matches($0.id) }) {
-                    return nil
-                }
+                let matches = liveDisplays.filter { entryMatchesDisplay(entry, $0) }
+                guard !matches.isEmpty else { return nil }
+                matchedIDs.formUnion(matches.map(\.id))
             }
+            guard matchedIDs == liveIDs else { return nil }
 
             // Specificity score — higher = more "this exact setup".
             let score = profile.entries.reduce(0) { acc, entry in
@@ -546,7 +571,21 @@ final class ProfileStore {
                     && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
                     && mode.isHiDPI == entry.isHiDPI
                 let action: ProfileApplyPreview.Row.Action = {
-                    if isAlready { return .alreadyApplied }
+                    if isAlready {
+                        // Report what the display is actually at right now,
+                        // not what the entry asked for. For .anyExternal
+                        // entries targeting a high resolution (e.g. saved
+                        // from a 4K monitor) on a 1080p external, the picked
+                        // mode is the closest available — saying "already at
+                        // 2880×1620" when the display is at 1920×1080 is a
+                        // user-facing lie.
+                        return .alreadyApplied(
+                            currentWidth: mode.width,
+                            currentHeight: mode.height,
+                            currentHz: mode.refreshHz,
+                            currentIsHiDPI: mode.isHiDPI
+                        )
+                    }
                     if isExact { return .willApplyExact }
                     return .willApplyFallback(
                         targetWidth: mode.width,
@@ -571,16 +610,14 @@ final class ProfileStore {
     }
 
     private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry) -> CGDisplayMode? {
-        modes.min { lhs, rhs in score(lhs, entry: entry) < score(rhs, entry: entry) }
-    }
-
-    private func score(_ m: CGDisplayMode, entry: Profile.Entry) -> Int {
-        let sizeDelta = abs(m.width - entry.pointWidth) + abs(m.height - entry.pointHeight)
-        let hidpi = (m.isHiDPI == entry.isHiDPI) ? 0 : 50
-        var hz = 0
-        if let want = entry.refreshHz, let got = m.refreshHz {
-            hz = abs(want - got) * 2
-        }
-        return sizeDelta + hidpi + hz
+        ModeScoring.bestMatch(
+            in: modes,
+            request: ModeScoring.Request(
+                width: entry.pointWidth,
+                height: entry.pointHeight,
+                refreshHz: entry.refreshHz,
+                preferHiDPI: entry.isHiDPI
+            )
+        )
     }
 }

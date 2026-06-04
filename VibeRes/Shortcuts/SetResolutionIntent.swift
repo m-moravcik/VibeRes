@@ -71,19 +71,15 @@ struct SetResolutionIntent: AppIntent {
     /// Scoring: lower is better. Penalises distance from requested size, mismatched
     /// HiDPI preference, and (when refreshHz is set) distance from requested refresh.
     private func bestMatch(in modes: [CGDisplayMode]) -> CGDisplayMode? {
-        modes.min { lhs, rhs in score(lhs) < score(rhs) }
-    }
-
-    private func score(_ m: CGDisplayMode) -> Double {
-        let sizeDelta = abs(m.width - width) + abs(m.height - height)
-        let hidpiPenalty = (m.isHiDPI == preferHiDPI) ? 0 : 50
-        var hzPenalty = 0
-        if let want = refreshHz, let got = m.refreshHz {
-            hzPenalty = abs(want - got) * 2
-        } else if let want = refreshHz, m.refreshHz == nil {
-            hzPenalty = want
-        }
-        return Double(sizeDelta + hidpiPenalty + hzPenalty)
+        ModeScoring.bestMatch(
+            in: modes,
+            request: ModeScoring.Request(
+                width: width,
+                height: height,
+                refreshHz: refreshHz,
+                preferHiDPI: preferHiDPI
+            )
+        )
     }
 }
 

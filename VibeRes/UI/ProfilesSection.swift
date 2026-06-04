@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let autoApplyLog = Logger(subsystem: "sk.moravcik.VibeRes", category: "autoApply")
 
 /// Compact profiles strip shown above the displays list. Each saved profile is one
 /// pill button; tap to apply, right-click for actions. "+" pill expands an inline
@@ -10,9 +13,9 @@ struct ProfilesSection: View {
     @State private var mode: Mode = .idle
     @State private var lastNote: String?
     @State private var lastNoteTone: NoteTone = .info
-    /// Tracks the last `setChangeToken` we acted on so we don't re-apply the
-    /// same display add/remove event multiple times if the popover redraws.
-    @State private var lastObservedSetToken: Int = -1
+    /// Tracks the last auto-apply signal we acted on so we don't re-apply the
+    /// same display/wake event multiple times if the popover redraws.
+    @State private var lastObservedAutoApplyToken: Int = -1
     @FocusState private var nameFieldFocused: Bool
 
     enum NoteTone {
@@ -131,14 +134,15 @@ struct ProfilesSection: View {
                 confirmApplyPanel
             }
 
-            // Watch for display add/remove events and auto-apply the matching
-            // profile when one exists. Mode-only changes (user manually picks
-            // a different resolution) don't bump the token, so they're ignored.
+            // Watch for display add/remove events and settled wake refreshes;
+            // mode-only changes (user manually picks a different resolution)
+            // don't bump the token, so they're ignored.
             EmptyView()
-                .onChange(of: displays.setChangeToken) { _, newToken in
+                .onChange(of: displays.autoApplyToken) { _, newToken in
+                    autoApplyLog.notice("token onChange: new=\(newToken) lastObserved=\(lastObservedAutoApplyToken) autoApplyEnabled=\(preferences.autoApplyOnDisplayChange)")
                     guard preferences.autoApplyOnDisplayChange else { return }
-                    guard newToken != lastObservedSetToken else { return }
-                    lastObservedSetToken = newToken
+                    guard newToken != lastObservedAutoApplyToken else { return }
+                    lastObservedAutoApplyToken = newToken
                     autoApplyMatchingProfile()
                 }
 
@@ -376,9 +380,12 @@ struct ProfilesSection: View {
 
     private func rowIcon(_ action: ProfileApplyPreview.Row.Action) -> String {
         switch action {
-        case .willApplyExact: return "checkmark.circle.fill"
-        case .willApplyFallback: return "arrow.triangle.2.circlepath"
-        case .alreadyApplied: return "equal.circle"
+        // Blue arrow = "this will change". Green check is reserved for
+        // displays that are *already* at the target mode — green next to a
+        // mode change reads as "OK, done" which misleads users.
+        case .willApplyExact: return "arrow.right.circle.fill"
+        case .willApplyFallback: return "arrow.right.circle"
+        case .alreadyApplied: return "checkmark.circle.fill"
         case .skippedNotConnected: return "exclamationmark.triangle.fill"
         case .skippedNoMode: return "questionmark.circle.fill"
         }
@@ -386,9 +393,9 @@ struct ProfilesSection: View {
 
     private func rowTint(_ action: ProfileApplyPreview.Row.Action) -> Color {
         switch action {
-        case .willApplyExact: return .green
+        case .willApplyExact: return .accentColor
         case .willApplyFallback: return .orange
-        case .alreadyApplied: return .secondary
+        case .alreadyApplied: return .green
         case .skippedNotConnected: return .red
         case .skippedNoMode: return .orange
         }
@@ -404,13 +411,31 @@ struct ProfilesSection: View {
         case .willApplyFallback(let w, let h, let hz):
             let got = "\(w)×\(h)" + (hz.map { " @ \($0)Hz" } ?? "")
             return "wanted \(saved), will use \(got)"
-        case .alreadyApplied:
-            return "already at \(saved)"
+        case .alreadyApplied(let w, let h, let hz, let isHiDPI):
+            let current = "\(w)×\(h)"
+                + (hz.map { " @ \($0)Hz" } ?? "")
+                + (isHiDPI ? " HiDPI" : "")
+            return rowAlreadyMatchesSaved(row, width: w, height: h, hz: hz, isHiDPI: isHiDPI)
+                ? "already at \(saved)"
+                : "already at \(current) (closest to \(saved))"
         case .skippedNotConnected:
             return "not connected — skip"
         case .skippedNoMode:
             return "no usable mode for \(row.savedWidth)×\(row.savedHeight)"
         }
+    }
+
+    private func rowAlreadyMatchesSaved(
+        _ row: ProfileApplyPreview.Row,
+        width: Int,
+        height: Int,
+        hz: Int?,
+        isHiDPI: Bool
+    ) -> Bool {
+        width == row.savedWidth
+            && height == row.savedHeight
+            && (row.savedHz == nil || row.savedHz == hz)
+            && isHiDPI == row.savedIsHiDPI
     }
 
     private func warningIcon(for c: DisplaySetClassifier.Classification) -> String {
@@ -1141,17 +1166,20 @@ struct ProfilesSection: View {
         }
     }
 
-    /// Triggered by DisplayStore.setChangeToken bumps. Looks for a saved
+    /// Triggered by DisplayStore.autoApplyToken bumps. Looks for a saved
     /// profile that matches the new display set and applies it. Silent on
     /// no-match so users without saved profiles aren't bothered.
     /// Also silent when every entry was already at its target mode — no
     /// point announcing "applied" if nothing actually changed.
     private func autoApplyMatchingProfile() {
         guard let match = profiles.profileMatchingExactly(displays.displays) else {
+            autoApplyLog.notice("autoApply: no matching profile, skipping")
             return
         }
+        autoApplyLog.notice("autoApply: invoking applyDetailed for '\(match.name, privacy: .public)' across \(displays.displays.count) display(s)")
         let outcomes = profiles.applyDetailed(match, displays: displays.displays)
         let didChangeAnything = outcomes.contains(where: \.didChange)
+        autoApplyLog.notice("autoApply: outcomes=\(outcomes.count) didChange=\(didChangeAnything)")
         if didChangeAnything {
             announce("Applied '\(match.name)' for the new display setup.", tone: .info)
         }
@@ -1276,12 +1304,7 @@ private struct ProfilePill: View {
             // Cleared on hover-out to keep the cache small.
             cachedPreview = hover ? previewProvider() : nil
         }
-        .popover(isPresented: $isHovering, arrowEdge: .top) {
-            if let preview = cachedPreview {
-                hoverPreviewContent(preview)
-                    .allowsHitTesting(false)
-            }
-        }
+        .help(plainPreviewTooltip)
         .contextMenu {
             // Left-click on the pill already applies — no Apply item to duplicate it.
             // Context menu is for actions without a dedicated UI control.
@@ -1295,74 +1318,65 @@ private struct ProfilePill: View {
         }
     }
 
-    @ViewBuilder
-    private func hoverPreviewContent(_ preview: ProfileApplyPreview) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Applying '\(profile.name)' will:")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 2)
-            ForEach(preview.rows) { row in
-                HStack(alignment: .top, spacing: 6) {
-                    Image(systemName: previewIcon(row.action))
-                        .foregroundStyle(previewTint(row.action))
-                        .font(.system(size: 10))
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(row.displayName)
-                            .font(.system(size: 11, weight: .medium))
-                        Text(previewDetail(row))
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
+    /// Plain-text apply preview for the system tooltip. We deliberately avoid
+    /// SwiftUI `.popover` here: it creates an NSPanel that intercepts the first
+    /// click on the pill while the preview is visible.
+    private var plainPreviewTooltip: String {
+        guard let preview = cachedPreview else { return tooltip }
+        var lines = ["Applying '\(profile.name)' will:"]
+        for row in preview.rows {
+            let prefix: String = {
+                switch row.action {
+                case .willApplyExact: return "✓"
+                case .willApplyFallback: return "⚠"
+                case .alreadyApplied: return "="
+                case .skippedNotConnected: return "✗"
+                case .skippedNoMode: return "?"
                 }
-            }
-            if !preview.untouched.isEmpty {
-                Divider().padding(.vertical, 1)
-                Text("Leaves untouched: " + preview.untouched.joined(separator: ", "))
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
-            }
+            }()
+            lines.append("  \(prefix) \(row.displayName) — \(previewDetail(row))")
         }
-        .padding(10)
-        .frame(maxWidth: 280)
-    }
-
-    private func previewIcon(_ action: ProfileApplyPreview.Row.Action) -> String {
-        switch action {
-        case .willApplyExact: return "checkmark.circle.fill"
-        case .willApplyFallback: return "arrow.triangle.2.circlepath"
-        case .alreadyApplied: return "equal.circle"
-        case .skippedNotConnected: return "exclamationmark.triangle.fill"
-        case .skippedNoMode: return "questionmark.circle.fill"
+        if !preview.untouched.isEmpty {
+            lines.append("Leaves untouched: " + preview.untouched.joined(separator: ", "))
         }
-    }
-
-    private func previewTint(_ action: ProfileApplyPreview.Row.Action) -> Color {
-        switch action {
-        case .willApplyExact: return .green
-        case .willApplyFallback: return .orange
-        case .alreadyApplied: return .secondary
-        case .skippedNotConnected: return .red
-        case .skippedNoMode: return .orange
-        }
+        return lines.joined(separator: "\n")
     }
 
     private func previewDetail(_ row: ProfileApplyPreview.Row) -> String {
         let saved = "\(row.savedWidth)×\(row.savedHeight)"
             + (row.savedHz.map { " @ \($0)Hz" } ?? "")
+            + (row.savedIsHiDPI ? " HiDPI" : "")
         switch row.action {
         case .willApplyExact:
             return "→ \(saved)"
         case .willApplyFallback(let w, let h, let hz):
             let got = "\(w)×\(h)" + (hz.map { " @ \($0)Hz" } ?? "")
             return "wanted \(saved), will use \(got)"
-        case .alreadyApplied:
-            return "already at \(saved)"
+        case .alreadyApplied(let w, let h, let hz, let isHiDPI):
+            let current = "\(w)×\(h)"
+                + (hz.map { " @ \($0)Hz" } ?? "")
+                + (isHiDPI ? " HiDPI" : "")
+            return rowAlreadyMatchesSaved(row, width: w, height: h, hz: hz, isHiDPI: isHiDPI)
+                ? "already at \(saved)"
+                : "already at \(current) (closest to \(saved))"
         case .skippedNotConnected:
             return "not connected — skip"
         case .skippedNoMode:
             return "no usable mode for \(row.savedWidth)×\(row.savedHeight)"
         }
+    }
+
+    private func rowAlreadyMatchesSaved(
+        _ row: ProfileApplyPreview.Row,
+        width: Int,
+        height: Int,
+        hz: Int?,
+        isHiDPI: Bool
+    ) -> Bool {
+        width == row.savedWidth
+            && height == row.savedHeight
+            && (row.savedHz == nil || row.savedHz == hz)
+            && isHiDPI == row.savedIsHiDPI
     }
 
     /// True if the profile contains an "any external" matcher — these

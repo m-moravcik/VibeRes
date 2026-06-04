@@ -4,6 +4,36 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.1] — 2026-06-04
+
+**Highlights:** More reliable wake/display recovery, safer profile auto-apply,
+and consistent resolution matching across GUI, CLI, and Shortcuts.
+
+### Changed
+
+- Wake-from-sleep refresh now samples displays through a short settle window and
+  suppresses normal display callbacks until the settled snapshot is committed.
+  This avoids auto-applying profiles against transient empty or partial display
+  lists while WindowServer is still waking up.
+- Wake auto-apply now runs only when the same displays come back with changed
+  current mode IDs. Ordinary wakes that preserve the user's manually selected
+  resolution are left alone.
+- Wake-triggered auto-apply clears stale single-step revert history before
+  raising the auto-apply signal, so the footer cannot offer an undo for an
+  unrelated pre-sleep action.
+- Profile auto-apply now requires every live display to be covered by the saved
+  profile. A profile that matches only a subset of connected displays no longer
+  silently applies to part of the desk.
+- GUI profile preview, CLI, and Shortcuts now share one mode-scoring path. When
+  refresh rate is omitted, tied modes pick the highest available refresh rate.
+- Profile hover preview uses a non-interactive tooltip and compares structured
+  mode fields, including HiDPI, instead of formatted strings.
+
+### Tests
+
+- 110 → 119 (+9): wake refresh transition/effect coverage, exact auto-apply
+  coverage for extra live displays, and shared mode-scoring tie-breakers.
+
 ## [0.8.0] — 2026-05-10
 
 **Highlights:** Apply preview on hover, partial-match warnings for multi-monitor setups, and impossible-to-misconfigure flexible profiles.

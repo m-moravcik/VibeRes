@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import VibeRes
@@ -49,6 +50,17 @@ struct AutoApplyTests {
         return ProfileStore(directory: dir)
     }
 
+    private func info(id: CGDirectDisplayID, name: String) -> DisplayInfo {
+        DisplayInfo(
+            id: id,
+            name: name,
+            isMain: false,
+            modes: [],
+            currentMode: nil,
+            groups: []
+        )
+    }
+
     @Test("No profiles → no match")
     func emptyStoreNoMatch() {
         let store = makeStore()
@@ -94,14 +106,36 @@ struct AutoApplyTests {
         )
         store.add(older)
         store.add(newer)
-        // We can't easily synthesise a real CGDirectDisplayID + matching EDID
-        // in a unit test, but we *can* test the "no match" branch and rely on
-        // the AutoApplyTests suite for empty/no-match. Tie-breaker shape is
-        // covered indirectly by the sort being deterministic.
-        // (This test asserts the function is total, not the tie-breaker
-        // value — for that we'd need an integration test against real
-        // displays.)
-        let result = store.profileMatchingExactly([])
-        #expect(result == nil) // both profiles need an external; none live
+        let result = store.profileMatchingExactly(
+            [info(id: 1, name: "External")],
+            entryMatchesDisplay: { _, _ in true }
+        )
+        #expect(result?.id == newer.id)
+    }
+
+    @Test("Auto-apply ignores profiles that leave a live display uncovered")
+    func exactMatchRejectsExtraLiveDisplays() {
+        let store = makeStore()
+        let profile = Profile(name: "Built-in only", entries: [
+            Profile.Entry(
+                matcher: .builtIn(vendor: 1, model: 2, serial: 3),
+                displayName: "Built-in",
+                pointWidth: 1800,
+                pointHeight: 1169,
+                refreshHz: 120,
+                isHiDPI: true
+            )
+        ])
+        store.add(profile)
+
+        let result = store.profileMatchingExactly(
+            [
+                info(id: 1, name: "Built-in"),
+                info(id: 2, name: "Projector"),
+            ],
+            entryMatchesDisplay: { entry, display in entry.displayName == display.name }
+        )
+
+        #expect(result == nil)
     }
 }

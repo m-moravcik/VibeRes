@@ -101,8 +101,11 @@ struct ProfileApplyPreview: Equatable {
             case willApplyExact
             /// Closest match will be used (rate or size differs).
             case willApplyFallback(targetWidth: Int, targetHeight: Int, targetHz: Int?)
-            /// Already at the saved mode — nothing to do.
-            case alreadyApplied
+            /// Already at the picked mode — nothing to do. Carries the
+            /// *current* mode so the UI can show "already at 1920×1080"
+            /// instead of "already at <saved 2880×1620>" when bestMatch
+            /// landed on a different mode than the entry requested.
+            case alreadyApplied(currentWidth: Int, currentHeight: Int, currentHz: Int?, currentIsHiDPI: Bool)
             /// Matcher binds nothing — entry will be skipped.
             case skippedNotConnected
             /// No usable mode for this resolution on the bound display.

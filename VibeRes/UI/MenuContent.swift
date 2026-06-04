@@ -99,6 +99,13 @@ private struct RootView: View {
                         Text("No displays detected.")
                             .foregroundStyle(.secondary)
                             .padding(Design.Spacing.l)
+                            // Safety net for the launch-race / wake-race case
+                            // where the initial snapshot was empty AND the
+                            // retry loop in DisplayStore also missed. Opening
+                            // the menu is the user's "try again" signal — run
+                            // one extra refresh on appear so they don't have
+                            // to find the Refresh button.
+                            .onAppear { store.refresh() }
                     } else {
                         ForEach(store.displays) { display in
                             DisplayCard(display: display) {

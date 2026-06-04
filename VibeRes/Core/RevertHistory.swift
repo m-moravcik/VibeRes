@@ -60,9 +60,8 @@ final class RevertHistory {
         return snapshot
     }
 
-    /// Drop history without applying anything. Called when displays change
-    /// set composition (a new monitor would make a saved `before` mode
-    /// reference a display that's no longer there).
+    /// Drop history without applying anything. Called when external display
+    /// state changes make a saved `before` mode stale.
     func clear() {
         entries.removeAll()
     }
