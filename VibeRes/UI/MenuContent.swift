@@ -117,6 +117,25 @@ private struct RootView: View {
                 .padding(.horizontal, Design.Spacing.m)
             }
 
+            if let seconds = store.confirmationSecondsRemaining {
+                // The countdown is the safety net; this row is for people who can
+                // see the screen and do not want to wait it out.
+                HStack(spacing: Design.Spacing.s) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(Design.Typography.note)
+                    Text("Keep this resolution? Reverting in \(seconds)s")
+                        .font(Design.Typography.note)
+                    Spacer(minLength: Design.Spacing.s)
+                    Button("Keep") { store.confirmDisplayChange() }
+                        .font(Design.Typography.note)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                }
+                .padding(.horizontal, Design.Spacing.l)
+                .padding(.vertical, Design.Spacing.xs)
+                .background(Color.orange.opacity(0.12))
+            }
+
             FooterBar()
         }
     }
@@ -417,7 +436,7 @@ private struct DisplayDetailView: View {
                 guard !isCurrent else { return }
                 hoveredGroupID = hovering ? group.id : (hoveredGroupID == group.id ? nil : hoveredGroupID)
             },
-            apply: { mode in store.apply(mode, to: display.id) }
+            apply: { mode in store.apply(mode, to: display.id, confirmFirst: preferences.confirmDisplayChanges) }
         )
     }
 

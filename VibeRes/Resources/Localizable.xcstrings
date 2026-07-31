@@ -1058,6 +1058,38 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved, but %@ report the same identity — this profile cannot tell them apart and will set both the same way." } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uložené, ale %@ hlásia rovnakú identitu — tento profil ich nedokáže rozlíšiť a nastaví oba rovnako." } }
       }
+    },
+    "Keep this resolution? Reverting in %llds" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Diese Auflösung behalten? Rückgängig in %lld s" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep this resolution? Reverting in %llds" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ponechať toto rozlíšenie? Vrátenie za %lld s" } }
+      }
+    },
+    "Keep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Behalten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ponechať" } }
+      }
+    },
+    "Confirm resolution changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Auflösungsänderungen bestätigen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm resolution changes" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Potvrdzovať zmeny rozlíšenia" } }
+      }
+    },
+    "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wendet eine neue Auflösung nur für diese Sitzung an und macht sie nach %lld Sekunden rückgängig, sofern du nicht bestätigst. Nützlich, wenn ein Modus deinen Bildschirm schon einmal unlesbar gemacht hat – das Rückgängigmachen passiert von selbst und funktioniert daher auch, wenn du den Knopf nicht sehen kannst." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Použije nové rozlíšenie len pre túto sesiu a po %lld sekundách ho vráti, ak ho nepotvrdíš. Užitočné, ak ti niektorý režim už niekedy nechal nečitateľnú obrazovku — vrátenie prebehne samo, takže funguje aj vtedy, keď tlačidlo nevidíš." } }
+      }
     }
   }
 }

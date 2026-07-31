@@ -34,6 +34,16 @@ themselves in words, and launch-at-login repairs itself.
   of system language. All 117 translatable strings are covered; the remaining
   five are bare units and separators ("Hz", "—") with nothing to translate.
 
+### Added
+
+- **Optional confirmation before a resolution sticks.** Settings → General →
+  "Confirm resolution changes" applies a new mode for the session only and undoes
+  it after 12 seconds unless you press Keep. This is the one thing that could
+  previously leave someone stuck: a mode that makes the screen unreadable hides
+  the popover too, so a button nobody can see is no help — the undo happens on a
+  timer, which works regardless. Off by default, because interrupting the app's
+  core action is the wrong trade for the changes that are fine.
+
 ### Changed
 
 - **Saving a profile warns when two monitors are indistinguishable.** Identical
