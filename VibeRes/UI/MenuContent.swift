@@ -200,6 +200,9 @@ private struct DisplayDetailView: View {
     /// Which row the cursor is currently over. Drives the side popover
     /// preview anchored vertically to that row.
     @State private var hoveredGroupID: String?
+    /// Collapsed by default: the tail of the size list is rarely what someone
+    /// came for. Resets per detail-view appearance, like the hover state.
+    @State private var showSmallerSizes = false
     /// Y-coordinate of the hovered row inside this detail view's coordinate
     /// space, used by the side popover anchor.
     /// Per-row Y midpoints, keyed by ResolutionGroup.id. Updated each
@@ -359,22 +362,36 @@ private struct DisplayDetailView: View {
 
     @ViewBuilder
     private func sizeList(for display: DisplayInfo) -> some View {
-        VStack(spacing: 0) {
-            ForEach(visibleGroups(for: display)) { group in
-                let isCurrent = group.modesByRefresh.contains {
+        let groups = visibleGroups(for: display)
+        let split = ResolutionListPartition.split(
+            sizes: groups.map { (width: $0.pointWidth, height: $0.pointHeight) },
+            currentIndex: groups.firstIndex { group in
+                group.modesByRefresh.contains {
                     $0.mode.ioDisplayModeID == display.currentMode?.ioDisplayModeID
                 }
-                CompactResolutionRow(
-                    group: group,
-                    currentMode: display.currentMode,
-                    isHovered: hoveredGroupID == group.id,
-                    simpleMode: preferences.simpleMode,
-                    onHoverChange: { hovering in
-                        guard !isCurrent else { return }
-                        hoveredGroupID = hovering ? group.id : (hoveredGroupID == group.id ? nil : hoveredGroupID)
-                    },
-                    apply: { mode in store.apply(mode, to: display.id) }
-                )
+            }
+        )
+
+        VStack(spacing: 0) {
+            ForEach(split.primary, id: \.self) { index in
+                row(for: groups[index], on: display)
+            }
+
+            if !split.collapsed.isEmpty {
+                // The small end of the list is available but not in the way.
+                // Collapsed rather than dropped: someone occasionally does want
+                // 1280×720 for a screen share.
+                DisclosureGroup(isExpanded: $showSmallerSizes) {
+                    ForEach(split.collapsed, id: \.self) { index in
+                        row(for: groups[index], on: display)
+                    }
+                } label: {
+                    Text("\(split.collapsed.count) smaller sizes")
+                        .font(Design.Typography.cardSubtitle)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, Design.Spacing.l)
+                .padding(.top, Design.Spacing.xs)
             }
         }
         .task(id: displayID) {
@@ -384,6 +401,24 @@ private struct DisplayDetailView: View {
             guard preferences.livePreviewEnabled else { return }
             desktopSnapshot = await DesktopCapture.snapshot(of: displayID)
         }
+    }
+
+    @ViewBuilder
+    private func row(for group: ResolutionGroup, on display: DisplayInfo) -> some View {
+        let isCurrent = group.modesByRefresh.contains {
+            $0.mode.ioDisplayModeID == display.currentMode?.ioDisplayModeID
+        }
+        CompactResolutionRow(
+            group: group,
+            currentMode: display.currentMode,
+            isHovered: hoveredGroupID == group.id,
+            simpleMode: preferences.simpleMode,
+            onHoverChange: { hovering in
+                guard !isCurrent else { return }
+                hoveredGroupID = hovering ? group.id : (hoveredGroupID == group.id ? nil : hoveredGroupID)
+            },
+            apply: { mode in store.apply(mode, to: display.id) }
+        )
     }
 
     /// Returns the (current mode, hovered group) pair we should preview,

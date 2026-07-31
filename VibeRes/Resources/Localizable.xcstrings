@@ -482,6 +482,14 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : " (+%1$lld more)" } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : " (+%1$lld ďalších)" } }
       }
+    },
+    "%lld smaller sizes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld kleinere Größen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld smaller sizes" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%lld menších rozlíšení" } }
+      }
     }
   }
 }
