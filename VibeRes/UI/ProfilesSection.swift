@@ -294,8 +294,10 @@ struct ProfilesSection: View {
     }
 
     private var suggestedName: String {
-        let n = displays.displays.count
-        return n == 1 ? "Single Display" : "Setup \(profiles.profiles.count + 1)"
+        Profile.suggestedName(
+            displayNames: displays.displays.map(\.name),
+            existingNames: Set(profiles.profiles.map(\.name))
+        )
     }
 
     private func currentModeDescription(_ m: CGDisplayMode) -> String {

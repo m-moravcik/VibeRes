@@ -179,6 +179,34 @@ struct Profile: Identifiable, Codable, Hashable {
 
     /// One-line description for tooltips: "Built-in only" / "Built-in + any external" /
     /// "Built-in + Q3279WG5B" so users can hover a pill and see what it'll touch.
+    /// Default name offered when saving a new profile.
+    ///
+    /// Names the hardware rather than counting profiles: "Built-in + LG
+    /// UltraFine" is something the user can accept or tweak, where "Setup 2"
+    /// forces them to retype the field to get any meaning out of it.
+    static func suggestedName(displayNames: [String], existingNames: Set<String>) -> String {
+        let base: String
+        switch displayNames.count {
+        case 0:
+            base = "New profile"
+        case 1:
+            base = displayNames[0]
+        default:
+            let joined = displayNames.joined(separator: " + ")
+            // Profile pills are narrow; past ~30 characters the name is
+            // truncated anyway, so collapse to the first display plus a count.
+            base = joined.count <= 30
+                ? joined
+                : "\(displayNames[0]) +\(displayNames.count - 1)"
+        }
+
+        guard existingNames.contains(base) else { return base }
+        // Start at 2: the unsuffixed name is conceptually the first.
+        var suffix = 2
+        while existingNames.contains("\(base) \(suffix)") { suffix += 1 }
+        return "\(base) \(suffix)"
+    }
+
     var humanSummary: String {
         let parts = entries.map { entry -> String in
             switch entry.matcher {
