@@ -187,15 +187,6 @@ private struct DisplayCard: View {
 
 // MARK: - Detail: one display's modes
 
-/// Carries per-row Y-midpoints from individual `CompactResolutionRow`
-/// backgrounds up to `DisplayDetailView`, where the side popover anchor
-/// reads the hovered row's Y synchronously.
-private struct RowFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [String: CGFloat] = [:]
-    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
-}
 
 private struct DisplayDetailView: View {
     let displayID: CGDirectDisplayID
@@ -209,13 +200,13 @@ private struct DisplayDetailView: View {
     /// Which row the cursor is currently over. Drives the side popover
     /// preview anchored vertically to that row.
     @State private var hoveredGroupID: String?
+    /// Collapsed by default: the tail of the size list is rarely what someone
+    /// came for. Resets per detail-view appearance, like the hover state.
+    @State private var showSmallerSizes = false
     /// Y-coordinate of the hovered row inside this detail view's coordinate
     /// space, used by the side popover anchor.
-    @State private var hoveredRowY: CGFloat = 40
     /// Per-row Y midpoints, keyed by ResolutionGroup.id. Updated each
     /// render via PreferenceKey so onHoverChange can read the right Y
-    /// for the row being entered without an async onChange round trip.
-    @State private var rowFrames: [String: CGFloat] = [:]
 
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
@@ -323,7 +314,7 @@ private struct DisplayDetailView: View {
                             Text("HiDPI")
                         }
                     }
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -371,27 +362,36 @@ private struct DisplayDetailView: View {
 
     @ViewBuilder
     private func sizeList(for display: DisplayInfo) -> some View {
-        VStack(spacing: 0) {
-            ForEach(visibleGroups(for: display)) { group in
-                let isCurrent = group.modesByRefresh.contains {
+        let groups = visibleGroups(for: display)
+        let split = ResolutionListPartition.split(
+            sizes: groups.map { (width: $0.pointWidth, height: $0.pointHeight) },
+            currentIndex: groups.firstIndex { group in
+                group.modesByRefresh.contains {
                     $0.mode.ioDisplayModeID == display.currentMode?.ioDisplayModeID
                 }
-                // GeometryReader background reports each row's Y to the
-                // shared `rowFrames` map every render. The popover anchor
-                // then reads the hovered row's Y synchronously, avoiding
-                // the "preview opens at the top, then jumps" lag from the
-                // previous onChange-based implementation.
-                CompactResolutionRow(
-                    group: group,
-                    currentMode: display.currentMode,
-                    isHovered: hoveredGroupID == group.id,
-                    simpleMode: preferences.simpleMode,
-                    onHoverChange: { hovering in
-                        guard !isCurrent else { return }
-                        hoveredGroupID = hovering ? group.id : (hoveredGroupID == group.id ? nil : hoveredGroupID)
-                    },
-                    apply: { mode in store.apply(mode, to: display.id) }
-                )
+            }
+        )
+
+        VStack(spacing: 0) {
+            ForEach(split.primary, id: \.self) { index in
+                row(for: groups[index], on: display)
+            }
+
+            if !split.collapsed.isEmpty {
+                // The small end of the list is available but not in the way.
+                // Collapsed rather than dropped: someone occasionally does want
+                // 1280×720 for a screen share.
+                DisclosureGroup(isExpanded: $showSmallerSizes) {
+                    ForEach(split.collapsed, id: \.self) { index in
+                        row(for: groups[index], on: display)
+                    }
+                } label: {
+                    Text("\(split.collapsed.count) smaller sizes")
+                        .font(Design.Typography.cardSubtitle)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, Design.Spacing.l)
+                .padding(.top, Design.Spacing.xs)
             }
         }
         .task(id: displayID) {
@@ -403,32 +403,22 @@ private struct DisplayDetailView: View {
         }
     }
 
-    /// Content of the side popover. Wrapped in a Group so we can attach
-    /// `.interactiveDismissDisabled()` (macOS 13+ modifier that stops the
-    /// popover from auto-dismissing when the user clicks anywhere "outside"
-    /// the visible content — including, importantly, on a refresh chip
-    /// underneath this popover's window). Without it the first click on
-    /// any chip triggered popover-dismiss instead of the chip action.
     @ViewBuilder
-    private func previewPopoverContent(for display: DisplayInfo) -> some View {
-        if let resolved = previewTarget(for: display) {
-            PreviewBox(
-                currentWidth: resolved.cur.width,
-                currentHeight: resolved.cur.height,
-                proposedWidth: resolved.group.pointWidth,
-                proposedHeight: resolved.group.pointHeight,
-                maxSize: 110,
-                desktopImage: preferences.livePreviewEnabled ? desktopSnapshot : nil
-            )
-            .padding(8)
-            .interactiveDismissDisabled()
-            .allowsHitTesting(false)
-        } else {
-            // Empty placeholder — popover is briefly opened with no target
-            // during hover transitions; rendering an empty 1pt view keeps
-            // the system from logging a SwiftUI warning.
-            Color.clear.frame(width: 1, height: 1)
+    private func row(for group: ResolutionGroup, on display: DisplayInfo) -> some View {
+        let isCurrent = group.modesByRefresh.contains {
+            $0.mode.ioDisplayModeID == display.currentMode?.ioDisplayModeID
         }
+        CompactResolutionRow(
+            group: group,
+            currentMode: display.currentMode,
+            isHovered: hoveredGroupID == group.id,
+            simpleMode: preferences.simpleMode,
+            onHoverChange: { hovering in
+                guard !isCurrent else { return }
+                hoveredGroupID = hovering ? group.id : (hoveredGroupID == group.id ? nil : hoveredGroupID)
+            },
+            apply: { mode in store.apply(mode, to: display.id) }
+        )
     }
 
     /// Returns the (current mode, hovered group) pair we should preview,
@@ -491,21 +481,19 @@ private struct FooterBar: View {
                     MenuRow(
                         icon: "arrow.uturn.backward.circle",
                         label: revertLabel,
-                        // No shortcut label: ⌘Z would only work while the
-                        // popover holds key focus, and the act of applying
-                        // a resolution typically dismisses it. Showing the
-                        // shortcut text would advertise a behaviour that
-                        // fails most of the time. Click the row instead.
-                        shortcut: nil,
+                        // The label was previously omitted because applying a
+                        // resolution dismissed the popover, so ⌘Z lost key focus
+                        // before anyone could press it. That dismissal was a bug
+                        // in the debounced refresh path and is fixed, so the
+                        // shortcut now works exactly when this row is visible
+                        // and can be advertised honestly.
+                        shortcut: "⌘Z",
                         action: {
                             store.performRevert()
                             // No toast — displays jump back, the row
                             // disappears, that's the feedback.
                         }
                     )
-                    // Keep the binding so power users who reopen the
-                    // popover and hit ⌘Z still get the revert; we just
-                    // don't promise it in the label.
                     .keyboardShortcut("z")
                 }
 
@@ -655,13 +643,13 @@ private struct UpdateBanner: View {
                     Text("Update available")
                         .font(.system(size: 12, weight: .semibold))
                     Text("\(versionLabel(latestVersion)) on GitHub — click to view")
-                        .font(.system(size: 10))
+                        .font(Design.Typography.note)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 Spacer()
                 Image(systemName: "arrow.up.right.square")
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -699,7 +687,7 @@ private struct BackButton: View {
                     .font(.system(size: 11, weight: .bold))
                     .accessibilityHidden(true)
                 Text("Back")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Design.Typography.control)
             }
             .foregroundStyle(isHovering ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.primary))
             .padding(.horizontal, 9)
@@ -720,12 +708,13 @@ private struct BackButton: View {
 
 // MARK: - Compact resolution row (new design)
 
-/// Cleaner replacement for ResolutionRow:
-/// - drops the inline real-estate badge (it was visually competing with the
-///   refresh chips and crowded the row)
-/// - bigger row padding, clearer typography
-/// - refresh rates as a native segmented Picker — readable, accessible,
-///   and consistent with other macOS controls
+/// One row per point size.
+///
+/// The inline real-estate badge is deliberately absent: it competed visually
+/// with the refresh chips and crowded the row. The percentage still reaches the
+/// user through `tooltipText`. Keep it that way unless the row layout changes.
+/// Refresh rates render as a native segmented Picker for accessibility and
+/// consistency with other macOS controls.
 private struct CompactResolutionRow: View {
     let group: ResolutionGroup
     let currentMode: CGDisplayMode?
@@ -800,7 +789,7 @@ private struct CompactResolutionRow: View {
     private var simpleHzLabel: some View {
         if let preferred = preferredMode {
             Text(preferred.refreshHz.map { "\($0) Hz" } ?? "")
-                .font(.system(size: 11).monospacedDigit())
+                .font(Design.Typography.cardSubtitle)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
         }
@@ -886,143 +875,19 @@ private struct CompactResolutionRow: View {
     }
 
     private var areaDelta: String {
-        guard let cur = currentMode else { return "" }
-        let curArea = Double(cur.width) * Double(cur.height)
-        let propArea = Double(group.pointWidth) * Double(group.pointHeight)
-        guard curArea > 0 else { return "" }
-        let pct = Int(((propArea - curArea) / curArea * 100).rounded())
-        if pct == 0 { return "" }
+        guard let cur = currentMode,
+              let pct = RealEstateBadge.percentChange(
+                  currentWidth: cur.width, currentHeight: cur.height,
+                  proposedWidth: group.pointWidth, proposedHeight: group.pointHeight
+              ),
+              pct != 0
+        else { return "" }
         let sign = pct > 0 ? "+" : "−"
         return " · \(sign)\(abs(pct))% screen space"
     }
 }
 
-private struct ResolutionRow: View {
-    let group: ResolutionGroup
-    let currentMode: CGDisplayMode?
-    let apply: (CGDisplayMode) -> Void
-    @State private var isHovering = false
 
-    private var currentModeID: Int32? { currentMode?.ioDisplayModeID }
-
-    var body: some View {
-        HStack(spacing: Design.Spacing.m) {
-            Image(systemName: isCurrentSize ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 11))
-                .foregroundStyle(isCurrentSize ? AnyShapeStyle(Design.Palette.rowSelectedTint) : AnyShapeStyle(.tertiary))
-                .frame(width: 14)
-
-            Text(formatSize(group.pointWidth, group.pointHeight))
-                .font(isCurrentSize ? Design.Typography.rowBold : Design.Typography.row)
-                .fixedSize()
-
-            if !isCurrentSize, let cur = currentMode {
-                RealEstateBadge(
-                    currentWidth: cur.width,
-                    currentHeight: cur.height,
-                    proposedWidth: group.pointWidth,
-                    proposedHeight: group.pointHeight
-                )
-            }
-
-            Spacer(minLength: Design.Spacing.s)
-
-            if group.modesByRefresh.count <= 1 {
-                if let only = group.modesByRefresh.first, only.hz > 0 {
-                    Text("\(only.hz) Hz")
-                        .font(Design.Typography.chip)
-                        .foregroundStyle(.secondary)
-                        .fixedSize()
-                }
-            } else {
-                HStack(spacing: 3) {
-                    ForEach(group.modesByRefresh, id: \.hz) { entry in
-                        RefreshChip(
-                            hz: entry.hz,
-                            isActive: entry.mode.ioDisplayModeID == currentModeID,
-                            action: { apply(entry.mode) }
-                        )
-                    }
-                }
-                .fixedSize()
-            }
-        }
-        .padding(.horizontal, Design.Spacing.l)
-        .padding(.vertical, Design.Layout.rowVerticalPadding)
-        .background(rowBackground)
-        .contentShape(Rectangle())
-        .onHover { isHovering = $0 }
-        .onTapGesture {
-            if let best = group.modesByRefresh.last?.mode {
-                apply(best)
-            }
-        }
-        .popover(isPresented: .constant(isHovering && !isCurrentSize), arrowEdge: .trailing) {
-            if let cur = currentMode {
-                PreviewBox(
-                    currentWidth: cur.width,
-                    currentHeight: cur.height,
-                    proposedWidth: group.pointWidth,
-                    proposedHeight: group.pointHeight,
-                    maxSize: 120
-                )
-                .padding(8)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var rowBackground: some View {
-        if isCurrentSize {
-            Design.Palette.rowSelectedFill
-        } else if isHovering {
-            Color.secondary.opacity(0.08)
-        } else {
-            Color.clear
-        }
-    }
-
-    private var isCurrentSize: Bool {
-        guard let id = currentModeID else { return false }
-        return group.modesByRefresh.contains { $0.mode.ioDisplayModeID == id }
-    }
-
-    private func formatSize(_ w: Int, _ h: Int) -> String {
-        "\(formatThousands(w)) × \(formatThousands(h))"
-    }
-}
-
-private struct RefreshChip: View {
-    let hz: Int
-    let isActive: Bool
-    let action: () -> Void
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Text(hz > 0 ? "\(hz)" : "—")
-                .font(isActive ? Design.Typography.chipActive : Design.Typography.chip)
-                .foregroundStyle(isActive ? Color.white : Color.primary)
-                .fixedSize()
-                .frame(minWidth: Design.Layout.chipMinWidth)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(
-                    RoundedRectangle(cornerRadius: Design.Radius.chip, style: .continuous)
-                        .fill(chipFill)
-                )
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-        .help(hz > 0 ? "\(hz) Hz" : "Unknown refresh rate")
-    }
-
-    private var chipFill: Color {
-        if isActive { return Color.accentColor }
-        if isHovering { return Color.secondary.opacity(0.32) }
-        return Design.Palette.chipFill
-    }
-}
 
 // MARK: - Number formatting (shared)
 

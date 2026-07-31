@@ -212,7 +212,7 @@ func cmdSet(_ needle: String, _ specStr: String) {
         try ResolutionSwitcher.apply(mode, to: display.id)
         print("\(display.name) → \(mode.cliDescription)")
     } catch {
-        fail("\(error)")
+        fail(error.userFacingText)
     }
 }
 

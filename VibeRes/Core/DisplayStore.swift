@@ -229,7 +229,9 @@ final class DisplayStore {
     /// Coalesces bursts of reconfiguration callbacks (macOS often fires several in rapid
     /// succession during a single mode change) into one refresh ~200ms after the last event.
     /// This also avoids briefly seeing transient/ghost displays during the change.
-    fileprivate func scheduleRefresh() {
+    /// Internal rather than fileprivate so tests can drive the debounced
+    /// reconfiguration path directly instead of posting a global notification.
+    func scheduleRefresh() {
         let decision = Self.callbackRefreshDecision(wakeRefreshActive: pendingWakeRefresh != nil)
         if decision.shouldCancelPendingRefresh {
             pendingRefresh?.cancel()
@@ -243,9 +245,15 @@ final class DisplayStore {
         pendingRefresh?.cancel()
         pendingRefresh = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .milliseconds(200))
-            guard !Task.isCancelled else { return }
-            _ = self?.applyRefresh(triggeredByCallback: true)
-            self?.dismissStaleMenuBarPopover()
+            guard !Task.isCancelled, let self else { return }
+            // Honour the same rule the wake path uses. Dismissing
+            // unconditionally closed the popover ~200ms after every mode change,
+            // because a resolution change also fires a reconfiguration
+            // callback — taking the outcome note and the Revert row with it.
+            let transition = self.applyRefresh(triggeredByCallback: true)
+            if transition.shouldDismissMenuBarPopover {
+                self.dismissStaleMenuBarPopover()
+            }
         }
     }
 
@@ -308,7 +316,16 @@ final class DisplayStore {
     /// Force-close every status-bar / popover window (visible or hidden) AND
     /// reset its cached frame origin so the next click rebuilds the panel
     /// with fresh coordinates derived from the updated screen geometry.
+    /// Test seam. The real implementation hunts down an AppKit window, which a
+    /// unit test has no business doing; overriding it lets a test observe
+    /// *whether* a refresh decided to dismiss.
+    var dismissStalePopoverOverride: (() -> Void)?
+
     private func dismissStaleMenuBarPopover() {
+        if let dismissStalePopoverOverride {
+            dismissStalePopoverOverride()
+            return
+        }
         for window in NSApp.windows {
             // MenuBarExtra panels are not standard NSWindows — they're internal
             // _NSPopoverWindow / NSStatusBarWindow subclasses. Match by class
@@ -342,7 +359,7 @@ final class DisplayStore {
             lastError = nil
             refresh()
         } catch {
-            lastError = "\(error)"
+            lastError = error.userFacingText
         }
     }
 

@@ -446,7 +446,7 @@ final class ProfileStore {
                         requestedHz: entry.refreshHz,
                         appliedSize: nil,
                         appliedHz: nil,
-                        status: .failed("\(error)")
+                        status: .failed(error.userFacingText)
                     ))
                 }
             }

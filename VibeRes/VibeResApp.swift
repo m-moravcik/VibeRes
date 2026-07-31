@@ -27,7 +27,13 @@ struct VibeResApp: App {
         // Schedule the first check on the next runloop tick so init stays fast.
         Task { @MainActor in checker.checkIfDue() }
         _updateChecker = State(initialValue: checker)
-        _preferences = State(initialValue: Preferences())
+        let prefs = Preferences()
+        // Re-register if a stored "launch at login" intent no longer matches
+        // what SMAppService reports. Without this the setting can quietly stop
+        // working — a replaced or moved bundle invalidates the registration and
+        // the toggle just reads off, with nothing to notice the regression.
+        prefs.launchAtLoginIntent = LoginItem.reconcile(storedIntent: prefs.launchAtLoginIntent)
+        _preferences = State(initialValue: prefs)
     }
 
     var body: some Scene {

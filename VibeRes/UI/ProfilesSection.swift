@@ -11,15 +11,30 @@ struct ProfilesSection: View {
     @Environment(DisplayStore.self) private var displays
     @Environment(Preferences.self) private var preferences
     @State private var mode: Mode = .idle
-    @State private var lastNote: String?
-    @State private var lastNoteTone: NoteTone = .info
+    @State private var lastNote: NoteBody?
+    @State private var lastNoteTone: ApplyOutcomeNote.Tone = .info
     /// Tracks the last auto-apply signal we acted on so we don't re-apply the
     /// same display/wake event multiple times if the popover redraws.
     @State private var lastObservedAutoApplyToken: Int = -1
     @FocusState private var nameFieldFocused: Bool
 
-    enum NoteTone {
-        case info, fallback, problem
+    /// What the note under the pills is currently showing.
+    ///
+    /// Apply results arrive as a structured `ApplyOutcomeNote` so they can be
+    /// localised from values rather than from pre-formatted English. The ad-hoc
+    /// confirmations ("Updated 'Desk'") are String Catalog keys.
+    enum NoteBody: Equatable {
+        case outcome(ApplyOutcomeNote)
+        case message(LocalizedStringKey)
+
+        var text: Text {
+            switch self {
+            // Already resolved through the String Catalog, so verbatim — a
+            // second lookup would search for the translated sentence as a key.
+            case let .outcome(note): return Text(verbatim: note.localizedDescription)
+            case let .message(key): return Text(key)
+            }
+        }
     }
 
     /// What the section is currently showing.
@@ -108,7 +123,7 @@ struct ProfilesSection: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Text("PROFILES")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(Design.Typography.sectionHeader)
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
                     // Tooltip moved off the standalone info-circle icon (which read
@@ -151,7 +166,7 @@ struct ProfilesSection: View {
                     Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
                                        : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
                         .font(.system(size: 9))
-                    Text(note).font(.system(size: 10)).lineLimit(3)
+                    note.text.font(Design.Typography.note).lineLimit(3)
                 }
                 .foregroundStyle(noteColor)
                 .padding(.horizontal, Design.Spacing.l)
@@ -184,7 +199,7 @@ struct ProfilesSection: View {
             .padding(.horizontal, Design.Spacing.l)
         } else {
             FlowLayout(spacing: 4, lineSpacing: 4) {
-                ForEach(profiles.profiles) { profile in
+                ForEach(Array(profiles.profiles.enumerated()), id: \.element.id) { index, profile in
                     ProfilePill(
                         profile: profile,
                         isCurrentlyFlexible: isFlexible(profile),
@@ -227,10 +242,29 @@ struct ProfilesSection: View {
                     } onDelete: {
                         profiles.delete(profile)
                     }
+                    // ⌘1…⌘9 while the popover has key focus. Not a global
+                    // hotkey — those were rejected in the backlog because they
+                    // collide with whatever the user is actually working in.
+                    // Only the first nine get one; a tenth profile would need
+                    // ⌘0, which reads as "zero" not "tenth".
+                    .modifier(ProfileShortcut(index: index))
                 }
                 saveButton
             }
             .padding(.horizontal, Design.Spacing.l)
+        }
+    }
+
+    /// Applies ⌘<n> to the first nine pills and nothing to the rest.
+    private struct ProfileShortcut: ViewModifier {
+        let index: Int
+
+        func body(content: Content) -> some View {
+            if index < 9, let key = KeyEquivalent(exactly: index + 1) {
+                content.keyboardShortcut(key)
+            } else {
+                content
+            }
         }
     }
 
@@ -243,7 +277,7 @@ struct ProfilesSection: View {
                     .font(.system(size: 9, weight: .semibold))
                     .accessibilityHidden(true)
                 Text("Save")
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
             }
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
@@ -279,8 +313,10 @@ struct ProfilesSection: View {
     }
 
     private var suggestedName: String {
-        let n = displays.displays.count
-        return n == 1 ? "Single Display" : "Setup \(profiles.profiles.count + 1)"
+        Profile.suggestedName(
+            displayNames: displays.displays.map(\.name),
+            existingNames: Set(profiles.profiles.map(\.name))
+        )
     }
 
     private func currentModeDescription(_ m: CGDisplayMode) -> String {
@@ -318,7 +354,7 @@ struct ProfilesSection: View {
                 }
 
                 Text(headline(for: state.classification))
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -334,7 +370,7 @@ struct ProfilesSection: View {
                                 .font(.system(size: 9))
                                 .foregroundStyle(.tertiary)
                             Text("Untouched: " + state.preview.untouched.joined(separator: ", "))
-                                .font(.system(size: 10))
+                                .font(Design.Typography.note)
                                 .foregroundStyle(.tertiary)
                                 .lineLimit(2)
                         }
@@ -367,12 +403,12 @@ struct ProfilesSection: View {
         HStack(alignment: .top, spacing: 6) {
             Image(systemName: rowIcon(row.action))
                 .foregroundStyle(rowTint(row.action))
-                .font(.system(size: 10))
+                .font(Design.Typography.note)
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.displayName)
                     .font(.system(size: 11, weight: .medium))
                 Text(rowDetail(row))
-                    .font(.system(size: 10))
+                    .font(Design.Typography.note)
                     .foregroundStyle(.secondary)
             }
         }
@@ -499,7 +535,7 @@ struct ProfilesSection: View {
                 }
 
                 Text("INCLUDE")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(Design.Typography.sectionHeader)
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
 
@@ -539,10 +575,10 @@ struct ProfilesSection: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(choice.displayName)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Design.Typography.control)
                     .lineLimit(1)
                 Text(choice.currentModeDescription)
-                    .font(.system(size: 10))
+                    .font(Design.Typography.note)
                     .foregroundStyle(.secondary)
 
                 // Only externals can be flexible. Built-in is always specific.
@@ -550,7 +586,7 @@ struct ProfilesSection: View {
                     let isBlockedByOther = saveFormAnyExternalConflict(currentID: choice.displayID)
                     Toggle(isOn: bindingForAnyExternal(choice.displayID)) {
                         Text("Match any external monitor")
-                            .font(.system(size: 10))
+                            .font(Design.Typography.note)
                     }
                     .toggleStyle(.checkbox)
                     .controlSize(.mini)
@@ -701,7 +737,7 @@ struct ProfilesSection: View {
                 }
 
                 Text("ENTRIES")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(Design.Typography.sectionHeader)
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
 
@@ -711,7 +747,7 @@ struct ProfilesSection: View {
 
                 if state.entries.allSatisfy({ !$0.isIncluded }) {
                     Text("At least one entry must remain to save.")
-                        .font(.system(size: 10))
+                        .font(Design.Typography.note)
                         .foregroundStyle(.orange)
                 }
 
@@ -748,11 +784,11 @@ struct ProfilesSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(displayNameLabel(for: entry))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Design.Typography.control)
                         .lineLimit(1)
                     if !entry.isBuiltIn && entry.matcherKind == .anyExternal {
                         Text("✱ flex")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(Design.Typography.badge)
                             .foregroundStyle(.tint)
                     }
                     if !isMatcherConnected(entry) {
@@ -767,7 +803,7 @@ struct ProfilesSection: View {
                         let isBlockedByOther = editFormAnyExternalConflict(currentRowID: entry.id)
                         Toggle(isOn: bindingForEditAnyExternal(entry.id)) {
                             Text("Match any external monitor")
-                                .font(.system(size: 10))
+                                .font(Design.Typography.note)
                         }
                         .toggleStyle(.checkbox)
                         .controlSize(.mini)
@@ -792,7 +828,7 @@ struct ProfilesSection: View {
             // values as plain text so the user knows what'll be applied when
             // a matching display becomes available again.
             Text(savedModeDescription(entry))
-                .font(.system(size: 10))
+                .font(Design.Typography.note)
                 .foregroundStyle(.secondary)
         } else {
             // Two-step: pick a (size, HiDPI) bucket, then pick refresh Hz.
@@ -1186,8 +1222,8 @@ struct ProfilesSection: View {
     }
 
     /// Sets a transient note with the given tone, auto-clearing after 6s.
-    private func announce(_ text: String, tone: NoteTone) {
-        lastNote = text
+    private func announce(_ key: LocalizedStringKey, tone: ApplyOutcomeNote.Tone) {
+        lastNote = .message(key)
         lastNoteTone = tone
         scheduleNoteClear()
     }
@@ -1203,44 +1239,15 @@ struct ProfilesSection: View {
     /// Translates outcome list into a single coloured note shown under the pills.
     /// Priority: any problem > any fallback > applied success > all already-at-target.
     private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
-        let problems = outcomes.filter {
-            switch $0.status {
-            case .skippedNoMatch, .skippedNoMode, .failed: return true
-            default: return false
-            }
-        }
-        let fallbacks = outcomes.filter {
-            if case .appliedWithFallback = $0.status { return true }
-            return false
-        }
-        let applied = outcomes.first(where: {
-            if case .applied = $0.status { return true }
-            return false
-        })
-
-        if !problems.isEmpty {
-            lastNoteTone = .problem
-            lastNote = problems.map(\.summary).joined(separator: "; ")
-        } else if !fallbacks.isEmpty {
-            lastNoteTone = .fallback
-            lastNote = fallbacks.map(\.summary).joined(separator: "; ")
-        } else if let first = applied {
-            lastNoteTone = .info
-            lastNote = first.summary + (outcomes.count > 1 ? " (+\(outcomes.count - 1) more)" : "")
-        } else if outcomes.allSatisfy({
-            if case .alreadyApplied = $0.status { return true }
-            return false
-        }) {
-            // Manual apply against an identical state — surface a quiet
-            // confirmation so the user knows the click registered, but
-            // don't pretend something changed.
-            lastNoteTone = .info
-            lastNote = "Already at the saved settings."
-        } else {
+        // Aggregation lives in ApplyOutcomeNote so the precedence rules are
+        // testable and the copy is localisable. See ApplyOutcomeNoteTests.
+        guard let note = ApplyOutcomeNote.make(from: outcomes) else {
             lastNote = nil
+            return
         }
-
-        if lastNote != nil { scheduleNoteClear() }
+        lastNoteTone = note.tone
+        lastNote = .outcome(note)
+        scheduleNoteClear()
     }
 
     private func commitRename(id: UUID) {
@@ -1285,7 +1292,7 @@ private struct ProfilePill: View {
                     .lineLimit(1)
                 if isCurrentlyFlexible {
                     Text("✱")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(Design.Typography.badge)
                         .foregroundStyle(.tint)
                 }
             }
@@ -1399,5 +1406,15 @@ private struct ProfilePill: View {
 
     private var tooltip: String {
         "Apply '\(profile.name)' (\(profile.humanSummary))"
+    }
+}
+
+extension KeyEquivalent {
+    /// `KeyEquivalent` for a single decimal digit, or nil for anything that is
+    /// not one. Keeps the digit-to-key conversion out of the view body and out
+    /// of force-unwrapped `Character` construction.
+    init?(exactly digit: Int) {
+        guard (0...9).contains(digit) else { return nil }
+        self.init(Character("\(digit)"))
     }
 }
