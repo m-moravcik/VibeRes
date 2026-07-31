@@ -89,9 +89,26 @@ struct RealEstateBadge: View {
         )
     }
 
-    /// Percent change in screen real estate (point area). Returns nil if unchanged or
-    /// either side has zero area; rounded to nearest int for compact rendering.
     private var changePercent: Int? {
+        Self.percentChange(
+            currentWidth: currentWidth, currentHeight: currentHeight,
+            proposedWidth: proposedWidth, proposedHeight: proposedHeight
+        )
+    }
+
+    /// Percent change in screen real estate (point area). Returns nil when either
+    /// side has zero area; rounded to nearest int for compact rendering.
+    ///
+    /// Static and internal because the row's tooltip needs the same number. It
+    /// previously had its own copy, and the tests had a third — so the shipping
+    /// arithmetic was the one nothing covered.
+    /// `nonisolated` because it is pure arithmetic: without it the View's
+    /// inferred main-actor isolation makes every caller, including tests, warn
+    /// about crossing an actor boundary to multiply two integers.
+    nonisolated static func percentChange(
+        currentWidth: Int, currentHeight: Int,
+        proposedWidth: Int, proposedHeight: Int
+    ) -> Int? {
         let curArea = Double(currentWidth) * Double(currentHeight)
         let propArea = Double(proposedWidth) * Double(proposedHeight)
         guard curArea > 0, propArea > 0 else { return nil }
