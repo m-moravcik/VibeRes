@@ -314,7 +314,7 @@ private struct DisplayDetailView: View {
                             Text("HiDPI")
                         }
                     }
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -643,13 +643,13 @@ private struct UpdateBanner: View {
                     Text("Update available")
                         .font(.system(size: 12, weight: .semibold))
                     Text("\(versionLabel(latestVersion)) on GitHub — click to view")
-                        .font(.system(size: 10))
+                        .font(Design.Typography.note)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 Spacer()
                 Image(systemName: "arrow.up.right.square")
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -687,7 +687,7 @@ private struct BackButton: View {
                     .font(.system(size: 11, weight: .bold))
                     .accessibilityHidden(true)
                 Text("Back")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Design.Typography.control)
             }
             .foregroundStyle(isHovering ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.primary))
             .padding(.horizontal, 9)
@@ -789,7 +789,7 @@ private struct CompactResolutionRow: View {
     private var simpleHzLabel: some View {
         if let preferred = preferredMode {
             Text(preferred.refreshHz.map { "\($0) Hz" } ?? "")
-                .font(.system(size: 11).monospacedDigit())
+                .font(Design.Typography.cardSubtitle)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
         }

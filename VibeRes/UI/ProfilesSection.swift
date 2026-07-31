@@ -123,7 +123,7 @@ struct ProfilesSection: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Text("PROFILES")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(Design.Typography.sectionHeader)
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
                     // Tooltip moved off the standalone info-circle icon (which read
@@ -166,7 +166,7 @@ struct ProfilesSection: View {
                     Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
                                        : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
                         .font(.system(size: 9))
-                    note.text.font(.system(size: 10)).lineLimit(3)
+                    note.text.font(Design.Typography.note).lineLimit(3)
                 }
                 .foregroundStyle(noteColor)
                 .padding(.horizontal, Design.Spacing.l)
@@ -277,7 +277,7 @@ struct ProfilesSection: View {
                     .font(.system(size: 9, weight: .semibold))
                     .accessibilityHidden(true)
                 Text("Save")
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
             }
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
@@ -354,7 +354,7 @@ struct ProfilesSection: View {
                 }
 
                 Text(headline(for: state.classification))
-                    .font(.system(size: 11))
+                    .font(Design.Typography.footer)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -370,7 +370,7 @@ struct ProfilesSection: View {
                                 .font(.system(size: 9))
                                 .foregroundStyle(.tertiary)
                             Text("Untouched: " + state.preview.untouched.joined(separator: ", "))
-                                .font(.system(size: 10))
+                                .font(Design.Typography.note)
                                 .foregroundStyle(.tertiary)
                                 .lineLimit(2)
                         }
@@ -403,12 +403,12 @@ struct ProfilesSection: View {
         HStack(alignment: .top, spacing: 6) {
             Image(systemName: rowIcon(row.action))
                 .foregroundStyle(rowTint(row.action))
-                .font(.system(size: 10))
+                .font(Design.Typography.note)
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.displayName)
                     .font(.system(size: 11, weight: .medium))
                 Text(rowDetail(row))
-                    .font(.system(size: 10))
+                    .font(Design.Typography.note)
                     .foregroundStyle(.secondary)
             }
         }
@@ -535,7 +535,7 @@ struct ProfilesSection: View {
                 }
 
                 Text("INCLUDE")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(Design.Typography.sectionHeader)
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
 
@@ -575,10 +575,10 @@ struct ProfilesSection: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(choice.displayName)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Design.Typography.control)
                     .lineLimit(1)
                 Text(choice.currentModeDescription)
-                    .font(.system(size: 10))
+                    .font(Design.Typography.note)
                     .foregroundStyle(.secondary)
 
                 // Only externals can be flexible. Built-in is always specific.
@@ -586,7 +586,7 @@ struct ProfilesSection: View {
                     let isBlockedByOther = saveFormAnyExternalConflict(currentID: choice.displayID)
                     Toggle(isOn: bindingForAnyExternal(choice.displayID)) {
                         Text("Match any external monitor")
-                            .font(.system(size: 10))
+                            .font(Design.Typography.note)
                     }
                     .toggleStyle(.checkbox)
                     .controlSize(.mini)
@@ -737,7 +737,7 @@ struct ProfilesSection: View {
                 }
 
                 Text("ENTRIES")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(Design.Typography.sectionHeader)
                     .foregroundStyle(.tertiary)
                     .tracking(0.5)
 
@@ -747,7 +747,7 @@ struct ProfilesSection: View {
 
                 if state.entries.allSatisfy({ !$0.isIncluded }) {
                     Text("At least one entry must remain to save.")
-                        .font(.system(size: 10))
+                        .font(Design.Typography.note)
                         .foregroundStyle(.orange)
                 }
 
@@ -784,11 +784,11 @@ struct ProfilesSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(displayNameLabel(for: entry))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Design.Typography.control)
                         .lineLimit(1)
                     if !entry.isBuiltIn && entry.matcherKind == .anyExternal {
                         Text("✱ flex")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(Design.Typography.badge)
                             .foregroundStyle(.tint)
                     }
                     if !isMatcherConnected(entry) {
@@ -803,7 +803,7 @@ struct ProfilesSection: View {
                         let isBlockedByOther = editFormAnyExternalConflict(currentRowID: entry.id)
                         Toggle(isOn: bindingForEditAnyExternal(entry.id)) {
                             Text("Match any external monitor")
-                                .font(.system(size: 10))
+                                .font(Design.Typography.note)
                         }
                         .toggleStyle(.checkbox)
                         .controlSize(.mini)
@@ -828,7 +828,7 @@ struct ProfilesSection: View {
             // values as plain text so the user knows what'll be applied when
             // a matching display becomes available again.
             Text(savedModeDescription(entry))
-                .font(.system(size: 10))
+                .font(Design.Typography.note)
                 .foregroundStyle(.secondary)
         } else {
             // Two-step: pick a (size, HiDPI) bucket, then pick refresh Hz.
@@ -1292,7 +1292,7 @@ private struct ProfilePill: View {
                     .lineLimit(1)
                 if isCurrentlyFlexible {
                     Text("✱")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(Design.Typography.badge)
                         .foregroundStyle(.tint)
                 }
             }

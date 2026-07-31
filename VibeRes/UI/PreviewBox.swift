@@ -81,7 +81,7 @@ struct RealEstateBadge: View {
         let color = isMore ? Color.green : Color.orange
         return AnyView(
             Text(text)
-                .font(.system(size: 9, weight: .semibold, design: .rounded).monospacedDigit())
+                .font(Design.Typography.sectionHeader.monospacedDigit())
                 .foregroundStyle(color)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1)

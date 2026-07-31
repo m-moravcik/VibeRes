@@ -26,16 +26,17 @@ enum Design {
     }
 
     enum Typography {
-        /// Slightly tighter than .body for dense menubar lists.
-        static let row: Font = .system(size: 12.5, design: .default).monospacedDigit()
-        static let rowBold: Font = .system(size: 12.5, weight: .semibold, design: .default).monospacedDigit()
-        static let chip: Font = .system(size: 10.5, weight: .medium, design: .default).monospacedDigit()
-        static let chipActive: Font = .system(size: 10.5, weight: .bold, design: .default).monospacedDigit()
         static let cardTitle: Font = .system(size: 13, weight: .semibold)
         static let cardSubtitle: Font = .system(size: 11).monospacedDigit()
         static let badge: Font = .system(size: 9, weight: .bold)
         static let navTitle: Font = .system(size: 13, weight: .semibold)
         static let footer: Font = .system(size: 11)
+        /// Outcome notes and other secondary annotations under a control.
+        static let note: Font = .system(size: 10)
+        /// All-caps section labels ("PROFILES", "ENTRIES").
+        static let sectionHeader: Font = .system(size: 9, weight: .semibold, design: .rounded)
+        /// Inline buttons and pickers inside the popover.
+        static let control: Font = .system(size: 12, weight: .medium)
     }
 
     enum Palette {

@@ -21,7 +21,7 @@ struct OnboardingView: View {
                     finish()
                 }
                 .buttonStyle(.plain)
-                .font(.system(size: 11))
+                .font(Design.Typography.footer)
                 .foregroundStyle(.secondary)
 
                 Spacer()
