@@ -58,3 +58,6 @@ AuthKey_*.p8
 
 # Icon render scratch — actual icons live in Assets.xcassets
 icon-build/
+
+# Localisation coverage check output
+build-localisation/

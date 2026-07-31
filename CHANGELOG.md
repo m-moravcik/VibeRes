@@ -28,6 +28,11 @@ themselves in words, and launch-at-login repairs itself.
   when registration failed — no feedback, no record.
 - Profile results could not be translated: the note under the pills was assembled
   from pre-formatted English. It is now built from values, with en/sk/de copy.
+- **The app is now actually localised into en/sk/de.** The catalog held 46 of the
+  122 strings the app emits, so most of the popover, the whole Settings window in
+  places, and every Shortcuts action description fell back to English regardless
+  of system language. All 117 translatable strings are covered; the remaining
+  five are bare units and separators ("Hz", "—") with nothing to translate.
 
 ### Changed
 
@@ -51,6 +56,9 @@ themselves in words, and launch-at-login repairs itself.
   three implementations, one of which lived in the test file and meant those
   tests never exercised the app.
 - Removed 154 lines of unreachable UI and four design tokens that only it used.
+- `scripts/check-localisation.sh`, run by CI, fails the build when the app emits a
+  string the catalog does not carry. The catalog drifted 76 strings behind the UI
+  while the changelog advertised full coverage because nothing was watching.
 
 ## [0.8.2] — 2026-07-31
 

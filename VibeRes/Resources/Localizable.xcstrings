@@ -490,6 +490,566 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld smaller sizes" } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "%lld menších rozlíšení" } }
       }
+    },
+    "%@ on GitHub — click to view" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%@ auf GitHub – zum Ansehen klicken" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ on GitHub — click to view" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%@ na GitHube — kliknutím zobrazíš" } }
+      }
+    },
+    "%@ × %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%@ × %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ × %@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%@ × %@" } }
+      }
+    },
+    "%lld Hertz" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld Hertz" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Hertz" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%lld hertzov" } }
+      }
+    },
+    "%lld by %lld%@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld mal %lld%@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld by %lld%@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%lld krát %lld%@" } }
+      }
+    },
+    "'%@' is locked to current monitors" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ ist an die aktuellen Monitore gebunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "'%@' is locked to current monitors" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ je uzamknutý na aktuálne monitory" } }
+      }
+    },
+    "'%@' now matches any external monitor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ passt jetzt zu jedem externen Monitor" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "'%@' now matches any external monitor" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ teraz zodpovedá ľubovoľnému externému monitoru" } }
+      }
+    },
+    "'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„Skaliert“ nutzt HiDPI-Rendering, damit Text auf Retina scharf bleibt (Standard für eingebaute Displays). „Nativ“ ist 1:1-Pixelabbildung – typisch für externe Monitore ohne Retina." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "„Škálované“ používa HiDPI vykresľovanie, takže text zostane ostrý na Retine (predvolené pre vstavané displeje). „Natívne“ je mapovanie 1:1 — typické pre externé monitory bez Retiny." } }
+      }
+    },
+    "Applied '%@' for the new display setup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ für die neue Displaykonfiguration angewendet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applied '%@' for the new display setup." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Použitý profil „%@“ pre nové rozloženie displejov." } }
+      }
+    },
+    "Apply '%@'?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ anwenden?" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apply '%@'?" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Použiť „%@“?" } }
+      }
+    },
+    "At least one entry must remain to save." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zum Speichern muss mindestens ein Eintrag bleiben." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "At least one entry must remain to save." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Na uloženie musí zostať aspoň jedna položka." } }
+      }
+    },
+    "CURRENT" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "AKTUELL" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "CURRENT" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "AKTUÁLNE" } }
+      }
+    },
+    "Checking…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Suche…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking…" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Kontrolujem…" } }
+      }
+    },
+    "Connect the external monitor first to lock '%@' to it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schließe den externen Monitor an, um „%@“ daran zu binden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect the external monitor first to lock '%@' to it." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Najprv pripoj externý monitor, aby sa naň „%@“ dal uzamknúť." } }
+      }
+    },
+    "Delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Odstrániť" } }
+      }
+    },
+    "Display unavailable." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Display nicht verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display unavailable." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Displej nie je dostupný." } }
+      }
+    },
+    "ENTRIES" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "EINTRÄGE" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ENTRIES" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "POLOŽKY" } }
+      }
+    },
+    "Edit…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bearbeiten…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit…" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Upraviť…" } }
+      }
+    },
+    "Get Current Resolution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktuelle Auflösung abrufen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Get Current Resolution" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Zistiť aktuálne rozlíšenie" } }
+      }
+    },
+    "Get current resolution from ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktuelle Auflösung von ${applicationName} abrufen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Get current resolution from ${applicationName}" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Zistiť aktuálne rozlíšenie z ${applicationName}" } }
+      }
+    },
+    "Height" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Höhe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Height" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Výška" } }
+      }
+    },
+    "Height in points, e.g. 1169" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Höhe in Punkten, z. B. 1169" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Height in points, e.g. 1169" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Výška v bodoch, napr. 1169" } }
+      }
+    },
+    "HiDPI" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "HiDPI" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "HiDPI" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "HiDPI" } }
+      }
+    },
+    "INCLUDE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "EINBEZIEHEN" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "INCLUDE" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "ZAHRNÚŤ" } }
+      }
+    },
+    "Include %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%@ einbeziehen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Include %@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Zahrnúť %@" } }
+      }
+    },
+    "Keep %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%@ behalten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep %@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ponechať %@" } }
+      }
+    },
+    "Keep at least one entry to save the profile." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Behalte mindestens einen Eintrag, um das Profil zu speichern." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep at least one entry to save the profile." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ponechaj aspoň jednu položku, aby sa profil dal uložiť." } }
+      }
+    },
+    "MAIN" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "HAUPT" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "MAIN" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "HLAVNÝ" } }
+      }
+    },
+    "Make flexible (any external)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Flexibel machen (beliebiger externer)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Make flexible (any external)" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nastaviť ako flexibilný (ľubovoľný externý)" } }
+      }
+    },
+    "Make specific (lock to current monitors)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fest binden (an aktuelle Monitore)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Make specific (lock to current monitors)" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uzamknúť na aktuálne monitory" } }
+      }
+    },
+    "Match any external monitor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zu jedem externen Monitor passen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match any external monitor" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Zodpovedať ľubovoľnému externému monitoru" } }
+      }
+    },
+    "Native" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nativ" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Native" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Natívne" } }
+      }
+    },
+    "No displays detected." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Displays erkannt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No displays detected." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nezistené žiadne displeje." } }
+      }
+    },
+    "No mode close to %lld×%lld is available on %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Auf %3$@ ist kein Modus in der Nähe von %1$lld×%2$lld verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No mode close to %lld×%lld is available on %@." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Na %3$@ nie je dostupný žiadny režim blízky %1$lld×%2$lld." } }
+      }
+    },
+    "Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nur ein Display darf auf „zu jedem externen Monitor passen“ gesetzt sein – binde die anderen an einen bestimmten Monitor." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Len jeden displej môže byť nastavený na „zodpovedať ľubovoľnému externému monitoru“ — ostatné uzamkni na konkrétny monitor." } }
+      }
+    },
+    "Only one display per profile can match 'any external monitor'. Uncheck the other first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pro Profil darf nur ein Display zu „jedem externen Monitor“ passen. Nimm zuerst das andere heraus." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only one display per profile can match 'any external monitor'. Uncheck the other first." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "V jednom profile môže „ľubovoľnému externému monitoru“ zodpovedať len jeden displej. Najprv odškrtni ten druhý." } }
+      }
+    },
+    "Only one entry can match 'any external monitor' — remove or lock the duplicates first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nur ein Eintrag darf zu „jedem externen Monitor“ passen – entferne oder binde die Duplikate zuerst." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only one entry can match 'any external monitor' — remove or lock the duplicates first." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "„Ľubovoľnému externému monitoru“ môže zodpovedať len jedna položka — duplikáty najprv odstráň alebo uzamkni." } }
+      }
+    },
+    "Only one entry per profile can match 'any external monitor'." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pro Profil darf nur ein Eintrag zu „jedem externen Monitor“ passen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only one entry per profile can match 'any external monitor'." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "V jednom profile môže „ľubovoľnému externému monitoru“ zodpovedať len jedna položka." } }
+      }
+    },
+    "Optional. If omitted, picks the highest available for that size." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Optional. Ohne Angabe wird die höchste verfügbare für diese Größe gewählt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional. If omitted, picks the highest available for that size." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nepovinné. Ak vynecháš, vyberie najvyššiu dostupnú pre danú veľkosť." } }
+      }
+    },
+    "PROFILES" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "PROFILE" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PROFILES" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "PROFILY" } }
+      }
+    },
+    "Pick at least one display to save." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wähle mindestens ein Display zum Speichern." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pick at least one display to save." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Vyber aspoň jeden displej na uloženie." } }
+      }
+    },
+    "Prefer HiDPI" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "HiDPI bevorzugen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Prefer HiDPI" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Preferovať HiDPI" } }
+      }
+    },
+    "Profile name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profilname" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile name" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Názov profilu" } }
+      }
+    },
+    "Profiles save the resolution and refresh rate of each chosen display so you can apply them with one click. Externals can be locked to a specific monitor or set to match any external (handy for presentations)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profile speichern Auflösung und Bildwiederholrate jedes gewählten Displays, damit du sie mit einem Klick anwenden kannst. Externe können an einen bestimmten Monitor gebunden oder auf „beliebiger externer“ gesetzt werden (praktisch für Präsentationen)." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profiles save the resolution and refresh rate of each chosen display so you can apply them with one click. Externals can be locked to a specific monitor or set to match any external (handy for presentations)." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Profily uložia rozlíšenie a obnovovaciu frekvenciu každého vybraného displeja, takže ich použiješ jedným klikom. Externé sa dajú uzamknúť na konkrétny monitor alebo nastaviť na ľubovoľný externý (praktické na prezentácie)." } }
+      }
+    },
+    "Refresh Rate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bildwiederholrate" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh Rate" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Obnovovacia frekvencia" } }
+      }
+    },
+    "Rename" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Umbenennen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Premenovať" } }
+      }
+    },
+    "Rename profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil umbenennen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename profile" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Premenovať profil" } }
+      }
+    },
+    "Rename…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Umbenennen…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename…" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Premenovať…" } }
+      }
+    },
+    "Return to display list" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zurück zur Displayliste" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Return to display list" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Späť na zoznam displejov" } }
+      }
+    },
+    "Returns the current resolution of the chosen display as a string like \"1800 × 1169 @ 120 Hz\"." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gibt die aktuelle Auflösung des gewählten Displays als Text zurück, etwa „1800 × 1169 @ 120 Hz“." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Returns the current resolution of the chosen display as a string like \"1800 × 1169 @ 120 Hz\"." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Vráti aktuálne rozlíšenie vybraného displeja ako text, napríklad „1800 × 1169 @ 120 Hz“." } }
+      }
+    },
+    "Save a multi-display preset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Voreinstellung für mehrere Displays speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save a multi-display preset" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Ulož predvoľbu pre viac displejov" } }
+      }
+    },
+    "Save current displays into a profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktuelle Displays in ein Profil speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save current displays into a profile" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uložiť aktuálne displeje do profilu" } }
+      }
+    },
+    "Save displays into a profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Displays in ein Profil speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save displays into a profile" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uložiť displeje do profilu" } }
+      }
+    },
+    "Scaled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Skaliert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scaled" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Škálované" } }
+      }
+    },
+    "Set ${display} to ${width} by ${height}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "${display} auf ${width} mal ${height} setzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set ${display} to ${width} by ${height}" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nastaviť ${display} na ${width} krát ${height}" } }
+      }
+    },
+    "Set Display Resolution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Displayauflösung festlegen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set Display Resolution" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nastaviť rozlíšenie displeja" } }
+      }
+    },
+    "Set Resolution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Auflösung festlegen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set Resolution" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nastaviť rozlíšenie" } }
+      }
+    },
+    "Set resolution in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Auflösung in ${applicationName} festlegen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set resolution in ${applicationName}" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nastaviť rozlíšenie v ${applicationName}" } }
+      }
+    },
+    "Size" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Größe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Size" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Veľkosť" } }
+      }
+    },
+    "Switches the chosen display to the requested resolution. Picks the closest matching mode if the exact size isn't available." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schaltet das gewählte Display auf die angeforderte Auflösung. Wählt den nächstpassenden Modus, wenn die exakte Größe nicht verfügbar ist." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switches the chosen display to the requested resolution. Picks the closest matching mode if the exact size isn't available." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Prepne vybraný displej na požadované rozlíšenie. Ak presná veľkosť nie je dostupná, vyberie najbližší zodpovedajúci režim." } }
+      }
+    },
+    "That display is no longer connected." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dieses Display ist nicht mehr angeschlossen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "That display is no longer connected." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Tento displej už nie je pripojený." } }
+      }
+    },
+    "Update available — %@ on GitHub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Update verfügbar – %@ auf GitHub" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Update available — %@ on GitHub" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Dostupná aktualizácia — %@ na GitHube" } }
+      }
+    },
+    "Update with current setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit aktueller Konfiguration aktualisieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Update with current setup" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizovať podľa aktuálneho stavu" } }
+      }
+    },
+    "Updated '%@'" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ aktualisiert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updated '%@'" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizovaný „%@“" } }
+      }
+    },
+    "Updated '%@' with current setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ mit aktueller Konfiguration aktualisiert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updated '%@' with current setup" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "„%@“ aktualizovaný podľa aktuálneho stavu" } }
+      }
+    },
+    "VibeRes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "VibeRes" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "VibeRes" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "VibeRes" } }
+      }
+    },
+    "VibeRes also checks once a day in the background. Brew users can run `brew upgrade --cask m-moravcik/viberes/viberes-app` to install the new build." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "VibeRes prüft außerdem einmal täglich im Hintergrund. Brew-Nutzer können `brew upgrade --cask m-moravcik/viberes/viberes-app` ausführen, um den neuen Build zu installieren." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "VibeRes also checks once a day in the background. Brew users can run `brew upgrade --cask m-moravcik/viberes/viberes-app` to install the new build." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "VibeRes navyše kontroluje raz denne na pozadí. Používatelia brew môžu nový build nainštalovať príkazom `brew upgrade --cask m-moravcik/viberes/viberes-app`." } }
+      }
+    },
+    "When both HiDPI and native modes exist for the size, prefer the HiDPI variant." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wenn es für die Größe HiDPI- und native Modi gibt, die HiDPI-Variante bevorzugen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "When both HiDPI and native modes exist for the size, prefer the HiDPI variant." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Keď pre danú veľkosť existujú HiDPI aj natívne režimy, preferovať HiDPI variantu." } }
+      }
+    },
+    "Width" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Breite" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Width" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Šírka" } }
+      }
+    },
+    "Width in points (logical pixels), e.g. 1800" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Breite in Punkten (logische Pixel), z. B. 1800" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Width in points (logical pixels), e.g. 1800" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Šírka v bodoch (logické pixely), napr. 1800" } }
+      }
+    },
+    "not connected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "nicht verbunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "not connected" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "nie je pripojený" } }
+      }
     }
   }
 }
