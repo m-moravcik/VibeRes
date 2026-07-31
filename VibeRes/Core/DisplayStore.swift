@@ -342,7 +342,7 @@ final class DisplayStore {
             lastError = nil
             refresh()
         } catch {
-            lastError = "\(error)"
+            lastError = error.userFacingText
         }
     }
 
