@@ -4,6 +4,54 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+**Highlights:** The popover stops closing on you mid-change, failures explain
+themselves in words, and launch-at-login repairs itself.
+
+### Fixed
+
+- **The popover closed itself ~200 ms after every resolution change.** A mode
+  change fires a display-reconfiguration callback, and the debounced refresh path
+  dismissed the popover unconditionally instead of honouring the rule that only a
+  changed display *set* should close it. The outcome note and the Revert row were
+  on screen for a fifth of a second, which made the fallback warning added in
+  0.8.0 invisible in normal use. Introduced in the 0.8.1 release prep.
+- **Failures showed raw system errors.** A refused resolution change rendered as
+  `applyMode(__C.CGError(rawValue: 1004))` in the popover, in profile results,
+  and in `viberes` output. It now says what happened and what to try, keeping the
+  numeric code for bug reports.
+- **Launch at login could stop working silently.** Nothing recorded that the user
+  had asked for it, so a registration invalidated by an update, a move, or a
+  restore simply read as "off" with no way for the app to notice. The intent is
+  stored and reconciled at launch. The Settings toggle also did nothing at all
+  when registration failed — no feedback, no record.
+- Profile results could not be translated: the note under the pills was assembled
+  from pre-formatted English. It is now built from values, with en/sk/de copy.
+
+### Changed
+
+- **The long tail of small resolutions collapses behind a disclosure.** A 5K
+  display offers 14–20 sizes, ending in ones nobody picks. Anything narrower than
+  60% of the widest option is one click away instead of always on screen; the
+  active mode is never hidden, however small.
+- **⌘1…⌘9 apply the first nine profiles** while the popover has focus.
+- **⌘Z is now advertised on the Revert row.** The shortcut always worked, but the
+  label was withheld because the popover used to close before anyone could press
+  it.
+- New profiles are suggested a name from the hardware — "Built-in + LG UltraFine"
+  rather than "Setup 2".
+
+### Internal
+
+- Releases are signed, notarized and stapled; see `.github/RELEASING.md`.
+- Tests: 119 → 149. The aggregation behind the outcome note, the launch-at-login
+  reconciliation, the resolution-list partition and the profile-name suggestion
+  were all previously unreachable from tests. The screen-space percentage had
+  three implementations, one of which lived in the test file and meant those
+  tests never exercised the app.
+- Removed 154 lines of unreachable UI and four design tokens that only it used.
+
 ## [0.8.2] — 2026-07-31
 
 **Highlights:** Signed and notarized releases — macOS no longer blocks the app
@@ -79,7 +127,9 @@ and consistent resolution matching across GUI, CLI, and Shortcuts.
 
 ## [0.7.0] — 2026-05-08
 
-**Highlights:** First-launch welcome tour and full localisation (en/sk/de). Profiles can now be edited inline.
+**Highlights:** First-launch welcome tour, Settings and onboarding localised into en/sk/de, and inline profile editing.
+
+> Corrected after the fact: this originally read "full localisation (en/sk/de)". The catalog covered Settings and onboarding only — 38 strings against 122 the app emits — so the popover remained English. Tracked and being finished; see the Unreleased section.
 
 ### Added
 
