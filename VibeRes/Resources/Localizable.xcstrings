@@ -1090,6 +1090,22 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button." } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Použije nové rozlíšenie len pre túto sesiu a po %lld sekundách ho vráti, ak ho nepotvrdíš. Užitočné, ak ti niektorý režim už niekedy nechal nečitateľnú obrazovku — vrátenie prebehne samo, takže funguje aj vtedy, keď tlačidlo nevidíš." } }
       }
+    },
+    "updates.unavailableInThisBuild" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Updates in dieser Version nicht verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates unavailable in this build." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizácie nie sú v tomto builde dostupné." } }
+      }
+    },
+    "updates.managedByHomebrew" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Updates werden von Homebrew verwaltet. Führe aus: brew upgrade --cask m-moravcik/viberes/viberes-app" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates managed by Homebrew. Run: brew upgrade --cask m-moravcik/viberes/viberes-app" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizácie spravuje Homebrew. Spusť: brew upgrade --cask m-moravcik/viberes/viberes-app" } }
+      }
     }
   }
 }
