@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import VibeRes
 
-/// Verifies the String Catalog actually carries the note strings in every
+/// Verifies the String Catalog carries every one of its strings in every
 /// language the bundle advertises, and that the placeholders agree.
 ///
 /// A missing translation is invisible at runtime — Foundation quietly falls
@@ -14,19 +14,29 @@ import Testing
 /// `.xcstrings` source, so it fails if the catalog is edited but not built.
 @Suite("Note string catalog coverage")
 struct NoteLocalisationTests {
-    /// Keys introduced by ApplyOutcomeNote. Kept explicit rather than derived
-    /// so that deleting a key from the catalog fails a test instead of silently
-    /// shrinking the checked set.
-    private static let noteKeys = [
-        "note.detail.applied",
-        "note.detail.fallback",
-        "note.detail.notConnected",
-        "note.detail.noExternalConnected",
-        "note.detail.noUsableMode",
-        "note.detail.failed",
-        "note.moreDisplays",
-        "note.alreadyAtSavedSettings",
-    ]
+    /// Every key in the shipped catalog, read from the source of truth rather
+    /// than a hand-maintained list — a list would silently stop covering keys
+    /// added later, which is exactly how the catalog fell 76 strings behind.
+    private static let catalogKeys: [String] = {
+        // The test bundle sits inside the app bundle, so walk up to the repo.
+        var dir = URL(fileURLWithPath: #filePath)
+        dir.deleteLastPathComponent()          // VibeResTests
+        dir.deleteLastPathComponent()          // repo root
+        let url = dir.appending(path: "VibeRes/Resources/Localizable.xcstrings")
+        guard let data = try? Data(contentsOf: url),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let strings = root["strings"] as? [String: Any]
+        else { return [] }
+        return strings.keys.sorted()
+    }()
+
+    private static let noteKeys = catalogKeys
+
+    /// True for identifier-style keys such as `note.detail.applied`, as opposed
+    /// to keys that are themselves the English sentence.
+    private static func isSymbolicKey(_ key: String) -> Bool {
+        key.contains(".") && !key.contains(" ")
+    }
 
     private func bundle(for language: String) throws -> Bundle {
         let path = try #require(
@@ -48,7 +58,15 @@ struct NoteLocalisationTests {
         for key in Self.noteKeys {
             let value = bundle.localizedString(forKey: key, value: "\u{0}MISSING", table: nil)
             #expect(value != "\u{0}MISSING", "\(language) is missing \(key)")
-            #expect(value != key, "\(language) has \(key) untranslated (value equals the key)")
+
+            // Most of this catalog uses the English sentence as the key, so
+            // value == key is correct for `en` and unremarkable elsewhere when a
+            // term is the same in both languages ("HiDPI", "VibeRes"). A
+            // *symbolic* key rendering as itself is different: it means the
+            // lookup found nothing and fell through to the identifier.
+            if Self.isSymbolicKey(key) {
+                #expect(value != key, "\(language) has no value for the symbolic key \(key)")
+            }
         }
     }
 

@@ -74,6 +74,10 @@ struct SettingsView: View {
                         }
                     }
                 ))
+                Toggle("Confirm resolution changes", isOn: prefs.confirmDisplayChanges)
+                Text("Applies a new resolution for this session only and undoes it after \(DisplayStore.confirmationWindowSeconds) seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button.")
+                    .font(Design.Typography.footer)
+                    .foregroundStyle(.secondary)
             } header: {
                 Text("Startup")
             }

@@ -12,6 +12,7 @@ final class Preferences {
     private static let simpleModeKey = "VibeRes.SimpleMode"
     private static let onboardingShownKey = "VibeRes.OnboardingShown"
     private static let launchAtLoginKey = "VibeRes.LaunchAtLogin"
+    private static let confirmChangesKey = "VibeRes.ConfirmDisplayChanges"
 
     var autoApplyOnDisplayChange: Bool {
         didSet {
@@ -67,7 +68,22 @@ final class Preferences {
         }
     }
 
+    /// When true, a resolution change is applied for the session only and undone
+    /// after a short window unless the user confirms it.
+    ///
+    /// Off by default, deliberately. It is the only protection against a mode
+    /// that leaves the screen unreadable — the popover is on that screen, so a
+    /// button nobody can see is useless and the timeout is what saves them — but
+    /// it also interrupts the app's core action, which is fine for the vast
+    /// majority of changes. Opt-in keeps the default flow untouched.
+    var confirmDisplayChanges: Bool {
+        didSet {
+            UserDefaults.standard.set(confirmDisplayChanges, forKey: Self.confirmChangesKey)
+        }
+    }
+
     init() {
+        self.confirmDisplayChanges = UserDefaults.standard.bool(forKey: Self.confirmChangesKey)
         // Read before the didSet observers can fire.
         self.launchAtLoginIntent = UserDefaults.standard.object(forKey: Self.launchAtLoginKey) as? Bool
 

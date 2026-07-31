@@ -28,9 +28,31 @@ themselves in words, and launch-at-login repairs itself.
   when registration failed — no feedback, no record.
 - Profile results could not be translated: the note under the pills was assembled
   from pre-formatted English. It is now built from values, with en/sk/de copy.
+- **The app is now actually localised into en/sk/de.** The catalog held 46 of the
+  122 strings the app emits, so most of the popover, the whole Settings window in
+  places, and every Shortcuts action description fell back to English regardless
+  of system language. All 117 translatable strings are covered; the remaining
+  five are bare units and separators ("Hz", "—") with nothing to translate.
+
+### Added
+
+- **Optional confirmation before a resolution sticks.** Settings → General →
+  "Confirm resolution changes" applies a new mode for the session only and undoes
+  it after 12 seconds unless you press Keep. This is the one thing that could
+  previously leave someone stuck: a mode that makes the screen unreadable hides
+  the popover too, so a button nobody can see is no help — the undo happens on a
+  timer, which works regardless. Off by default, because interrupting the app's
+  core action is the wrong trade for the changes that are fine.
 
 ### Changed
 
+- **Saving a profile warns when two monitors are indistinguishable.** Identical
+  monitors can report the same vendor, model and serial, and a saved entry binds
+  to every display its matcher accepts — so one entry silently drives both
+  screens. 0.8.0 fixed the equivalent collision for "any external" by allowing
+  one such entry per profile, but that remedy does not apply here: the displays
+  really are indistinguishable, so the profile now says so instead of pretending
+  otherwise.
 - **The long tail of small resolutions collapses behind a disclosure.** A 5K
   display offers 14–20 sizes, ending in ones nobody picks. Anything narrower than
   60% of the widest option is one click away instead of always on screen; the
@@ -51,6 +73,9 @@ themselves in words, and launch-at-login repairs itself.
   three implementations, one of which lived in the test file and meant those
   tests never exercised the app.
 - Removed 154 lines of unreachable UI and four design tokens that only it used.
+- `scripts/check-localisation.sh`, run by CI, fails the build when the app emits a
+  string the catalog does not carry. The catalog drifted 76 strings behind the UI
+  while the changelog advertised full coverage because nothing was watching.
 
 ## [0.8.2] — 2026-07-31
 

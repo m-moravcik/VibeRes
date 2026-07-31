@@ -346,7 +346,7 @@ final class DisplayStore {
         }
     }
 
-    func apply(_ mode: CGDisplayMode, to display: CGDirectDisplayID) {
+    func apply(_ mode: CGDisplayMode, to display: CGDirectDisplayID, confirmFirst: Bool = false) {
         do {
             // Capture the pre-change mode so a follow-up Revert click can
             // restore it. Skip when the click is a no-op (mode === current).
@@ -355,12 +355,79 @@ final class DisplayStore {
                current.ioDisplayModeID != mode.ioDisplayModeID {
                 revert.record(displayID: display, displayName: info.name, before: current)
             }
-            try ResolutionSwitcher.apply(mode, to: display)
+            // `.forSession` while awaiting confirmation: if the screen turns out
+            // to be unreadable *and* the app is somehow unable to revert, a
+            // reboot still recovers. Made permanent by `confirmDisplayChange()`.
+            try ResolutionSwitcher.apply(mode, to: display, scope: confirmFirst ? .forSession : .permanently)
             lastError = nil
             refresh()
+            if confirmFirst {
+                armConfirmation(mode: mode, display: display)
+            }
         } catch {
             lastError = error.userFacingText
         }
+    }
+
+    // MARK: - Confirmation countdown
+
+    /// Seconds left before an unconfirmed change is undone, or nil when nothing
+    /// is pending. Drives the Keep/Revert row.
+    private(set) var confirmationSecondsRemaining: Int?
+
+    private var countdown = RevertCountdown()
+    private var pendingConfirmation: (mode: CGDisplayMode, display: CGDirectDisplayID)?
+    private var countdownTask: Task<Void, Never>?
+
+    /// How long the user gets. Long enough to notice an unreadable screen and
+    /// react, short enough that walking away recovers quickly.
+    static let confirmationWindowSeconds = 12
+
+    private func armConfirmation(mode: CGDisplayMode, display: CGDirectDisplayID) {
+        pendingConfirmation = (mode, display)
+        countdown.arm(at: Date(), seconds: Self.confirmationWindowSeconds)
+        confirmationSecondsRemaining = Self.confirmationWindowSeconds
+
+        countdownTask?.cancel()
+        countdownTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard let self, !Task.isCancelled else { return }
+                switch self.countdown.state(at: Date()) {
+                case .waiting(let seconds):
+                    self.confirmationSecondsRemaining = seconds
+                case .expired:
+                    // The timeout is the actual safety net: a user staring at a
+                    // black screen cannot click anything.
+                    self.revertUnconfirmedChange()
+                    return
+                case .inactive:
+                    return
+                }
+            }
+        }
+    }
+
+    /// The user can see the screen and wants to keep it. Re-applies the same mode
+    /// permanently so the choice survives a reboot.
+    func confirmDisplayChange() {
+        countdownTask?.cancel()
+        countdown.confirm()
+        confirmationSecondsRemaining = nil
+        if let pending = pendingConfirmation {
+            try? ResolutionSwitcher.apply(pending.mode, to: pending.display, scope: .permanently)
+        }
+        pendingConfirmation = nil
+        // Keeping the change means there is nothing left to undo by accident.
+        revert.clear()
+    }
+
+    private func revertUnconfirmedChange() {
+        countdownTask?.cancel()
+        countdown.confirm()
+        confirmationSecondsRemaining = nil
+        pendingConfirmation = nil
+        performRevert()
     }
 
     /// Re-apply each display's `before` mode and clear the history. Returns
