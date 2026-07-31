@@ -491,21 +491,19 @@ private struct FooterBar: View {
                     MenuRow(
                         icon: "arrow.uturn.backward.circle",
                         label: revertLabel,
-                        // No shortcut label: ⌘Z would only work while the
-                        // popover holds key focus, and the act of applying
-                        // a resolution typically dismisses it. Showing the
-                        // shortcut text would advertise a behaviour that
-                        // fails most of the time. Click the row instead.
-                        shortcut: nil,
+                        // The label was previously omitted because applying a
+                        // resolution dismissed the popover, so ⌘Z lost key focus
+                        // before anyone could press it. That dismissal was a bug
+                        // in the debounced refresh path and is fixed, so the
+                        // shortcut now works exactly when this row is visible
+                        // and can be advertised honestly.
+                        shortcut: "⌘Z",
                         action: {
                             store.performRevert()
                             // No toast — displays jump back, the row
                             // disappears, that's the feedback.
                         }
                     )
-                    // Keep the binding so power users who reopen the
-                    // popover and hit ⌘Z still get the revert; we just
-                    // don't promise it in the label.
                     .keyboardShortcut("z")
                 }
 
