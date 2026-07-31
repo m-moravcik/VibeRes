@@ -20,8 +20,12 @@ settings:
     # scripts/release-signed.sh.
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
-    # Required for notarization. Inert under ad-hoc signing, so it only takes
-    # effect on the release build.
+    # Required for notarization. Applies to ad-hoc builds too — `codesign
+    # --sign - --options runtime` yields flags=0x10002(adhoc,runtime) — so the
+    # hardened runtime, and with it library validation, is active in every
+    # configuration. That matters the moment a pre-signed third-party framework
+    # is embedded: library validation will refuse to load it under an ad-hoc
+    # signature, breaking local and CI builds rather than only releases.
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
   configs:
