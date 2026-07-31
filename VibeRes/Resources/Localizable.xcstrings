@@ -418,6 +418,70 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Step %1$d of %2$d" } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Krok %1$d z %2$d" } }
       }
+    },
+    "note.alreadyAtSavedSettings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bereits auf den gespeicherten Einstellungen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Already at the saved settings." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Už je nastavené podľa profilu." } }
+      }
+    },
+    "note.detail.applied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ → %2$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ → %2$@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ → %2$@" } }
+      }
+    },
+    "note.detail.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: %2$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: %2$@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: %2$@" } }
+      }
+    },
+    "note.detail.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: gewünscht %2$@, verwendet %3$@ (nächstmöglich)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: wanted %2$@, used %3$@ (closest available)" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: požadované %2$@, použité %3$@ (najbližšie dostupné)" } }
+      }
+    },
+    "note.detail.noExternalConnected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kein externer Monitor verbunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No external monitor connected" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nie je pripojený externý monitor" } }
+      }
+    },
+    "note.detail.noUsableMode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: kein passender Modus für %2$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: no usable mode for %2$@" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: žiadny použiteľný režim pre %2$@" } }
+      }
+    },
+    "note.detail.notConnected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ nicht verbunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ not connected" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ nie je pripojený" } }
+      }
+    },
+    "note.moreDisplays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : " (+%1$lld weitere)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : " (+%1$lld more)" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : " (+%1$lld ďalších)" } }
+      }
     }
   }
 }

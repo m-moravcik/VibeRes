@@ -11,15 +11,30 @@ struct ProfilesSection: View {
     @Environment(DisplayStore.self) private var displays
     @Environment(Preferences.self) private var preferences
     @State private var mode: Mode = .idle
-    @State private var lastNote: String?
-    @State private var lastNoteTone: NoteTone = .info
+    @State private var lastNote: NoteBody?
+    @State private var lastNoteTone: ApplyOutcomeNote.Tone = .info
     /// Tracks the last auto-apply signal we acted on so we don't re-apply the
     /// same display/wake event multiple times if the popover redraws.
     @State private var lastObservedAutoApplyToken: Int = -1
     @FocusState private var nameFieldFocused: Bool
 
-    enum NoteTone {
-        case info, fallback, problem
+    /// What the note under the pills is currently showing.
+    ///
+    /// Apply results arrive as a structured `ApplyOutcomeNote` so they can be
+    /// localised from values rather than from pre-formatted English. The ad-hoc
+    /// confirmations ("Updated 'Desk'") are String Catalog keys.
+    enum NoteBody: Equatable {
+        case outcome(ApplyOutcomeNote)
+        case message(LocalizedStringKey)
+
+        var text: Text {
+            switch self {
+            // Already resolved through the String Catalog, so verbatim — a
+            // second lookup would search for the translated sentence as a key.
+            case let .outcome(note): return Text(verbatim: note.localizedDescription)
+            case let .message(key): return Text(key)
+            }
+        }
     }
 
     /// What the section is currently showing.
@@ -151,7 +166,7 @@ struct ProfilesSection: View {
                     Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
                                        : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
                         .font(.system(size: 9))
-                    Text(note).font(.system(size: 10)).lineLimit(3)
+                    note.text.font(.system(size: 10)).lineLimit(3)
                 }
                 .foregroundStyle(noteColor)
                 .padding(.horizontal, Design.Spacing.l)
@@ -1186,8 +1201,8 @@ struct ProfilesSection: View {
     }
 
     /// Sets a transient note with the given tone, auto-clearing after 6s.
-    private func announce(_ text: String, tone: NoteTone) {
-        lastNote = text
+    private func announce(_ key: LocalizedStringKey, tone: ApplyOutcomeNote.Tone) {
+        lastNote = .message(key)
         lastNoteTone = tone
         scheduleNoteClear()
     }
@@ -1203,44 +1218,15 @@ struct ProfilesSection: View {
     /// Translates outcome list into a single coloured note shown under the pills.
     /// Priority: any problem > any fallback > applied success > all already-at-target.
     private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
-        let problems = outcomes.filter {
-            switch $0.status {
-            case .skippedNoMatch, .skippedNoMode, .failed: return true
-            default: return false
-            }
-        }
-        let fallbacks = outcomes.filter {
-            if case .appliedWithFallback = $0.status { return true }
-            return false
-        }
-        let applied = outcomes.first(where: {
-            if case .applied = $0.status { return true }
-            return false
-        })
-
-        if !problems.isEmpty {
-            lastNoteTone = .problem
-            lastNote = problems.map(\.summary).joined(separator: "; ")
-        } else if !fallbacks.isEmpty {
-            lastNoteTone = .fallback
-            lastNote = fallbacks.map(\.summary).joined(separator: "; ")
-        } else if let first = applied {
-            lastNoteTone = .info
-            lastNote = first.summary + (outcomes.count > 1 ? " (+\(outcomes.count - 1) more)" : "")
-        } else if outcomes.allSatisfy({
-            if case .alreadyApplied = $0.status { return true }
-            return false
-        }) {
-            // Manual apply against an identical state — surface a quiet
-            // confirmation so the user knows the click registered, but
-            // don't pretend something changed.
-            lastNoteTone = .info
-            lastNote = "Already at the saved settings."
-        } else {
+        // Aggregation lives in ApplyOutcomeNote so the precedence rules are
+        // testable and the copy is localisable. See ApplyOutcomeNoteTests.
+        guard let note = ApplyOutcomeNote.make(from: outcomes) else {
             lastNote = nil
+            return
         }
-
-        if lastNote != nil { scheduleNoteClear() }
+        lastNoteTone = note.tone
+        lastNote = .outcome(note)
+        scheduleNoteClear()
     }
 
     private func commitRename(id: UUID) {
