@@ -291,11 +291,33 @@ echo "Status: $SUBMIT_STATUS ($SUBMISSION_ID)"
 step "Staple"
 
 xcrun stapler staple "$APP" || die "stapling failed"
+
+# `stapler validate` alone is not proof of stapling: when it finds no ticket in
+# the bundle it silently fetches one from Apple's CloudKit ticket-delivery
+# service and still reports success. It therefore proves the app is notarized
+# server-side, not that it will launch on a Mac with no network — which is the
+# entire point of stapling. Assert the ticket is physically in the bundle.
+# For an app bundle, stapler writes it to Contents/CodeResources (a CMS blob,
+# not to be confused with Contents/_CodeSignature/CodeResources).
+TICKET="$APP/Contents/CodeResources"
+[ -s "$TICKET" ] || die "stapler reported success but no ticket at Contents/CodeResources.
+  The app would need network access to pass Gatekeeper on first launch."
+echo "Ticket embedded: Contents/CodeResources ($(wc -c < "$TICKET" | tr -d ' ') bytes)"
+
 xcrun stapler validate "$APP" || die "stapler validate failed after stapling"
 
-# The real end-to-end check: this is what Gatekeeper does when the user
-# double-clicks a freshly downloaded app.
-spctl --assess --type exec --verbose=4 "$APP" || die "Gatekeeper assessment failed"
+# What Gatekeeper does when the user double-clicks a freshly downloaded app.
+# Only meaningful where assessment is actually enabled — on a machine with
+# `spctl --status` disabled this passes trivially, so say so rather than
+# implying the release was verified when it was not.
+if spctl --status 2>&1 | grep -q "assessments enabled"; then
+  spctl --assess --type exec --verbose=4 "$APP" || die "Gatekeeper assessment failed"
+  echo "Gatekeeper: enforced assessment passed"
+else
+  spctl --assess --type exec --verbose=4 "$APP" || true
+  echo "WARNING: Gatekeeper assessments are disabled on this machine, so the" >&2
+  echo "         check above is advisory only. CI runners have them enabled." >&2
+fi
 
 step "Package"
 

@@ -144,6 +144,39 @@ failed build does not leave the private key on the runner.
 The release will **fail** rather than silently publish an unsigned build if any
 of these secrets is missing.
 
+### How long notarization takes
+
+Usually a few minutes. It is not guaranteed: on 2026-07-31 submissions from
+this team took **64 to 125 minutes** while Apple's system status page reported
+no incident at all. Plan for that:
+
+- `scripts/release-signed.sh` waits `NOTARY_TIMEOUT` (default 90m). Override it
+  for a slow day: `NOTARY_TIMEOUT=3h make signed-app`.
+- The release job allows 150 minutes.
+- If a run times out, re-run it — notarization is idempotent, and resubmitting
+  the same bundle is harmless.
+
+A submission that comes back **Invalid within a minute** is not evidence the
+service is fast: entitlement checks are static and run before the malware scan,
+so rejections return long before an acceptance would.
+
+### Two verification traps
+
+Both of these report success on a bundle that would fail for a real user, so
+the script does not rely on either one alone:
+
+- **`stapler validate` does not prove stapling.** When it finds no ticket in the
+  bundle it fetches one from Apple's CloudKit ticket-delivery service and still
+  prints "The validate action worked!". It proves the app is notarized
+  server-side, not that it launches without network — which is the whole point
+  of stapling. The script asserts the ticket exists at
+  `VibeRes.app/Contents/CodeResources` instead.
+- **`spctl --assess` is meaningless where assessment is disabled.** Check with
+  `spctl --status`; if it says `assessments disabled`, an "accepted" verdict
+  proves nothing and the output carries `override=security disabled`. The
+  script warns in that case. GitHub runners have assessment enabled, so the
+  check has teeth in CI.
+
 ### What is not signed
 
 `Formula/viberes.rb` builds the `viberes` CLI from source on the user's own
