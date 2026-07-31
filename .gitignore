@@ -14,6 +14,11 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 
+# Coverage profile dumps. Release builds no longer emit these (see the
+# ENABLE_CODE_COVERAGE note in project.yml), but `xcodebuild test` still does.
+*.profraw
+*.profdata
+
 # Swift Package Manager
 .build/
 .swiftpm/
@@ -32,6 +37,21 @@ Package.resolved
 *.app.zip
 *.dmg
 notarization-*.json
+artifacts/
+
+# Signing secrets — these must never enter the repo. The Developer ID private
+# key and the App Store Connect API key are the only things standing between a
+# leak and someone shipping malware signed as us.
+*.p12
+*.pfx
+*.p8
+AuthKey_*.p8
+*.cer
+*.certSigningRequest
+
+# Local release configuration: points at the App Store Connect API key and
+# holds the key/issuer IDs. Not secret by itself, but machine-specific.
+.release.env
 
 # XcodeGen output — regenerate with `xcodegen generate`, project.yml is the source of truth
 *.xcodeproj/

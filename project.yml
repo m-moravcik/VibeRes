@@ -11,12 +11,32 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    MARKETING_VERSION: "0.8.1"
-    CURRENT_PROJECT_VERSION: "16"
+    MARKETING_VERSION: "0.8.2"
+    CURRENT_PROJECT_VERSION: "17"
+    # Signing identity and team are intentionally NOT pinned here. Day-to-day
+    # builds and CI sign ad-hoc (CODE_SIGN_IDENTITY="-"), which keeps the repo
+    # buildable by anyone without an Apple Developer account. The notarized
+    # release overrides these from the command line — see
+    # scripts/release-signed.sh.
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
+    # Required for notarization. Inert under ad-hoc signing, so it only takes
+    # effect on the release build.
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
+  configs:
+    Release:
+      # The scheme sets gatherCoverageData for the test action, but xcodebuild
+      # applies it as a build setting to the `build` action too. That pulls in
+      # -profile-generate, and the coverage runtime drags
+      # com.apple.security.get-task-allow into the entitlements — which Apple
+      # rejects at notarization, because it lets a debugger attach to a signed
+      # app. It also shipped a slower, instrumented binary in every release up
+      # to 0.8.1. Coverage belongs to `xcodebuild test` (Debug) only.
+      ENABLE_CODE_COVERAGE: NO
+      # Belt and braces: never let Xcode inject debug entitlements into a
+      # build that is meant for distribution.
+      CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
 
 schemes:
   VibeRes:

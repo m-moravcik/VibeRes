@@ -4,6 +4,30 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.2] — 2026-07-31
+
+**Highlights:** Signed and notarized releases — macOS no longer blocks the app
+on first launch — and the shipped binary is no longer instrumented.
+
+### Fixed
+
+- Release builds were compiled with code coverage instrumentation. The scheme's
+  test-action coverage setting was also applied to the `build` action, so every
+  release from 0.5.0 through 0.8.1 shipped an instrumented binary that wrote
+  profiling data at runtime and requested the `com.apple.security.get-task-allow`
+  debug entitlement.
+- GitHub release notes never contained the changelog entry for the released
+  version. The extraction used the version header as a regular expression, where
+  `[0.8.1]` is a character class rather than a literal, so it never matched and
+  the generic fallback text was published every time.
+
+### Changed
+
+- VibeRes.app is now signed with a Developer ID Application certificate using
+  the hardened runtime and a secure timestamp, then notarized by Apple and
+  stapled. The "VibeRes is damaged and can't be opened" Gatekeeper error on
+  first launch is gone, and no right-click-to-open workaround is needed.
+
 ## [0.8.1] — 2026-06-04
 
 **Highlights:** More reliable wake/display recovery, safer profile auto-apply,

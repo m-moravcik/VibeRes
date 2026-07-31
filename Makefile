@@ -1,4 +1,4 @@
-.PHONY: app cli install-cli uninstall-cli test clean
+.PHONY: app signed-app signed-app-dry cli install-cli uninstall-cli test clean
 
 DERIVED := $(shell xcodebuild -project VibeRes.xcodeproj -scheme VibeRes -showBuildSettings 2>/dev/null | awk -F= '/ BUILD_DIR =/{print $$2}' | tr -d ' ')
 RELEASE := $(DERIVED)/Release
@@ -9,6 +9,16 @@ app:
 	xcodebuild -project VibeRes.xcodeproj -scheme VibeRes -configuration Release \
 		-destination 'platform=macOS' \
 		CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO build
+
+# Release build: real Developer ID signature, notarized and stapled.
+# See scripts/release-signed.sh for the credentials it expects.
+signed-app:
+	./scripts/release-signed.sh
+
+# Same, minus the Apple round-trip. Use this to check the certificate resolves
+# and the signature carries hardened runtime + timestamp before submitting.
+signed-app-dry:
+	SKIP_NOTARIZE=1 ./scripts/release-signed.sh
 
 cli:
 	xcodegen generate
