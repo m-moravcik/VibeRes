@@ -199,7 +199,7 @@ struct ProfilesSection: View {
             .padding(.horizontal, Design.Spacing.l)
         } else {
             FlowLayout(spacing: 4, lineSpacing: 4) {
-                ForEach(profiles.profiles) { profile in
+                ForEach(Array(profiles.profiles.enumerated()), id: \.element.id) { index, profile in
                     ProfilePill(
                         profile: profile,
                         isCurrentlyFlexible: isFlexible(profile),
@@ -242,10 +242,29 @@ struct ProfilesSection: View {
                     } onDelete: {
                         profiles.delete(profile)
                     }
+                    // ⌘1…⌘9 while the popover has key focus. Not a global
+                    // hotkey — those were rejected in the backlog because they
+                    // collide with whatever the user is actually working in.
+                    // Only the first nine get one; a tenth profile would need
+                    // ⌘0, which reads as "zero" not "tenth".
+                    .modifier(ProfileShortcut(index: index))
                 }
                 saveButton
             }
             .padding(.horizontal, Design.Spacing.l)
+        }
+    }
+
+    /// Applies ⌘<n> to the first nine pills and nothing to the rest.
+    private struct ProfileShortcut: ViewModifier {
+        let index: Int
+
+        func body(content: Content) -> some View {
+            if index < 9, let key = KeyEquivalent(exactly: index + 1) {
+                content.keyboardShortcut(key)
+            } else {
+                content
+            }
         }
     }
 
@@ -1387,5 +1406,15 @@ private struct ProfilePill: View {
 
     private var tooltip: String {
         "Apply '\(profile.name)' (\(profile.humanSummary))"
+    }
+}
+
+extension KeyEquivalent {
+    /// `KeyEquivalent` for a single decimal digit, or nil for anything that is
+    /// not one. Keeps the digit-to-key conversion out of the view body and out
+    /// of force-unwrapped `Character` construction.
+    init?(exactly digit: Int) {
+        guard (0...9).contains(digit) else { return nil }
+        self.init(Character("\(digit)"))
     }
 }
