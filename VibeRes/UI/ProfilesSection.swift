@@ -319,6 +319,28 @@ struct ProfilesSection: View {
         )
     }
 
+    /// Tells the user when two of the monitors they just saved report the same
+    /// EDID, because the saved entries cannot tell those two apart: at apply
+    /// time each entry binds to every display its matcher accepts, so one entry
+    /// drives both screens.
+    ///
+    /// A warning rather than a rejection — the displays really are
+    /// indistinguishable, so there is nothing the user could fix in the form.
+    private func warnIfDisplaysAreIndistinguishable(selection: [CGDirectDisplayID: ProfileMatchKind]) {
+        let specific = displays.displays.filter { selection[$0.id] == .specific }
+        let ambiguous = DisplayIdentity.ambiguous(specific.map { DisplayIdentity.capture($0.id) })
+        guard !ambiguous.isEmpty else { return }
+
+        let names = specific
+            .filter { ambiguous.contains(DisplayIdentity.capture($0.id)) }
+            .map(\.name)
+        let listed = Set(names).sorted().joined(separator: ", ")
+        announce(
+            "Saved, but \(listed) report the same identity — this profile cannot tell them apart and will set both the same way.",
+            tone: .fallback
+        )
+    }
+
     private func currentModeDescription(_ m: CGDisplayMode) -> String {
         var parts = ["\(m.width)×\(m.height)"]
         if let hz = m.refreshHz { parts.append("\(hz)Hz") }
@@ -1187,6 +1209,7 @@ struct ProfilesSection: View {
         switch profiles.captureCurrent(name: trimmed, displays: displays.displays, selection: selection) {
         case .saved:
             mode = .idle
+            warnIfDisplaysAreIndistinguishable(selection: selection)
         case .rejectedMultipleAnyExternal:
             announce("Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.", tone: .problem)
         case .rejectedEmpty:

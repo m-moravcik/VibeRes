@@ -36,6 +36,13 @@ themselves in words, and launch-at-login repairs itself.
 
 ### Changed
 
+- **Saving a profile warns when two monitors are indistinguishable.** Identical
+  monitors can report the same vendor, model and serial, and a saved entry binds
+  to every display its matcher accepts — so one entry silently drives both
+  screens. 0.8.0 fixed the equivalent collision for "any external" by allowing
+  one such entry per profile, but that remedy does not apply here: the displays
+  really are indistinguishable, so the profile now says so instead of pretending
+  otherwise.
 - **The long tail of small resolutions collapses behind a disclosure.** A 5K
   display offers 14–20 sizes, ending in ones nobody picks. Anything narrower than
   60% of the widest option is one click away instead of always on screen; the

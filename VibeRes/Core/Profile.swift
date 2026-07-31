@@ -241,4 +241,27 @@ struct DisplayIdentity: Hashable, Codable {
             serial: CGDisplaySerialNumber(id)
         )
     }
+
+    /// Identities shared by more than one attached display, each reported once.
+    ///
+    /// Two identical monitors — the common dual-monitor purchase — can report the
+    /// same vendor, model and serial, and then a single `.edid` entry binds to
+    /// both: `applyDetailed` applies each entry to every display its matcher
+    /// accepts. 0.8.0 fixed the equivalent collision for `.anyExternal` by
+    /// allowing one such entry per profile, but that remedy does not transfer
+    /// here — these displays genuinely are indistinguishable, so the only honest
+    /// response is to say so rather than to reject the profile.
+    static func ambiguous(_ identities: [DisplayIdentity]) -> [DisplayIdentity] {
+        var seen: [DisplayIdentity: Int] = [:]
+        for identity in identities {
+            seen[identity, default: 0] += 1
+        }
+        // Preserve first-appearance order so a warning lists them predictably.
+        var reported: Set<DisplayIdentity> = []
+        return identities.filter { identity in
+            guard seen[identity, default: 0] > 1, !reported.contains(identity) else { return false }
+            reported.insert(identity)
+            return true
+        }
+    }
 }
