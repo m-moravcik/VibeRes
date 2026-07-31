@@ -11,6 +11,7 @@ final class Preferences {
     private static let livePreviewKey = "VibeRes.LivePreviewEnabled"
     private static let simpleModeKey = "VibeRes.SimpleMode"
     private static let onboardingShownKey = "VibeRes.OnboardingShown"
+    private static let launchAtLoginKey = "VibeRes.LaunchAtLogin"
 
     var autoApplyOnDisplayChange: Bool {
         didSet {
@@ -48,7 +49,28 @@ final class Preferences {
         }
     }
 
+    /// What the user last asked for regarding launch at login.
+    ///
+    /// `SMAppService` is authoritative about the *current* registration but keeps
+    /// no record of intent, so a registration that gets invalidated — the bundle
+    /// replaced by an update, moved, or restored from a backup — reads as "off"
+    /// with nothing to compare against. Storing intent lets the app notice and
+    /// re-register instead of silently stopping at login. `nil` means no answer
+    /// has been recorded yet; see `LoginItem.reconciliation`.
+    var launchAtLoginIntent: Bool? {
+        didSet {
+            if let launchAtLoginIntent {
+                UserDefaults.standard.set(launchAtLoginIntent, forKey: Self.launchAtLoginKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.launchAtLoginKey)
+            }
+        }
+    }
+
     init() {
+        // Read before the didSet observers can fire.
+        self.launchAtLoginIntent = UserDefaults.standard.object(forKey: Self.launchAtLoginKey) as? Bool
+
         if UserDefaults.standard.object(forKey: Self.autoApplyKey) == nil {
             self.autoApplyOnDisplayChange = true
         } else {

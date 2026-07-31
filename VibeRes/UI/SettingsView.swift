@@ -40,7 +40,10 @@ struct SettingsView: View {
         }
         .frame(width: 460, height: 320)
         .task {
-            launchAtLogin = LoginItem.isEnabled
+            // Prefer the recorded intent: if the registration was invalidated
+            // and re-registration failed, the toggle should still show what the
+            // user asked for rather than silently reverting to off.
+            launchAtLogin = preferences.launchAtLoginIntent ?? LoginItem.isEnabled
             // Reset on every appear — covers re-opens after close.
             selectedTab = .general
         }
@@ -55,13 +58,19 @@ struct SettingsView: View {
                 Toggle("Launch at login", isOn: Binding(
                     get: { launchAtLogin },
                     set: { newValue in
-                        if LoginItem.setEnabled(newValue) {
-                            // SMAppService applies async — give it a runloop
-                            // tick before reading the canonical state back.
-                            Task { @MainActor in
-                                try? await Task.sleep(for: .milliseconds(150))
-                                launchAtLogin = LoginItem.isEnabled
-                            }
+                        // Record the intent before touching the service. It is
+                        // what the user asked for and has to outlive a failed
+                        // registration, so the next launch can retry instead of
+                        // quietly leaving the setting off.
+                        preferences.launchAtLoginIntent = newValue
+                        launchAtLogin = newValue
+
+                        guard LoginItem.setEnabled(newValue) else { return }
+                        // SMAppService applies async — give it a runloop
+                        // tick before reading the canonical state back.
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(150))
+                            launchAtLogin = LoginItem.isEnabled
                         }
                     }
                 ))
