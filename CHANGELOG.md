@@ -20,7 +20,7 @@ Revert also restores the previous main display.
   `viberes profile apply` reports the main-display outcome in the note, and
   `viberes profile list` shows a `main:` line for each profile's choice.
   Revert (`⌘Z` or the footer button) also restores the previous main display
-  — the full state before the apply is tracked, not just the modes.
+  — the previous main is tracked too, not just the modes.
 
 ## [0.8.6] — 2026-08-01
 
