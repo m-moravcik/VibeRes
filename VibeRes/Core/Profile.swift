@@ -96,6 +96,12 @@ struct Profile: Identifiable, Codable, Hashable {
     var name: String
     var entries: [Entry]
     var createdAt: Date
+    /// Which display should become main (host the menu bar) when this profile
+    /// is applied. `nil` — the default and the value every pre-0.9 profile
+    /// decodes to — means the arrangement is never touched. Resolved against
+    /// live displays at apply time and honoured only when it binds to exactly
+    /// one of them; no geometry is stored.
+    var mainDisplay: DisplayMatcher?
 
     /// Per-display target. The matcher decides which live display this entry
     /// applies to; the resolution fields decide what mode to switch it into.
@@ -218,11 +224,18 @@ struct Profile: Identifiable, Codable, Hashable {
         return parts.joined(separator: " + ")
     }
 
-    init(id: UUID = UUID(), name: String, entries: [Entry], createdAt: Date = Date()) {
+    init(
+        id: UUID = UUID(),
+        name: String,
+        entries: [Entry],
+        createdAt: Date = Date(),
+        mainDisplay: DisplayMatcher? = nil
+    ) {
         self.id = id
         self.name = name
         self.entries = entries
         self.createdAt = createdAt
+        self.mainDisplay = mainDisplay
     }
 }
 
