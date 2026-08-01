@@ -193,6 +193,46 @@ jobs:
           # The script writes zip / sha256 / version to $GITHUB_OUTPUT itself.
           ./scripts/release-signed.sh
 
+      - name: Extract release notes from CHANGELOG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Pull the section between "## [VERSION]" and the next "## [" header.
+          # If the section isn't found, fall back to a generic notes string.
+          awk -v ver="## [$VERSION]" '
+            index($0, ver) == 1 { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ] || ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::warning::No '## [$VERSION]' section in CHANGELOG.md — using generic notes."
+            printf 'See [CHANGELOG.md](https://github.com/%s/blob/main/CHANGELOG.md) for full notes.\n' \
+              "$GITHUB_REPOSITORY" > release-notes.md
+          fi
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          ZIP: ${{ steps.package.outputs.zip }}
+        run: |
+          # Idempotent: a re-run, or a second run racing the first, must attach
+          # the archive to the existing release rather than abort — by this
+          # point the build has already been notarized.
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "release v${VERSION} exists; uploading the archive to it"
+            gh release upload "v${VERSION}" "$ZIP" --clobber
+          else
+            gh release create "v${VERSION}" \
+              "$ZIP" \
+              --title "VibeRes ${VERSION}" \
+              --notes-file release-notes.md
+          fi
+
+      # These run *after* the release exists. Publishing the appcast earlier
+      # can advertise an enclosure signature for bytes nobody can download —
+      # which is what three racing runs produced for 0.8.5.
       - name: Generate and sign the appcast
         env:
           SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
@@ -266,34 +306,6 @@ jobs:
       # Notes go to a file, never through $GITHUB_OUTPUT into a shell argument.
       # CHANGELOG text is arbitrary markdown: a backtick or a `$(` in a release
       # entry would be evaluated by the shell in the step that consumes it.
-      - name: Extract release notes from CHANGELOG
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          # Pull the section between "## [VERSION]" and the next "## [" header.
-          # If the section isn't found, fall back to a generic notes string.
-          awk -v ver="## [$VERSION]" '
-            index($0, ver) == 1 { found=1; next }
-            found && /^## \[/ { exit }
-            found { print }
-          ' CHANGELOG.md > release-notes.md
-          if [ ! -s release-notes.md ] || ! grep -q '[^[:space:]]' release-notes.md; then
-            echo "::warning::No '## [$VERSION]' section in CHANGELOG.md — using generic notes."
-            printf 'See [CHANGELOG.md](https://github.com/%s/blob/main/CHANGELOG.md) for full notes.\n' \
-              "$GITHUB_REPOSITORY" > release-notes.md
-          fi
-          cat release-notes.md
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-          ZIP: ${{ steps.package.outputs.zip }}
-        run: |
-          gh release create "v${VERSION}" \
-            "$ZIP" \
-            --title "VibeRes ${VERSION}" \
-            --notes-file release-notes.md
 
   sync-tap:
     name: Sync formula and cask to tap
