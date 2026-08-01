@@ -4,7 +4,7 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.3] — 2026-08-01
 
 **Highlights:** The popover stops closing on you mid-change, failures explain
 themselves in words, and launch-at-login repairs itself.
