@@ -2,7 +2,7 @@
 
 # VibeRes
 
-A modern menubar resolution switcher for macOS. Native SwiftUI, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
+A modern menubar resolution switcher for macOS. Native SwiftUI, live hover preview, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
 
 > Requires **macOS 26 Tahoe**, Apple Silicon. See [Older macOS](#older-macos) for backporting notes.
 
@@ -25,11 +25,7 @@ Upgrade later: `brew upgrade --cask m-moravcik/viberes/viberes-app` and `brew up
 
 ### Manual
 
-If you don't use Homebrew, download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases), unzip into `/Applications`, and on first launch right-click → **Open** (ad-hoc signed). Or strip the quarantine flag yourself:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/VibeRes.app
-```
+If you don't use Homebrew, download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases) and unzip it into `/Applications`. Releases are Developer ID signed, notarized and stapled, so a normal double-click works — no right-click → **Open** dance.
 
 ### Build from source
 
@@ -58,6 +54,16 @@ Click a display card to drill in. Each row is one logical size; refresh rates ap
 
 VibeRes deduplicates NTSC drop-frame variants (59.94, 47.95) against their integer counterparts (60, 48) automatically.
 
+### Preview on hover
+
+Hover any row other than the current one and a small sketch appears in the top-right corner of the list: the thin outline is the mode you're on, the filled rectangle inside it is the mode you're about to pick, both drawn at the same scale — so shrinking and growing read the same way. It sits in a fixed corner instead of following the cursor, which is deliberate: a popover anchored to the hovered row kept eating the first click and lagging behind fast pointer movement.
+
+The row's tooltip carries what a rectangle can't say — mode family, true pixel count, and the change in screen space: *"Scaled (HiDPI) · 3456 × 2234 pixels · +12% screen space"*.
+
+**Live preview** *(off by default)* fills that inner rectangle with a real screenshot of the display, cropped to the proposed aspect ratio, so you see *which part of your desktop survives the switch* rather than just how big the box gets. Enable it in **Settings → Preview → Live preview on hover**; macOS asks for Screen Recording the first time, and the app tells the system why.
+
+It is deliberately frugal with that permission: one still per display view you open — never a continuous capture stream — cached while the popover is open and dropped when it closes. The screenshot is rendered on your Mac and never leaves it. If the permission is denied or a capture fails, the preview quietly falls back to the plain outline version; see [Troubleshooting](#live-preview-keeps-re-prompting-for-screen-recording) if the prompt keeps coming back.
+
 ---
 
 ## Profiles
@@ -79,7 +85,7 @@ When you click a pill, a coloured note shows the outcome: green for an exact mat
 
 ### Editing a profile
 
-Right-click any pill to apply, update, rename, or delete. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile.
+Right-click any pill to apply, update, rename, or delete. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile. When saving or editing, you can optionally choose which display becomes main (hosts the menu bar) when the profile applies; the default "Don't change" keeps today's behaviour.
 
 ---
 
@@ -156,19 +162,24 @@ automatically. Full process documented in [`.github/RELEASING.md`](.github/RELEA
 
 ## Troubleshooting
 
-### Live Preview keeps re-prompting for Screen Recording
+### Live preview keeps re-prompting for Screen Recording
 
-After a `brew upgrade --cask` (or any time the app bundle is replaced) macOS may end up with multiple stale Screen Recording grant entries pointing at old code-signature hashes. Symptom: every hover over a resolution row triggers the Allow / Deny prompt again, even though VibeRes is already checked in System Settings → Privacy & Security → Screen Recording.
+The prompt comes from opening a display's resolution list, not from hovering a row — [Live preview](#preview-on-hover) captures one still per display view. Seeing it once per session is expected the first time; seeing it every single time is not.
 
-The fix is one command:
+Released builds have been Developer ID signed, notarized and stapled since 0.8.2, so the grant survives `brew upgrade --cask`. Builds you make yourself (`make app`) are ad-hoc signed, and macOS keys Screen Recording grants by code-signature hash rather than bundle ID — replacing such a bundle leaves a stale grant behind, and `CGPreflightScreenCaptureAccess` keeps reporting no access even though VibeRes looks enabled in System Settings → Privacy & Security → Screen Recording.
 
-```bash
-tccutil reset ScreenCapture sk.moravcik.VibeRes
-```
+Two ways out, cheapest first:
 
-Then quit and relaunch VibeRes, click the menu-bar icon → drill into a display → hover a resolution row, and grant Screen Recording one last time. From then on it stays granted. (This is a known limitation of ad-hoc signed builds on macOS Tahoe; a notarized release will not have the issue.)
+1. Toggle **Live preview on hover** off and back on. That clears the cached denial and lets the next preview ask again — no relaunch needed since 0.8.6.
+2. If the grant itself is stale, reset it and grant it once more:
 
-VibeRes also self-detects this loop. After two failed grant attempts in a single session it stops calling `ScreenCaptureKit` altogether and falls back to the geometric preview — so you are not nagged with prompts indefinitely.
+   ```bash
+   tccutil reset ScreenCapture sk.moravcik.VibeRes
+   ```
+
+   Then relaunch VibeRes, click the menu-bar icon, drill into a display, and allow Screen Recording when asked.
+
+VibeRes also stops nagging on its own: after two failed grant attempts it stops calling `ScreenCaptureKit` for the rest of the session and draws the geometric preview instead.
 
 ## Older macOS
 
