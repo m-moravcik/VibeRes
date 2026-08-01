@@ -42,7 +42,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  # One global group, not per-ref. A tag push resolves github.ref to
+  # refs/tags/vX.Y.Z and a manual dispatch to refs/heads/main, so a per-ref
+  # group let both run at once — which is how v0.8.4 and v0.8.5 ended up with an
+  # appcast signed for one run's build and an asset uploaded by another's.
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -61,16 +65,26 @@ jobs:
     steps:
       - name: Resolve tag (push vs workflow_dispatch)
         id: tag
+        env:
+          # Through the environment, never into the script body: `${{ }}` is
+          # substituted before bash sees the line, so a crafted tag would be
+          # shell code rather than data.
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
           else
             TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::refusing to release from a tag that is not vMAJOR.MINOR.PATCH: $TAG"
+            exit 1
           fi
           echo "ref=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Checkout at tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
           fetch-depth: 0
           ref: ${{ steps.tag.outputs.ref }}
@@ -111,6 +125,20 @@ jobs:
             echo "::error::CURRENT_PROJECT_VERSION must increase: $PREVIOUS -> $CURRENT"
             exit 1
           fi
+
+      - name: Verify the tag is on main
+        env:
+          TAG: ${{ steps.tag.outputs.ref }}
+        run: |
+          # Signing certificate, notarization key and the Sparkle private key are
+          # all reachable from this job, so the code being built has to be code
+          # that went through main — not whatever an arbitrary tag points at.
+          git fetch origin main --depth=0 --quiet
+          if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/main; then
+            echo "::error::$TAG is not an ancestor of origin/main; refusing to release with signing secrets."
+            exit 1
+          fi
+          echo "$TAG is on main"
 
       - name: Install build tools
         run: brew install xcodegen xcbeautify
@@ -236,6 +264,8 @@ jobs:
       - name: Generate and sign the appcast
         env:
           SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           if [ -z "$SPARKLE_EDDSA_PRIVATE_KEY" ]; then
             echo "::error::secret SPARKLE_EDDSA_PRIVATE_KEY is not set — clients would get an unsigned feed."
@@ -244,8 +274,25 @@ jobs:
           KEY="$RUNNER_TEMP/sparkle_ed25519.key"
           printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" > "$KEY"
           chmod 600 "$KEY"
+          # From the *published* asset, not the local build. Two runs building
+          # the same version produce different bytes, and publishing a feed
+          # signed for the local copy is how v0.8.4 and v0.8.5 ended up
+          # advertising a signature for an archive nobody could download.
+          PUBLISHED="$RUNNER_TEMP/published"
+          rm -rf "$PUBLISHED" && mkdir -p "$PUBLISHED"
+          gh release download "v${VERSION}" --pattern '*.zip' --dir "$PUBLISHED"
+          ASSET="$PUBLISHED/VibeRes-${VERSION}.zip"
+          [ -f "$ASSET" ] || { echo "::error::published asset missing"; exit 1; }
+
           SPARKLE_EDDSA_PRIVATE_KEY_PATH="$KEY" DERIVED_DATA=./build \
-            ./scripts/make-appcast.sh "${{ steps.package.outputs.zip }}" appcast.xml
+            ./scripts/make-appcast.sh "$ASSET" appcast.xml
+
+          # Prove the pairing before it is published, not after a user hits it.
+          SIGN_UPDATE="$(find ./build/SourcePackages/artifacts -name sign_update -type f -perm +111 | head -1)"
+          SIG="$(python3 -c "import re,sys; print(re.search(r'sparkle:edSignature=\"([^\"]+)\"', open('appcast.xml').read()).group(1))")"
+          "$SIGN_UPDATE" --verify "$ASSET" "$SIG" \
+            || { echo "::error::appcast signature does not verify against the published asset"; exit 1; }
+          echo "feed verified against the published asset"
           rm -f "$KEY"
 
       - name: Commit the appcast to main
@@ -294,6 +341,35 @@ jobs:
           echo "::error::could not publish the appcast after 5 attempts"
           exit 1
 
+      - name: Smoke-check the published feed
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Fetch the feed and the asset the way a user's copy of VibeRes will,
+          # and verify the pairing. Everything before this point tested our own
+          # bytes; this tests what GitHub serves.
+          for attempt in 1 2 3 4 5 6; do
+            FEED="$(curl -fsSL "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/appcast.xml?$(date +%s)" || true)"
+            printf '%s' "$FEED" | grep -q "VibeRes-${VERSION}.zip" && break
+            echo "feed not updated yet (attempt $attempt); raw.githubusercontent caches briefly"
+            sleep 10
+          done
+          printf '%s' "$FEED" | grep -q "VibeRes-${VERSION}.zip" \
+            || { echo "::error::published feed does not reference ${VERSION}"; exit 1; }
+
+          SIG="$(printf '%s' "$FEED" | python3 -c "import re,sys; print(re.search(r'sparkle:edSignature=\"([^\"]+)\"', sys.stdin.read()).group(1))")"
+          LEN="$(printf '%s' "$FEED" | python3 -c "import re,sys; print(re.search(r'length=\"(\d+)\"', sys.stdin.read()).group(1))")"
+
+          curl -fsSL -o "$RUNNER_TEMP/public.zip" \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/VibeRes-${VERSION}.zip"
+          ACTUAL="$(stat -f%z "$RUNNER_TEMP/public.zip")"
+          [ "$ACTUAL" = "$LEN" ] || { echo "::error::feed says $LEN bytes, asset is $ACTUAL"; exit 1; }
+
+          SIGN_UPDATE="$(find ./build/SourcePackages/artifacts -name sign_update -type f -perm +111 | head -1)"
+          "$SIGN_UPDATE" --verify "$RUNNER_TEMP/public.zip" "$SIG" \
+            || { echo "::error::the public feed does not verify against the public asset"; exit 1; }
+          echo "public feed and public asset agree"
+
       # Runs even on failure so a broken build never leaves the private key or
       # the API key sitting on the runner for the rest of the job.
       - name: Remove signing material
@@ -318,7 +394,7 @@ jobs:
 
     steps:
       - name: Checkout tap repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
           repository: m-moravcik/homebrew-viberes
           token: ${{ secrets.TAP_PUSH_TOKEN }}
