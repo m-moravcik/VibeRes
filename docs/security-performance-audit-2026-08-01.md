@@ -215,19 +215,33 @@ Worked through on 2026-08-01, after the audit. Test count over the whole run: 17
 | ID | Status | Commit |
 |---|---|---|
 | F-01 | Fixed | `7dae351`, `e42195e`, `7fe4b91` |
-| F-02 | Fixed in the workflow; two repository settings outstanding | `7fe4b91` |
+| F-02 | Fixed in the workflow; repository settings assessed as unnecessary for a single-owner repo | `7fe4b91` |
 | F-03 | Fixed | `5ca0f4d` |
 | F-04 | Fixed | `6bda190` |
 | F-05 | Fixed | `6bda190` |
-| F-06 | Batching fixed; scoring deliberately left on `MainActor` | `7663c94` |
+| F-06 | Atomicity fixed; performance claim retracted, scoring deliberately left on `MainActor` | `7663c94` |
 | F-07 | Fixed | `bc62577` |
 | F-08 | Fixed | `bc62577` |
 
 Notes where the fix differs from the recommendation:
 
-- **F-02** — the workflow no longer interpolates manual input into a shell, pins `actions/checkout` by SHA, and refuses to release a tag that is not an ancestor of `main`. The tag ruleset and the protected environment are repository settings and remain to be created; until they exist, the ancestor check is what stands between an arbitrary tag and the signing secrets.
+- **F-02** — the workflow no longer interpolates manual input into a shell, pins `actions/checkout` by SHA, and refuses to release a tag that is not an ancestor of `main`. The tag ruleset and protected environment were then assessed against the actual access model rather than adopted on principle: the repository is public with exactly one collaborator (`m-moravcik`, admin), the release workflow triggers only on `v*.*.*` tag pushes and `workflow_dispatch`, and there is no `pull_request_target`, so fork pull requests never receive secrets. Everyone who can reach the signing secrets is the owner. A tag ruleset restricting tag creation to the owner therefore constrains nobody, and a protected environment can only name that same person as reviewer. The control that does bite a leaked token is the ancestor-of-`main` gate, which is shipped: a stolen token cannot release attacker code by pushing a tag alone. Recommend revisiting if a second maintainer is ever added.
 - **F-06** — the batch switcher was built and every matched display now commits in one transaction. The second recommendation, moving matching and scoring off `MainActor`, was measured rather than assumed: scoring three displays against a real 60-mode list takes **86 µs**, about 1/200th of a frame. The cost that actually occupies the UI actor is `CGCompleteDisplayConfiguration`, and moving *that* off the main actor buys nothing observable — the desktop is blanked for the duration of a reconfiguration either way — while requiring CoreGraphics display configuration off-main and `@unchecked Sendable` holes for `CGDisplayMode`. Not done, on purpose.
 - Fixing F-06 exposed a defect the audit did not list: the revert snapshot was recorded *before* each switch was attempted and never removed on failure, so Revert offered to restore displays that had never changed and reported a count that included them. Fixed in the same commit.
+
+### Correction to the F-06 rationale
+
+The commit message for `7663c94` justifies the batch with visible flicker and with auto-apply retriggering on intermediate states. Both were asserted, not measured, and neither survives checking:
+
+- **Flicker was never measured and was never reported.** A `CGCompleteDisplayConfiguration` blanks the displays taking part in *that* transaction, so applying three displays one after another blanks each monitor once, staggered — not the whole desktop three times. Whether that is perceptible was not tested, and the app's owner does not recall ever seeing it.
+- **Auto-apply cannot fire on an intermediate state.** `DisplayStore.applyRefresh` bumps `setChangeToken` only when a display is added or removed; mode-only changes deliberately do not bump it, precisely so auto-apply does not fight a manual resolution change (`DisplayStore.swift:260-263`). Every intermediate state within a profile apply is mode-only.
+
+What the change is actually worth, and what F-06 should have been argued on:
+
+- **Atomicity.** Committing per display meant a failure on display 3 left displays 1 and 2 already changed, with no rollback and a profile half applied — which the audit itself lists under Impact. One transaction cannot half-apply: a display CoreGraphics refuses is dropped before the commit, and a failed commit changes nothing.
+- **The revert-snapshot defect above**, which only became visible once outcomes were patched from a transaction result instead of guessed before the attempt.
+
+The batch is worth keeping on those grounds. The performance half of F-06 remains unsubstantiated and should not be cited as fixed.
 
 ## Limitations
 
