@@ -38,7 +38,10 @@ struct SettingsView: View {
                 .tabItem { Label("Updates", systemImage: "arrow.down.circle") }
                 .tag(SettingsTab.updates)
         }
-        .frame(width: 460, height: 320)
+        // Sized so no tab scrolls. A little empty space beats a scroll bar in a
+        // settings window with three tabs — the previous 320pt height cut off
+        // the General tab once the confirmation setting was added.
+        .frame(width: 470, height: 400)
         .task {
             // Prefer the recorded intent: if the registration was invalidated
             // and re-registration failed, the toggle should still show what the
@@ -74,17 +77,13 @@ struct SettingsView: View {
                         }
                     }
                 ))
-                Toggle("Confirm resolution changes", isOn: prefs.confirmDisplayChanges)
-                Text("Applies a new resolution for this session only and undoes it after \(DisplayStore.confirmationWindowSeconds) seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button.")
-                    .font(Design.Typography.footer)
-                    .foregroundStyle(.secondary)
             } header: {
                 Text("Startup")
             }
 
             Section {
                 Toggle("Auto-apply matching profile", isOn: prefs.autoApplyOnDisplayChange)
-                Text("When you plug or unplug a monitor, VibeRes finds the saved profile that best fits the new layout and applies it silently. Mode-only changes don't trigger this.")
+                Text("Applied silently when a monitor is plugged in or unplugged. Changing only a resolution never triggers it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
@@ -114,7 +113,12 @@ struct SettingsView: View {
         Form {
             Section {
                 Toggle("Simple mode", isOn: prefs.simpleMode)
-                Text("Hide the per-row refresh-rate chips. Clicking a resolution applies it at the highest available refresh rate for your display. Turn off if you want to pick refresh rates manually.")
+                Text("Hides the refresh-rate chips; a click applies the highest rate available for that size.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Confirm resolution changes", isOn: prefs.confirmDisplayChanges)
+                Text("Applies for this session only and undoes it after \(DisplayStore.confirmationWindowSeconds) seconds unless you confirm. The undo runs on its own, so it works even when the screen is unreadable.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
@@ -122,8 +126,18 @@ struct SettingsView: View {
             }
 
             Section {
-                Toggle("Live preview on hover", isOn: prefs.livePreviewEnabled)
-                Text("Hovering a resolution row shows a real screenshot of your desktop scaled into the proposed mode. Requires Screen Recording permission, which is requested the first time you hover with this turned on.")
+                Toggle("Live preview on hover", isOn: Binding(
+                    get: { preferences.livePreviewEnabled },
+                    set: { newValue in
+                        preferences.livePreviewEnabled = newValue
+                        // Turning the feature back on is the user's signal to try
+                        // again. Without this, a permission granted in System
+                        // Settings after one denial stayed unnoticed until the
+                        // app was relaunched.
+                        if newValue { DesktopCapture.resetPermissionCache() }
+                    }
+                ))
+                Text("Shows a screenshot of your desktop scaled into the proposed mode. Asks for Screen Recording the first time.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {

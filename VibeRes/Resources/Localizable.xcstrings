@@ -1186,6 +1186,38 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh rate must be between 1 and 1000 Hz." } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Obnovovacia frekvencia musí byť medzi 1 a 1000 Hz." } }
       }
+    },
+    "Applied silently when a monitor is plugged in or unplugged. Changing only a resolution never triggers it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wird still angewendet, wenn ein Monitor angeschlossen oder getrennt wird. Eine reine Auflösungsänderung löst das nie aus." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applied silently when a monitor is plugged in or unplugged. Changing only a resolution never triggers it." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Použije sa potichu pri pripojení alebo odpojení monitora. Samotná zmena rozlíšenia to nikdy nespustí." } }
+      }
+    },
+    "Applies for this session only and undoes it after %lld seconds unless you confirm. The undo runs on its own, so it works even when the screen is unreadable." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gilt nur für diese Sitzung und wird nach %lld Sekunden rückgängig gemacht, sofern du nicht bestätigst. Das Rückgängigmachen läuft von selbst und funktioniert daher auch bei unlesbarem Bildschirm." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies for this session only and undoes it after %lld seconds unless you confirm. The undo runs on its own, so it works even when the screen is unreadable." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Platí len pre túto sesiu a po %lld sekundách sa vráti, ak ho nepotvrdíš. Vrátenie prebehne samo, takže funguje aj pri nečitateľnej obrazovke." } }
+      }
+    },
+    "Hides the refresh-rate chips; a click applies the highest rate available for that size." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Blendet die Bildwiederholraten aus; ein Klick wendet die höchste für diese Größe verfügbare Rate an." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hides the refresh-rate chips; a click applies the highest rate available for that size." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Skryje čipy s obnovovacou frekvenciou; klik použije najvyššiu dostupnú pre danú veľkosť." } }
+      }
+    },
+    "Shows a screenshot of your desktop scaled into the proposed mode. Asks for Screen Recording the first time." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zeigt einen Screenshot deines Schreibtischs, skaliert in den vorgeschlagenen Modus. Fragt beim ersten Mal nach Bildschirmaufnahme." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shows a screenshot of your desktop scaled into the proposed mode. Asks for Screen Recording the first time." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Zobrazí snímku plochy zmenšenú do navrhovaného režimu. Pri prvom použití si vyžiada Screen Recording." } }
+      }
     }
   }
 }

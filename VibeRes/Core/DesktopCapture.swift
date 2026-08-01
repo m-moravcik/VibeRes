@@ -73,7 +73,10 @@ enum DesktopCapture {
         }
     }
 
-    /// Manual reset hook for the "I just toggled Live Preview" flow.
+    /// Reset hook for the "I just turned Live Preview back on" flow. Puts the
+    /// cache back to `.unknown` so the next capture may prompt once more; a
+    /// second denial after that is what makes `.stuckLoop` reachable, which it
+    /// was not while `.denied` short-circuited every subsequent attempt.
     static func resetPermissionCache() {
         status = .unknown
         deniedAttempts = 0
@@ -84,9 +87,22 @@ enum DesktopCapture {
     /// after the second failed grant rather than prompting forever.
     private static func ensurePermission() async -> Bool {
         switch status {
-        case .granted: return true
-        case .denied, .stuckLoop: return false
-        case .unknown: break
+        case .granted:
+            return true
+        case .denied:
+            // Preflight does not prompt, so it is safe to re-ask here. Without
+            // this, granting the permission in System Settings after one denial
+            // left the feature dead until the app was relaunched.
+            if CGPreflightScreenCaptureAccess() {
+                status = .granted
+                deniedAttempts = 0
+                return true
+            }
+            return false
+        case .stuckLoop:
+            return false
+        case .unknown:
+            break
         }
 
         if CGPreflightScreenCaptureAccess() {

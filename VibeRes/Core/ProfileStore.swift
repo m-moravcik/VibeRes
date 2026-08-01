@@ -47,13 +47,50 @@ final class ProfileStore {
         return dir
     }
 
+    // Bounds on the on-disk catalog. It is the user's own file, so this is
+    // resilience rather than a trust boundary — but a corrupted or hand-edited
+    // file should not be able to stall launch or exhaust memory on a read that
+    // happens on the main actor during init.
+    nonisolated static let maximumStoreBytes = 4 * 1024 * 1024
+    nonisolated static let maximumProfiles = 200
+    /// Display enumeration already caps active displays at 32; a profile has no
+    /// reason to describe more.
+    nonisolated static let maximumEntriesPerProfile = 32
+
+    nonisolated static func isWithinSizeLimit(bytes: Int) -> Bool {
+        bytes <= maximumStoreBytes
+    }
+
+    /// Trims a decoded catalog to the limits, keeping the first entries so the
+    /// result is predictable rather than arbitrary.
+    nonisolated static func capped(_ profiles: [Profile]) -> [Profile] {
+        profiles.prefix(maximumProfiles).map { profile in
+            guard profile.entries.count > maximumEntriesPerProfile else { return profile }
+            return Profile(
+                id: profile.id,
+                name: profile.name,
+                entries: Array(profile.entries.prefix(maximumEntriesPerProfile)),
+                createdAt: profile.createdAt
+            )
+        }
+    }
+
     func load() {
+        // Check the size before reading rather than after: the point is to not
+        // pull an implausible file into memory on the main actor at launch.
+        let size = (try? storeURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard Self.isWithinSizeLimit(bytes: size) else {
+            lastError = "Saved profiles look corrupted and were not loaded."
+            profiles = []
+            return
+        }
+
         guard let data = try? Data(contentsOf: storeURL) else {
             profiles = []
             return
         }
         do {
-            profiles = try JSONDecoder().decode([Profile].self, from: data)
+            profiles = Self.capped(try JSONDecoder().decode([Profile].self, from: data))
         } catch {
             // Sanitised — don't surface JSONDecoder internals or file paths.
             lastError = "Failed to read saved profiles."
