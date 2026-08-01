@@ -50,6 +50,20 @@ struct SetResolutionIntent: AppIntent {
     var preferHiDPI: Bool
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
+        // Shortcuts hands over whatever the automation supplies, including
+        // values no display could have. Scoring survives them now, but the
+        // honest answer is to reject them at the parameter that is wrong rather
+        // than silently pick some "closest" mode.
+        guard ModeScoring.isRequestInRange(width: width, height: height, refreshHz: refreshHz) else {
+            if !(1...16384).contains(width) {
+                throw $width.needsValueError("Width must be between 1 and 16384 points.")
+            }
+            if !(1...16384).contains(height) {
+                throw $height.needsValueError("Height must be between 1 and 16384 points.")
+            }
+            throw $refreshHz.needsValueError("Refresh rate must be between 1 and 1000 Hz.")
+        }
+
         let snapshot = await MainActor.run { DisplayManager.snapshot() }
         guard let info = snapshot.first(where: { Int($0.id) == display.id }) else {
             throw $display.needsValueError("That display is no longer connected.")

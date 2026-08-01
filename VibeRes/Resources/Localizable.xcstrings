@@ -1162,6 +1162,30 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved, but %lld selected display(s) were disconnected before saving and are not in the profile." } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uložené, ale %lld vybraných displejov bolo pred uložením odpojených a v profile nie sú." } }
       }
+    },
+    "Width must be between 1 and 16384 points." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Breite muss zwischen 1 und 16384 Punkten liegen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Width must be between 1 and 16384 points." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Šírka musí byť medzi 1 a 16384 bodmi." } }
+      }
+    },
+    "Height must be between 1 and 16384 points." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Höhe muss zwischen 1 und 16384 Punkten liegen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Height must be between 1 and 16384 points." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Výška musí byť medzi 1 a 16384 bodmi." } }
+      }
+    },
+    "Refresh rate must be between 1 and 1000 Hz." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Bildwiederholrate muss zwischen 1 und 1000 Hz liegen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh rate must be between 1 and 1000 Hz." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Obnovovacia frekvencia musí byť medzi 1 a 1000 Hz." } }
+      }
     }
   }
 }

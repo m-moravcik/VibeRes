@@ -98,9 +98,15 @@ targets:
           - sk
           - de
         CFBundleAllowMixedLocalizations: true
-        # Re-add NSScreenCaptureUsageDescription only when (and if) the live
-        # screenshot preview is actually implemented. Until then, declaring an
-        # unused permission is misleading and would trip privacy reviewers.
+        # Live preview captures the desktop through ScreenCaptureKit
+        # (DesktopCapture.swift), so the declaration is required, not optional:
+        # Apple's guidance is to ship it with an app-authored reason before any
+        # capture. The comment that used to sit here said the feature was not
+        # implemented — it has been since the live preview shipped.
+        NSScreenCaptureUsageDescription: >-
+          VibeRes shows a live thumbnail of your desktop when you hover a
+          resolution, so you can see how it will look before applying it.
+          Nothing is recorded, stored or sent anywhere.
         #
         # Sparkle. The feed lives on a stable path in the repo rather than as a
         # release asset: `releases/latest/download/appcast.xml` 404s for every
