@@ -316,6 +316,13 @@ final class DisplayStore {
     /// Force-close every status-bar / popover window (visible or hidden) AND
     /// reset its cached frame origin so the next click rebuilds the panel
     /// with fresh coordinates derived from the updated screen geometry.
+    /// Test seam. Applying a mode is the one thing a unit test must not really
+    /// do — it would change the machine's display — but failure handling on the
+    /// revert path is exactly what needs covering, so the call is injectable.
+    var applyMode: (CGDisplayMode, CGDirectDisplayID, CGConfigureOption) throws -> Void = {
+        try ResolutionSwitcher.apply($0, to: $1, scope: $2)
+    }
+
     /// Test seam. The real implementation hunts down an AppKit window, which a
     /// unit test has no business doing; overriding it lets a test observe
     /// *whether* a refresh decided to dismiss.
@@ -358,7 +365,7 @@ final class DisplayStore {
             // `.forSession` while awaiting confirmation: if the screen turns out
             // to be unreadable *and* the app is somehow unable to revert, a
             // reboot still recovers. Made permanent by `confirmDisplayChange()`.
-            try ResolutionSwitcher.apply(mode, to: display, scope: confirmFirst ? .forSession : .permanently)
+            try applyMode(mode, display, confirmFirst ? .forSession : .permanently)
             lastError = nil
             refresh()
             if confirmFirst {
@@ -411,15 +418,30 @@ final class DisplayStore {
     /// The user can see the screen and wants to keep it. Re-applies the same mode
     /// permanently so the choice survives a reboot.
     func confirmDisplayChange() {
+        if let pending = pendingConfirmation {
+            do {
+                try applyMode(pending.mode, pending.display, .permanently)
+            } catch {
+                // The mode is still session-scoped and the screen may be
+                // unreadable. Tearing down the countdown here would remove the
+                // only automatic way back, so leave the safety net armed and
+                // say what went wrong.
+                lastError = error.userFacingText
+                return
+            }
+        }
         countdownTask?.cancel()
         countdown.confirm()
         confirmationSecondsRemaining = nil
-        if let pending = pendingConfirmation {
-            try? ResolutionSwitcher.apply(pending.mode, to: pending.display, scope: .permanently)
-        }
         pendingConfirmation = nil
         // Keeping the change means there is nothing left to undo by accident.
         revert.clear()
+    }
+
+    /// Arms the confirmation window directly. Test-only: the production path
+    /// goes through `apply(_:to:confirmFirst:)`, which really changes a display.
+    func armConfirmationForTesting(mode: CGDisplayMode, display: CGDirectDisplayID) {
+        armConfirmation(mode: mode, display: display)
     }
 
     private func revertUnconfirmedChange() {
@@ -435,11 +457,26 @@ final class DisplayStore {
     @discardableResult
     func performRevert() -> Int {
         let snapshot = revert.consume()
+        var failed: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
+        var restored = 0
+
         for entry in snapshot {
-            try? ResolutionSwitcher.apply(entry.before, to: entry.displayID)
+            do {
+                try applyMode(entry.before, entry.displayID, .permanently)
+                restored += 1
+            } catch {
+                // Keep the entry: this display is still in the mode the user
+                // wanted undone, so the way back must survive the attempt.
+                failed.append((entry.displayID, entry.displayName, entry.before))
+                lastError = error.userFacingText
+            }
         }
-        if !snapshot.isEmpty { refresh() }
-        return snapshot.count
+
+        if !failed.isEmpty { revert.recordBatch(failed) }
+        if restored > 0 { refresh() }
+        // Only what actually came back, so a caller cannot report a success
+        // that did not happen.
+        return restored
     }
 
     private func registerReconfigurationCallback() {
