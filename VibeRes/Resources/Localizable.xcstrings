@@ -1106,6 +1106,54 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates managed by Homebrew. Run: brew upgrade --cask m-moravcik/viberes/viberes-app" } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizácie spravuje Homebrew. Spusť: brew upgrade --cask m-moravcik/viberes/viberes-app" } }
       }
+    },
+    "Update ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Update bereit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Update ready" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Aktualizácia je pripravená" } }
+      }
+    },
+    "Click to restart into the new version" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Klicken, um in die neue Version neu zu starten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Click to restart into the new version" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Kliknutím reštartuješ do novej verzie" } }
+      }
+    },
+    "Installs the downloaded update and relaunches VibeRes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Installiert das geladene Update und startet VibeRes neu" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Installs the downloaded update and relaunches VibeRes" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Nainštaluje stiahnutú aktualizáciu a reštartuje VibeRes" } }
+      }
+    },
+    "Check for updates automatically" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Automatisch nach Updates suchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for updates automatically" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Automaticky kontrolovať aktualizácie" } }
+      }
+    },
+    "Downloads updates in the background and offers to restart when one is ready. VibeRes never restarts on its own." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lädt Updates im Hintergrund und bietet einen Neustart an, sobald eines bereit ist. VibeRes startet nie von selbst neu." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Downloads updates in the background and offers to restart when one is ready. VibeRes never restarts on its own." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Sťahuje aktualizácie na pozadí a keď je niektorá pripravená, ponúkne reštart. VibeRes sa nikdy nereštartuje sám." } }
+      }
+    },
+    "Check for Updates…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nach Updates suchen…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates…" } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Skontrolovať aktualizácie…" } }
+      }
     }
   }
 }
