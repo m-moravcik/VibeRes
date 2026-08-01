@@ -6,10 +6,10 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.8.3</title>
-      <pubDate>Sat, 01 Aug 2026 10:15:25 +0000</pubDate>
-      <sparkle:version>18</sparkle:version>
-      <sparkle:shortVersionString>0.8.3</sparkle:shortVersionString>
+      <title>0.8.4</title>
+      <pubDate>Sat, 01 Aug 2026 10:39:54 +0000</pubDate>
+      <sparkle:version>19</sparkle:version>
+      <sparkle:shortVersionString>0.8.4</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
 <p><strong>Highlights:</strong> The popover stops closing on you mid-change, failures explain themselves in words, and launch-at-login repairs itself.</p>
@@ -42,14 +42,14 @@
 <li><code>scripts/check-localisation.sh</code>, run by CI, fails the build when the app emits a string the catalog does not carry. The catalog drifted 76 strings behind the UI while the changelog advertised full coverage because nothing was watching.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.8.3/VibeRes-0.8.3.zip"
-                 sparkle:edSignature="QLK97uxOAjCsZGl/RfH3MVYbU8DsA2yGeu6uE6esi2+NmdZ/QCQFDqn2I+Qq1qZeTq1Oq+ZjKLk0vfKZgmlcBw=="
-                 length="2854639"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.8.4/VibeRes-0.8.4.zip"
+                 sparkle:edSignature="5WAJg8K32cLpBAKfVfMiU2mQGWD8AMPkGtVq03/HPrMa+4E5JBbodTJa+bePi+qCripLo2nCQpldEY+is7txAg=="
+                 length="2854640"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: pibnlJeBBfyJxqgakK5y+Spnm+Q7TYGm4+nblGjpRrViF9qHlgpjO6M7dxQi6hLbe8L8rpydx38ro2xNa47WBQ==
+edSignature: 36QMcYKzoNiXVNQn23do7EEBseW+ME/Cd09D7L+QLEw+355p1YAeydOXN3lKOvc7zS8UeOCOGfVGgmPBbIT2CQ==
 length: 6158
 -->
