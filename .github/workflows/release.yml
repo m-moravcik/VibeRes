@@ -224,22 +224,31 @@ jobs:
           # of an hour by this point, so a push that lands while we were waiting
           # must not throw the release away — which is exactly what happened to
           # the first 0.8.4 attempt.
+          # `set -e` is on (shell: bash -e), so every step that is allowed to
+          # fail has to say so explicitly. The previous version of this loop did
+          # not, and died on the first iteration instead of retrying.
+          set +e
           for attempt in 1 2 3 4 5; do
-            git fetch origin main
-            git checkout -B appcast-update origin/main
+            git fetch origin main || { sleep 5; continue; }
+
+            # -f because the generating step left appcast.xml modified in the
+            # working tree and plain checkout refuses to overwrite it. The
+            # generated file is safe in RUNNER_TEMP.
+            git checkout -f -B appcast-update origin/main || { sleep 5; continue; }
+
             cp "$RUNNER_TEMP/appcast.xml" appcast.xml
             git add appcast.xml
             if git diff --staged --quiet; then
               echo "appcast unchanged"
               exit 0
             fi
-            git commit -m "Publish appcast for ${VERSION}"
+            git commit -m "Publish appcast for ${VERSION}" || { sleep 5; continue; }
+
             if git push origin appcast-update:main; then
               echo "appcast published on attempt $attempt"
               exit 0
             fi
             echo "push rejected — main moved; retrying ($attempt/5)"
-            git reset --hard origin/main
             sleep $((attempt * 5))
           done
           echo "::error::could not publish the appcast after 5 attempts"
