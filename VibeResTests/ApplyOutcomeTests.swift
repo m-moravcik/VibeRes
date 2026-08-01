@@ -21,7 +21,7 @@ struct ApplyOutcomeTests {
     func emptyProfile() {
         let store = makeStore()
         let p = Profile(name: "Empty", entries: [])
-        let outcomes = store.applyDetailed(p, displays: [])
+        let outcomes = store.applyDetailed(p, displays: []).outcomes
         #expect(outcomes.isEmpty)
     }
 
@@ -33,7 +33,7 @@ struct ApplyOutcomeTests {
                           displayName: "Phantom Monitor",
                           pointWidth: 2560, pointHeight: 1440, refreshHz: 60, isHiDPI: false),
         ])
-        let outcomes = store.applyDetailed(p, displays: [])
+        let outcomes = store.applyDetailed(p, displays: []).outcomes
         #expect(outcomes.count == 1)
         if case .skippedNoMatch = outcomes.first?.status {} else {
             Issue.record("expected .skippedNoMatch, got \(String(describing: outcomes.first?.status))")
@@ -55,7 +55,7 @@ struct ApplyOutcomeTests {
                           displayName: "Q3279WG5B",
                           pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false),
         ])
-        let outcomes = store.applyDetailed(p, displays: [])
+        let outcomes = store.applyDetailed(p, displays: []).outcomes
         #expect(outcomes.count == 1)
         if case .skippedNoMatch = outcomes.first?.status {} else {
             Issue.record("expected .skippedNoMatch")

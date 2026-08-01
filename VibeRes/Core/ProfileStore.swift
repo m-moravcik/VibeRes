@@ -421,6 +421,58 @@ final class ProfileStore {
         }
     }
 
+    /// What applying a profile did: per-display mode outcomes plus, when the
+    /// profile pins a main display, what happened to the arrangement.
+    struct ProfileApplyResult {
+        var outcomes: [ApplyOutcome]
+        var mainChange: MainChangeOutcome?
+
+        /// True when anything on screen actually changed. Auto-apply uses
+        /// this to suppress "Applied…" toasts for no-op applies.
+        var didChangeAnything: Bool {
+            outcomes.contains(where: \.didChange) || mainChange?.didChange == true
+        }
+    }
+
+    /// Outcome of the main-display phase. `nil` on ProfileApplyResult means
+    /// the profile does not pin a main display at all.
+    enum MainChangeOutcome: Equatable {
+        case changed(displayName: String)            // committed and verified (F5)
+        case changedButAdjusted(displayName: String) // committed, but read-back differs from the plan
+        case alreadyMain
+        case skippedNoMatch                          // matcher bound no active display
+        case skippedAmbiguous(count: Int)            // matcher bound 2+ — intent unknowable
+        case skippedMirrored                         // arrangement + mirroring is unmeasured
+        case failed(String)                          // the origin transaction threw
+
+        var didChange: Bool {
+            switch self {
+            case .changed, .changedButAdjusted: return true
+            case .alreadyMain, .skippedNoMatch, .skippedAmbiguous, .skippedMirrored, .failed:
+                return false
+            }
+        }
+
+        /// English, Core-safe (the CLI prints it verbatim); localised copy
+        /// lives in ApplyOutcomeNote.
+        var problemSummary: String? {
+            switch self {
+            case .changed, .alreadyMain:
+                return nil
+            case .changedButAdjusted:
+                return "main display set, but macOS adjusted the arrangement"
+            case .skippedNoMatch:
+                return "main display not changed: the saved display is not connected"
+            case .skippedAmbiguous(let count):
+                return "main display not changed: \(count) connected displays match"
+            case .skippedMirrored:
+                return "main display not changed: displays are mirrored"
+            case .failed(let message):
+                return "main display not changed: \(message)"
+            }
+        }
+    }
+
     /// A display change decided but not yet committed, with the slot in the
     /// result it will fill once the transaction returns.
     private struct PlannedChange {
@@ -440,6 +492,23 @@ final class ProfileStore {
     var applyBatch: ([ResolutionSwitcher.BatchChange], CGConfigureOption) throws
         -> ResolutionSwitcher.BatchOutcome = { try ResolutionSwitcher.applyBatch($0, scope: $1) }
 
+    /// Test seams for the main-display phase — same rationale as `applyBatch`:
+    /// the origin transaction and the live arrangement reads must be
+    /// injectable, because a unit test must not rearrange the machine.
+    @ObservationIgnored
+    var applyOrigins: ([CGDirectDisplayID: CGPoint], CGConfigureOption) throws -> Void =
+        { try ResolutionSwitcher.applyOrigins($0, scope: $1) }
+
+    @ObservationIgnored
+    var liveArrangement: () -> (main: CGDirectDisplayID, bounds: [CGDirectDisplayID: CGRect]) = {
+        var bounds: [CGDirectDisplayID: CGRect] = [:]
+        for id in ResolutionSwitcher.activeDisplayIDs() { bounds[id] = CGDisplayBounds(id) }
+        return (CGMainDisplayID(), bounds)
+    }
+
+    @ObservationIgnored
+    var isInMirrorSet: (CGDirectDisplayID) -> Bool = { CGDisplayIsInMirrorSet($0) != 0 }
+
     /// Apply every entry of the profile to its matching live display, picking the
     /// best mode via the same scoring used by SetResolutionIntent. Returns a
     /// per-entry outcome so the UI can distinguish between success, fallback,
@@ -453,7 +522,7 @@ final class ProfileStore {
         _ profile: Profile,
         displays: [DisplayInfo],
         revert: RevertHistory? = nil
-    ) -> [ApplyOutcome] {
+    ) -> ProfileApplyResult {
         var outcomes: [ApplyOutcome] = []
         // Collect pre-change snapshots so a single multi-display profile
         // apply can be undone with one Revert click.
@@ -591,21 +660,83 @@ final class ProfileStore {
             }
         }
 
+        // Phase 2 — main display. Ordered after the mode transaction: modes
+        // change sizes in points, and only the *post-mode* live arrangement is
+        // guaranteed to be a consistent layout to translate (F2). Stale
+        // geometry could describe gaps the window server has never been
+        // measured on.
+        var mainChange: MainChangeOutcome?
+        var previousMainID: CGDirectDisplayID?
+        if let matcher = profile.mainDisplay {
+            mainChange = applyMainDisplay(matcher, displays: displays,
+                                          previousMain: &previousMainID)
+        }
+
         // Revert undoes "the last profile apply" rather than the last
         // individual switch within it — and only records displays that
         // actually moved, so it never offers to restore one that never changed.
-        if !batchSnapshot.isEmpty, let revert = revert {
+        // A main-only change (all modes already at target) must still arm it.
+        if !batchSnapshot.isEmpty || previousMainID != nil, let revert = revert {
             revert.recordBatch(batchSnapshot)
+            // Task 5 wires previousMainID into RevertHistory.
         }
-        return outcomes
+        return ProfileApplyResult(outcomes: outcomes, mainChange: mainChange)
     }
 
-    /// Backward-compat wrapper that converts ApplyOutcome list into a flat string array.
+    /// Resolves the profile's main matcher against the live arrangement and,
+    /// when it binds to exactly one active display that is not already main,
+    /// commits a full-coverage origin translation and verifies it (F5).
+    private func applyMainDisplay(
+        _ matcher: DisplayMatcher,
+        displays: [DisplayInfo],
+        previousMain: inout CGDirectDisplayID?
+    ) -> MainChangeOutcome {
+        let live = liveArrangement()
+        let activeIDs = Array(live.bounds.keys)
+
+        switch MainDisplayPlanner.resolveTarget(matcher, activeIDs: activeIDs) {
+        case .noMatch:
+            return .skippedNoMatch
+        case .ambiguous(let count):
+            return .skippedAmbiguous(count: count)
+        case .target(let target):
+            // Arrangement combined with mirroring is a spike unknown; leave
+            // it alone rather than find out on a user's machine.
+            guard !activeIDs.contains(where: isInMirrorSet) else { return .skippedMirrored }
+            guard target != live.main else { return .alreadyMain }
+            guard let plan = MainDisplayPlanner.plan(bounds: live.bounds, target: target) else {
+                return .skippedNoMatch
+            }
+
+            let name = displays.first(where: { $0.id == target })?.name ?? "display \(target)"
+            viberesLog.notice("main display: \(live.main) → \(target) (\(name, privacy: .public)), \(plan.count) origins")
+            do {
+                try applyOrigins(plan, .permanently)
+            } catch {
+                viberesLog.error("main display: transaction failed — \(String(describing: error), privacy: .public)")
+                return .failed(error.userFacingText)
+            }
+            previousMain = live.main
+
+            // F5: the return code is not evidence — read the arrangement back.
+            let after = liveArrangement()
+            if after.main == target, MainDisplayPlanner.verified(plan: plan, actualBounds: after.bounds) {
+                return .changed(displayName: name)
+            }
+            viberesLog.error("main display: committed but read-back differs from the plan (F5)")
+            return .changedButAdjusted(displayName: name)
+        }
+    }
+
+    /// Backward-compat wrapper that converts the result into a flat problem list.
     @discardableResult
     func apply(_ profile: Profile, displays: [DisplayInfo]) -> [String] {
-        applyDetailed(profile, displays: displays)
-            .filter(\.isProblem)
-            .map(\.summary)
+        let result = applyDetailed(profile, displays: displays)
+        var problems = result.outcomes.filter(\.isProblem).map(\.summary)
+        if let main = result.mainChange, let summary = main.problemSummary {
+            problems.append(summary)
+        }
+        return problems
     }
 
     /// Returns the saved profile that best fits the current display set, or

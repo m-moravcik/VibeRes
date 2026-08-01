@@ -299,10 +299,10 @@ func cmdProfileApply(_ name: String) {
         fail("no profile named \"\(name)\"")
     }
     let displays = DisplayManager.snapshot()
-    let outcomes = store.applyDetailed(profile, displays: displays)
+    let result = store.applyDetailed(profile, displays: displays)
     var hadProblem = false
     print("# applied profile \"\(profile.name)\"")
-    for o in outcomes {
+    for o in result.outcomes {
         let icon: String
         switch o.status {
         case .applied: icon = "✓"

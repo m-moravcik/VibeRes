@@ -355,10 +355,10 @@ struct ProfilesSection: View {
         let snapshotDisplays = displays.displays
         let revert = displays.revert
         Task.detached(priority: .userInitiated) {
-            let outcomes = await MainActor.run {
+            let result = await MainActor.run {
                 profiles.applyDetailed(profile, displays: snapshotDisplays, revert: revert)
             }
-            await MainActor.run { announceOutcome(outcomes) }
+            await MainActor.run { announceOutcome(result.outcomes) }
         }
     }
 
@@ -1244,10 +1244,9 @@ struct ProfilesSection: View {
             return
         }
         autoApplyLog.notice("autoApply: invoking applyDetailed for '\(match.name, privacy: .public)' across \(displays.displays.count) display(s)")
-        let outcomes = profiles.applyDetailed(match, displays: displays.displays)
-        let didChangeAnything = outcomes.contains(where: \.didChange)
-        autoApplyLog.notice("autoApply: outcomes=\(outcomes.count) didChange=\(didChangeAnything)")
-        if didChangeAnything {
+        let result = profiles.applyDetailed(match, displays: displays.displays)
+        autoApplyLog.notice("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
+        if result.didChangeAnything {
             announce("Applied '\(match.name)' for the new display setup.", tone: .info)
         }
     }
