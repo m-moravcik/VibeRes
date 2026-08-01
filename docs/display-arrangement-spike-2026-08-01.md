@@ -2,7 +2,7 @@
 
 Date: 2026-08-01
 Commit at time of spike: `4fc49a772917e656e2f28fbebbc2a099c9e5ec51` (`Prepare 0.8.6`, after `v0.8.5`)
-Status: **spike complete, feature not implemented**
+Status: **spike complete; Stage 1 implemented in 0.9.0** (see docs/superpowers/plans/2026-08-01-main-display-in-profile.md)
 Relates to: `BACKLOG.md` → *Display arrangement preservation*
 
 ## Why this exists
