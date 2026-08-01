@@ -6,50 +6,25 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.8.4</title>
-      <pubDate>Sat, 01 Aug 2026 10:39:54 +0000</pubDate>
-      <sparkle:version>19</sparkle:version>
-      <sparkle:shortVersionString>0.8.4</sparkle:shortVersionString>
+      <title>0.8.5</title>
+      <pubDate>Sat, 01 Aug 2026 10:58:34 +0000</pubDate>
+      <sparkle:version>20</sparkle:version>
+      <sparkle:shortVersionString>0.8.5</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> The popover stops closing on you mid-change, failures explain themselves in words, and launch-at-login repairs itself.</p>
 <h3>Fixed</h3>
 <ul>
-<li><strong>The popover closed itself ~200 ms after every resolution change.</strong> A mode change fires a display-reconfiguration callback, and the debounced refresh path dismissed the popover unconditionally instead of honouring the rule that only a changed display *set* should close it. The outcome note and the Revert row were on screen for a fifth of a second, which made the fallback warning added in 0.8.0 invisible in normal use. Introduced in the 0.8.1 release prep.</li>
-<li><strong>Failures showed raw system errors.</strong> A refused resolution change rendered as <code>applyMode(__C.CGError(rawValue: 1004))</code> in the popover, in profile results, and in <code>viberes</code> output. It now says what happened and what to try, keeping the numeric code for bug reports.</li>
-<li><strong>Launch at login could stop working silently.</strong> Nothing recorded that the user had asked for it, so a registration invalidated by an update, a move, or a restore simply read as &quot;off&quot; with no way for the app to notice. The intent is stored and reconciled at launch. The Settings toggle also did nothing at all when registration failed — no feedback, no record.</li>
-<li>Profile results could not be translated: the note under the pills was assembled from pre-formatted English. It is now built from values, with en/sk/de copy.</li>
-<li><strong>The app is now actually localised into en/sk/de.</strong> The catalog held 46 of the 122 strings the app emits, so most of the popover, the whole Settings window in places, and every Shortcuts action description fell back to English regardless of system language. All 117 translatable strings are covered; the remaining five are bare units and separators (&quot;Hz&quot;, &quot;—&quot;) with nothing to translate.</li>
-</ul>
-<h3>Added</h3>
-<ul>
-<li><strong>In-app updates.</strong> VibeRes checks once a day, downloads in the background and offers a single click to restart into the new version — no browser, no dragging into Applications, no replacing an app that is still running. Settings → Updates turns the automatic check off. Installs from Homebrew defer to <code>brew upgrade</code>, and a build that is not signed by us refuses to update itself at all, because an updater that runs unverified binaries is a way in rather than a feature.</li>
-<li><strong>Optional confirmation before a resolution sticks.</strong> Settings → General → &quot;Confirm resolution changes&quot; applies a new mode for the session only and undoes it after 12 seconds unless you press Keep. This is the one thing that could previously leave someone stuck: a mode that makes the screen unreadable hides the popover too, so a button nobody can see is no help — the undo happens on a timer, which works regardless. Off by default, because interrupting the app&#x27;s core action is the wrong trade for the changes that are fine.</li>
-</ul>
-<h3>Changed</h3>
-<ul>
-<li><strong>Saving a profile warns when two monitors are indistinguishable.</strong> Identical monitors can report the same vendor, model and serial, and a saved entry binds to every display its matcher accepts — so one entry silently drives both screens. 0.8.0 fixed the equivalent collision for &quot;any external&quot; by allowing one such entry per profile, but that remedy does not apply here: the displays really are indistinguishable, so the profile now says so instead of pretending otherwise.</li>
-<li><strong>The long tail of small resolutions collapses behind a disclosure.</strong> A 5K display offers 14–20 sizes, ending in ones nobody picks. Anything narrower than 60% of the widest option is one click away instead of always on screen; the active mode is never hidden, however small.</li>
-<li><strong>⌘1…⌘9 apply the first nine profiles</strong> while the popover has focus.</li>
-<li><strong>⌘Z is now advertised on the Revert row.</strong> The shortcut always worked, but the label was withheld because the popover used to close before anyone could press it.</li>
-<li>New profiles are suggested a name from the hardware — &quot;Built-in + LG UltraFine&quot; rather than &quot;Setup 2&quot;.</li>
-</ul>
-<h3>Internal</h3>
-<ul>
-<li>Releases are signed, notarized and stapled; see <code>.github/RELEASING.md</code>.</li>
-<li>Tests: 119 → 149. The aggregation behind the outcome note, the launch-at-login reconciliation, the resolution-list partition and the profile-name suggestion were all previously unreachable from tests. The screen-space percentage had three implementations, one of which lived in the test file and meant those tests never exercised the app.</li>
-<li>Removed 154 lines of unreachable UI and four design tokens that only it used.</li>
-<li><code>scripts/check-localisation.sh</code>, run by CI, fails the build when the app emits a string the catalog does not carry. The catalog drifted 76 strings behind the UI while the changelog advertised full coverage because nothing was watching.</li>
+<li><strong>Saving a profile no longer drops a display in silence.</strong> The save form reads the displays attached at the moment you press Save, so a monitor unplugged while the form was open simply never made it into the profile — you picked three displays and got two, with nothing said. It now tells you, and <code>viberes</code> reports it too.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.8.4/VibeRes-0.8.4.zip"
-                 sparkle:edSignature="o+6t0XD3qxmTKsa+fnz94R9xFkh1ndBFBZ6euQAJ4+XW7/Zct0tVa6TXCFJwXpIcgmk1CjXC34vln4lyLSHWAA=="
-                 length="2854607"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.8.5/VibeRes-0.8.5.zip"
+                 sparkle:edSignature="yucm05MyjisgNEIjIo1nL4lkT20QWy0kSnY/ZpDVqeAIDH1XNxBcHUzcoXmnYP2fbdj5hjlV/6cmXXM35bbsBg=="
+                 length="2856757"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: WdRMn9QJcGWnE/IA5JG8dv7GClx7pvLvlGXR4Zpd+GwYbunPabsrGN5Xfb0DyWeYl2H6wqMECPOKywdSGOzbBQ==
-length: 6158
+edSignature: AtEub7yL6wssES6/Mj3FOy9sNdvY3gCh0nc6hKNJ1B52VKIoy3Z82W/tOsYslZlULdST93vgwV7d1OqjHXYnAg==
+length: 1400
 -->
