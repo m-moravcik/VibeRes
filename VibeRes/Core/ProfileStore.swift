@@ -299,6 +299,21 @@ final class ProfileStore {
         return .saved
     }
 
+    /// How a live display gets bound: by role (any external) or by identity —
+    /// built-in panels get `.builtIn`, everything else `.edid`. Shared by the
+    /// entry loop and the main-display selection so the two can never drift.
+    private static func matcher(for id: CGDirectDisplayID, kind: ProfileMatchKind) -> DisplayMatcher {
+        switch kind {
+        case .anyExternal:
+            return .anyExternal
+        case .specific:
+            let identity = DisplayIdentity.capture(id)
+            return CGDisplayIsBuiltin(id) != 0
+                ? .builtIn(vendor: identity.vendor, model: identity.model, serial: identity.serial)
+                : .edid(vendor: identity.vendor, model: identity.model, serial: identity.serial)
+        }
+    }
+
     /// Captures the current state of selected displays as a new profile.
     /// `selection` decides which physical displays to include and how to bind
     /// each entry — by EDID (specific) or by role (any external).
@@ -306,23 +321,13 @@ final class ProfileStore {
     func captureCurrent(
         name: String,
         displays: [DisplayInfo],
-        selection: [CGDirectDisplayID: ProfileMatchKind]
+        selection: [CGDirectDisplayID: ProfileMatchKind],
+        mainSelection: CGDirectDisplayID? = nil
     ) -> SaveResult {
         let entries: [Profile.Entry] = displays.compactMap { info in
             guard let mode = info.currentMode else { return nil }
             guard let kind = selection[info.id] else { return nil }
-            let matcher: DisplayMatcher = {
-                let identity = DisplayIdentity.capture(info.id)
-                let isBuiltin = CGDisplayIsBuiltin(info.id) != 0
-                switch kind {
-                case .specific:
-                    return isBuiltin
-                        ? .builtIn(vendor: identity.vendor, model: identity.model, serial: identity.serial)
-                        : .edid(vendor: identity.vendor, model: identity.model, serial: identity.serial)
-                case .anyExternal:
-                    return .anyExternal
-                }
-            }()
+            let matcher = Self.matcher(for: info.id, kind: kind)
             return Profile.Entry(
                 matcher: matcher,
                 displayName: info.name,
@@ -334,7 +339,16 @@ final class ProfileStore {
         }
         guard !entries.isEmpty else { return .rejectedEmpty }
         guard !Self.hasMultipleAnyExternal(entries) else { return .rejectedMultipleAnyExternal }
-        add(Profile(name: name, entries: entries))
+
+        // The main pick must be one of the *saved* displays: a selection that
+        // was unchecked (or unplugged) before Save has no entry to anchor to.
+        var mainDisplay: DisplayMatcher?
+        if let mainSelection,
+           let kind = selection[mainSelection],
+           displays.contains(where: { $0.id == mainSelection }) {
+            mainDisplay = Self.matcher(for: mainSelection, kind: kind)
+        }
+        add(Profile(name: name, entries: entries, mainDisplay: mainDisplay))
 
         // A monitor unplugged between opening the form and pressing Save is no
         // longer in `displays`, so its entry never gets built. Saying nothing

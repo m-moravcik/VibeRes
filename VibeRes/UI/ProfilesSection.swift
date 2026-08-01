@@ -62,6 +62,8 @@ struct ProfilesSection: View {
         var name: String = ""
         /// Per-display: include? + how to bind (specific vs anyExternal)
         var perDisplay: [DisplayChoice] = []
+        /// Which included display becomes main on apply; nil = don't change.
+        var mainDisplayID: CGDirectDisplayID?
     }
 
     struct DisplayChoice: Equatable, Identifiable {
@@ -565,6 +567,23 @@ struct ProfilesSection: View {
                     displayChoiceRow(choice)
                 }
 
+                Text("MAIN DISPLAY")
+                    .font(Design.Typography.sectionHeader)
+                    .foregroundStyle(.tertiary)
+                    .tracking(0.5)
+
+                Picker(selection: bindingForMainDisplay) {
+                    Text("Don't change").tag(CGDirectDisplayID?.none)
+                    ForEach(state.perDisplay.filter(\.isIncluded)) { choice in
+                        Text(choice.displayName).tag(CGDirectDisplayID?.some(choice.displayID))
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .labelsHidden()
+                .accessibilityLabel("Main display")
+                .help("Which display hosts the menu bar after this profile is applied. 'Don't change' leaves the arrangement alone.")
+
                 HStack {
                     Spacer()
                     Button("Cancel") { mode = .idle }
@@ -687,6 +706,24 @@ struct ProfilesSection: View {
                 if case .saving(var s) = mode,
                    let i = s.perDisplay.firstIndex(where: { $0.id == id }) {
                     s.perDisplay[i].isIncluded = newValue
+                    // Un-including the display that was picked as main leaves
+                    // the picker pointing at nothing — reset to "Don't change".
+                    if !newValue, s.mainDisplayID == id { s.mainDisplayID = nil }
+                    mode = .saving(s)
+                }
+            }
+        )
+    }
+
+    private var bindingForMainDisplay: Binding<CGDirectDisplayID?> {
+        Binding(
+            get: {
+                if case .saving(let s) = mode { return s.mainDisplayID }
+                return nil
+            },
+            set: { newValue in
+                if case .saving(var s) = mode {
+                    s.mainDisplayID = newValue
                     mode = .saving(s)
                 }
             }
@@ -1208,7 +1245,12 @@ struct ProfilesSection: View {
         }
         guard !selection.isEmpty else { return }
 
-        switch profiles.captureCurrent(name: trimmed, displays: displays.displays, selection: selection) {
+        switch profiles.captureCurrent(
+            name: trimmed,
+            displays: displays.displays,
+            selection: selection,
+            mainSelection: s.perDisplay.first(where: { $0.isIncluded && $0.displayID == s.mainDisplayID })?.displayID
+        ) {
         case .saved:
             mode = .idle
             warnIfDisplaysAreIndistinguishable(selection: selection)
