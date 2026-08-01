@@ -205,8 +205,27 @@ final class ProfileStore {
     /// describe whether the save itself was accepted.
     enum SaveResult: Equatable {
         case saved
+        /// Saved, but displays the user had selected were gone by the time Save
+        /// was pressed. A distinct case rather than a payload on `.saved`
+        /// because Swift lets `case .saved:` match a case *with* a payload, so
+        /// every call site would stay free to ignore it — which is the silence
+        /// this exists to end.
+        case savedWithMissingDisplays(count: Int)
         case rejectedEmpty
         case rejectedMultipleAnyExternal  // more than one `.anyExternal` entry
+    }
+
+    /// How many of the user's selected displays are no longer attached.
+    ///
+    /// `nonisolated` because it is set arithmetic; ProfileStore is @MainActor
+    /// and tests would otherwise have to cross an actor boundary to count.
+    nonisolated static func missingSelections(
+        selection: [CGDirectDisplayID: ProfileMatchKind],
+        liveDisplayIDs: Set<CGDirectDisplayID>
+    ) -> Int {
+        // Only selected-but-gone counts. A live display the user deliberately
+        // left out is a choice, not a loss.
+        selection.keys.filter { !liveDisplayIDs.contains($0) }.count
     }
 
     /// True if a list of entries contains more than one `.anyExternal` matcher.
@@ -279,7 +298,15 @@ final class ProfileStore {
         guard !entries.isEmpty else { return .rejectedEmpty }
         guard !Self.hasMultipleAnyExternal(entries) else { return .rejectedMultipleAnyExternal }
         add(Profile(name: name, entries: entries))
-        return .saved
+
+        // A monitor unplugged between opening the form and pressing Save is no
+        // longer in `displays`, so its entry never gets built. Saying nothing
+        // leaves the user a display short with no reason to suspect it.
+        let missing = Self.missingSelections(
+            selection: selection,
+            liveDisplayIDs: Set(displays.map(\.id))
+        )
+        return missing > 0 ? .savedWithMissingDisplays(count: missing) : .saved
     }
 
     /// Outcome of applying a single profile entry. Lets the UI explain *what*

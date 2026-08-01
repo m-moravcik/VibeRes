@@ -1154,6 +1154,14 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates…" } },
         "sk" : { "stringUnit" : { "state" : "translated", "value" : "Skontrolovať aktualizácie…" } }
       }
+    },
+    "Saved, but %lld selected display(s) were disconnected before saving and are not in the profile." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gespeichert, aber %lld ausgewählte Displays wurden vor dem Speichern getrennt und sind nicht im Profil." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved, but %lld selected display(s) were disconnected before saving and are not in the profile." } },
+        "sk" : { "stringUnit" : { "state" : "translated", "value" : "Uložené, ale %lld vybraných displejov bolo pred uložením odpojených a v profile nie sú." } }
+      }
     }
   }
 }

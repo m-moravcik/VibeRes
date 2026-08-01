@@ -262,6 +262,9 @@ func cmdProfileSave(_ name: String, args: [String]) {
     switch store.captureCurrent(name: name, displays: displays, selection: selection) {
     case .saved:
         print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
+    case .savedWithMissingDisplays(let count):
+        // Worth saying in a script too: the profile is smaller than asked for.
+        print("saved profile \"\(name)\" — \(count) selected display(s) were not connected and were skipped")
     case .rejectedMultipleAnyExternal:
         fail("a profile can have at most one 'any external' entry — remove --any-external from one of the displays")
     case .rejectedEmpty:

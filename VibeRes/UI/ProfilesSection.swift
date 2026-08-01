@@ -1172,7 +1172,9 @@ struct ProfilesSection: View {
         // before we rename. If save is rejected, surface the reason and
         // keep the user in the form so they can fix the conflict.
         switch profiles.replaceEntries(profile, with: newEntries) {
-        case .saved:
+        // The edit form works from the profile's own entries, not from live
+        // displays, so nothing can go missing between opening and saving.
+        case .saved, .savedWithMissingDisplays:
             profile.name = trimmed
             profiles.update(profile)
             announce("Updated '\(trimmed)'", tone: .info)
@@ -1210,6 +1212,12 @@ struct ProfilesSection: View {
         case .saved:
             mode = .idle
             warnIfDisplaysAreIndistinguishable(selection: selection)
+        case .savedWithMissingDisplays(let count):
+            mode = .idle
+            announce(
+                "Saved, but \(count) selected display(s) were disconnected before saving and are not in the profile.",
+                tone: .fallback
+            )
         case .rejectedMultipleAnyExternal:
             announce("Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.", tone: .problem)
         case .rejectedEmpty:
