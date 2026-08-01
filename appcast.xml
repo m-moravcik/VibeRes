@@ -7,7 +7,7 @@
     <language>en</language>
     <item>
       <title>0.8.5</title>
-      <pubDate>Sat, 01 Aug 2026 11:00:41 +0000</pubDate>
+      <pubDate>Sat, 01 Aug 2026 11:01:19 +0000</pubDate>
       <sparkle:version>20</sparkle:version>
       <sparkle:shortVersionString>0.8.5</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
@@ -18,13 +18,13 @@
 </ul>
       ]]></description>
       <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.8.5/VibeRes-0.8.5.zip"
-                 sparkle:edSignature="cgZK+k9SG9ON3ItBGWahrkC6qKFaB8hD6mhytH6UcyzWCNXlb9W2P51r6yhIVsPNDq2lmMJq+W/sFcreB1kRBQ=="
-                 length="2856716"
+                 sparkle:edSignature="Ii/Ei5nTwtZauOtOUJxjmEMYnb5iQ5K242yM1ZvNxusWoUaKoB2W1mTjqmnBBjngoBDli69IZLCxgkWUpHIyAA=="
+                 length="2856710"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: OiBXLVeNE8a/o+YAt+8mfQd+lQNExQGoOfuon2D/0CWvWXBFC8VT8r3a+nnOmeGpE6xgGBb/XNnph+1HMyAUCA==
+edSignature: ZcPQTrFjryUeXd2Om/YZr4ROts/5Q1pgc7P3HJgUAQk8C9jzJGHO36PYoOxzh+V/QA/2e0FLH0QQvF2aVg5UAQ==
 length: 1400
 -->
