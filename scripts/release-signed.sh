@@ -190,6 +190,57 @@ APP="$DERIVED_DATA/Build/Products/Release/VibeRes.app"
 [ -d "$APP" ] || die "build reported success but $APP does not exist"
 
 # ---------------------------------------------------------------------------
+# 2b. Re-sign nested helpers.
+#
+# Xcode's embed-and-sign phase signs Sparkle.framework itself but leaves its
+# *contents* as shipped — Updater.app, Autoupdate and the two XPC services all
+# stay ad-hoc, with no team and no secure timestamp. Verified on a real build:
+#
+#   Sparkle.framework   Developer ID Application: Pexelo s. r. o. (7TM9VA58W5), Timestamp=…
+#   Updater.app         TeamIdentifier=not set
+#   Autoupdate          TeamIdentifier=not set
+#   Downloader.xpc      TeamIdentifier=not set
+#   Installer.xpc       TeamIdentifier=not set
+#
+# Notarization rejects that, and `codesign --verify --deep --strict` does not
+# catch it because a valid ad-hoc signature is still a valid signature. Sparkle's
+# own documentation suggests `xcodebuild archive` + `-exportArchive` instead;
+# re-signing explicitly is the smaller change and keeps one build path.
+#
+# Order matters: innermost first, then the framework, then the app. Signing
+# outside-in would seal a hash of contents that are about to change.
+# ---------------------------------------------------------------------------
+FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
+if [ -d "$FRAMEWORK" ]; then
+  step "Re-sign nested helpers"
+
+  # Resolve through Versions/Current rather than hardcoding a letter, but refuse
+  # anything that resolves outside the framework.
+  VERSIONS_DIR="$FRAMEWORK/Versions"
+  CURRENT="$(cd "$VERSIONS_DIR/Current" 2>/dev/null && pwd -P || true)"
+  [ -n "$CURRENT" ] || die "cannot resolve $VERSIONS_DIR/Current"
+  case "$CURRENT" in
+    "$(cd "$VERSIONS_DIR" && pwd -P)"/*) : ;;
+    *) die "Sparkle version directory resolves outside the framework: $CURRENT" ;;
+  esac
+
+  for nested in \
+    "$CURRENT/XPCServices/Downloader.xpc" \
+    "$CURRENT/XPCServices/Installer.xpc" \
+    "$CURRENT/Autoupdate" \
+    "$CURRENT/Updater.app" \
+    "$CURRENT" \
+    "$APP"
+  do
+    [ -e "$nested" ] || continue
+    codesign --force --options runtime --timestamp \
+      --sign "$SIGN_IDENTITY" "$nested" \
+      || die "failed to re-sign $nested"
+    echo "  signed ${nested#"$APP"}"
+  done
+fi
+
+# ---------------------------------------------------------------------------
 # 3. Verify the signature locally. Catching a bad signature here costs seconds;
 #    catching it via a rejected notarization costs minutes.
 # ---------------------------------------------------------------------------
@@ -198,37 +249,71 @@ step "Verify signature"
 codesign --verify --deep --strict --verbose=2 "$APP" \
   || die "codesign verification failed"
 
-# Confirm the three properties notarization actually checks for. Grepping the
-# human-readable output is ugly but it is the only place codesign reports the
-# runtime flag and the timestamp together.
-SIG_INFO="$(codesign --display --verbose=4 "$APP" 2>&1)"
-printf '%s\n' "$SIG_INFO" | grep -q "flags=.*runtime" \
-  || die "hardened runtime is not enabled on the signed bundle"
-printf '%s\n' "$SIG_INFO" | grep -q "^Timestamp=" \
-  || die "signature has no secure timestamp — notarization would reject it"
-printf '%s\n' "$SIG_INFO" | grep -q "^TeamIdentifier=$DEVELOPMENT_TEAM" \
-  || die "signed with an unexpected team: $(printf '%s\n' "$SIG_INFO" | grep '^TeamIdentifier=')"
-printf '%s\n' "$SIG_INFO" | grep -E "^(Authority|TeamIdentifier|Timestamp)=" | head -5
-echo "Hardened runtime + secure timestamp + team: OK"
+# Every signable item, not just the outer bundle. Sparkle.framework contains
+# four nested targets (Autoupdate, Updater.app, and two XPC services), all of
+# which ship ad-hoc signed upstream and all of which notarization inspects.
+#
+# `codesign --verify --deep --strict` is not enough on its own: it *accepts* a
+# valid ad-hoc signature, so it passes locally while Apple rejects the upload an
+# hour later. That is the same shape of late, remote failure as the 0.8.2
+# coverage-entitlement incident.
+codesign --verify --deep --strict --verbose=2 "$APP" \
+  || die "codesign verification failed"
 
-# Debug entitlements are a hard notarization rejection, and the failure arrives
-# minutes later from Apple with no local trace. Check here instead.
-# get-task-allow lets a debugger attach to the signed app and read its memory;
-# it is injected by coverage-instrumented and development-signed builds.
-ENTS="$(codesign -d --entitlements - --xml "$APP" 2>/dev/null || true)"
-for forbidden in \
-  com.apple.security.get-task-allow \
-  com.apple.security.cs.disable-library-validation \
-  com.apple.security.cs.allow-dyld-environment-variables
-do
-  if printf '%s' "$ENTS" | grep -q "$forbidden"; then
-    printf '%s' "$ENTS" | plutil -p - >&2 2>/dev/null || printf '%s\n' "$ENTS" >&2
-    die "the signed bundle requests '$forbidden'.
+signable_targets() {
+  printf '%s\n' "$APP"
+  find "$APP/Contents" \
+    \( -name "*.app" -o -name "*.xpc" -o -name "*.framework" \) -print 2>/dev/null
+  find "$APP/Contents" -type f -perm -111 ! -name "*.dylib" -print 2>/dev/null \
+    | while read -r candidate; do
+        # Mach-O only; shell scripts and resources are not separately signed.
+        if file -b "$candidate" | grep -q "Mach-O"; then printf '%s\n' "$candidate"; fi
+      done
+}
+
+checked=0
+while IFS= read -r target; do
+  [ -n "$target" ] || continue
+  label="${target#"$APP"}"
+  [ -n "$label" ] || label="VibeRes.app"
+
+  info="$(codesign --display --verbose=4 "$target" 2>&1)" || die "unsigned: $label"
+
+  printf '%s\n' "$info" | grep -q "flags=.*runtime" \
+    || die "hardened runtime missing on $label"
+  printf '%s\n' "$info" | grep -q "^Timestamp=" \
+    || die "no secure timestamp on $label — notarization would reject it"
+  printf '%s\n' "$info" | grep -q "^TeamIdentifier=$DEVELOPMENT_TEAM" \
+    || die "$label is signed by an unexpected team: $(printf '%s\n' "$info" | grep '^TeamIdentifier=' || echo 'none')
+  Upstream frameworks arrive ad-hoc signed; xcodebuild must re-sign them."
+  printf '%s\n' "$info" | grep -q "^Authority=Developer ID Application" \
+    || die "$label does not carry a Developer ID Application authority"
+
+  # Debug entitlements are a hard rejection and the failure arrives minutes
+  # later from Apple with no local trace. get-task-allow lets a debugger attach
+  # to a signed app and read its memory.
+  ents="$(codesign -d --entitlements - --xml "$target" 2>/dev/null || true)"
+  for forbidden in \
+    com.apple.security.get-task-allow \
+    com.apple.security.cs.disable-library-validation \
+    com.apple.security.cs.allow-dyld-environment-variables
+  do
+    if printf '%s' "$ents" | grep -q "$forbidden"; then
+      printf '%s' "$ents" | plutil -p - >&2 2>/dev/null || printf '%s\n' "$ents" >&2
+      die "$label requests '$forbidden'.
   Notarization rejects this. Check ENABLE_CODE_COVERAGE and
   CODE_SIGN_INJECT_BASE_ENTITLEMENTS for the Release configuration."
-  fi
-done
-echo "Entitlements: no debug/relaxation entitlements present"
+    fi
+  done
+
+  checked=$((checked + 1))
+done <<EOF
+$(signable_targets | sort -u)
+EOF
+
+[ "$checked" -gt 0 ] || die "no signable targets found under $APP"
+codesign --display --verbose=4 "$APP" 2>&1 | grep -E "^(Authority|TeamIdentifier|Timestamp)=" | head -5
+echo "Verified $checked signable target(s): Developer ID, hardened runtime, timestamp, no debug entitlements"
 
 if [ "${SKIP_NOTARIZE:-0}" = "1" ]; then
   step "Done (signed, not notarized)"

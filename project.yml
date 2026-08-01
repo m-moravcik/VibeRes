@@ -101,6 +101,24 @@ targets:
         # Re-add NSScreenCaptureUsageDescription only when (and if) the live
         # screenshot preview is actually implemented. Until then, declaring an
         # unused permission is misleading and would trip privacy reviewers.
+        #
+        # Sparkle. The feed lives on a stable path in the repo rather than as a
+        # release asset: `releases/latest/download/appcast.xml` 404s for every
+        # client, permanently, the moment one release is published without that
+        # asset attached.
+        SUFeedURL: https://raw.githubusercontent.com/m-moravcik/VibeRes/main/appcast.xml
+        SUPublicEDKey: ciayVzrfVUd/AHaU8EB8T7xsMfathzO3rKMGxHK1xEk=
+        SUEnableAutomaticChecks: true
+        # Load-bearing. Auto-download is off by default, and the delegate hook
+        # that raises the "update ready" row only fires after an *automatic*
+        # download — without this the row never appears and nothing logs why.
+        SUAutomaticallyUpdate: true
+        SUScheduledCheckInterval: 86400
+        # Refuse a feed that is not signed with our EdDSA key. Without it,
+        # someone able to substitute the feed cannot ship a malicious build (the
+        # enclosure signature stops that) but can pin users to an older,
+        # validly signed release.
+        SURequireSignedFeed: true
     dependencies:
       - package: Sparkle
     settings:

@@ -7,7 +7,7 @@ import SwiftUI
 /// has room to grow without bloating the main menu.
 struct SettingsView: View {
     @Environment(Preferences.self) private var preferences
-    @Environment(UpdateChecker.self) private var updateChecker
+    @Environment(\.updater) private var updater
     @State private var launchAtLogin: Bool = LoginItem.isEnabled
     /// Forces the TabView to start on General every time the Settings
     /// window is opened. SwiftUI keeps the SettingsView instance alive
@@ -144,66 +144,37 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Current version")
                             .font(.callout)
-                        Text(UpdateChecker.currentVersion)
+                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                             .foregroundStyle(.secondary)
                             .font(.callout.monospacedDigit())
                     }
                     Spacer()
                 }
 
-                if let latest = updateChecker.latestVersion {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(updateChecker.isUpdateAvailable ? "Update available" : "Latest on GitHub")
-                                .font(.callout)
-                            Text(latest)
-                                .foregroundStyle(.secondary)
-                                .font(.callout.monospacedDigit())
-                        }
-                        Spacer()
-                        if updateChecker.isUpdateAvailable, let url = updateChecker.releaseURL {
-                            Button("Open release") { NSWorkspace.shared.open(url) }
-                        }
-                    }
-                }
+                if let reason = updater?.unavailableReason {
+                    // Say why rather than showing a dead toggle. Covers debug
+                    // builds and Homebrew installs, where brew owns updates.
+                    Text(reason)
+                        .font(Design.Typography.footer)
+                        .foregroundStyle(.secondary)
+                } else if let updater {
+                    Toggle("Check for updates automatically", isOn: Binding(
+                        get: { updater.automaticallyChecksForUpdates },
+                        set: { updater.automaticallyChecksForUpdates = $0 }
+                    ))
+                    Text("Downloads updates in the background and offers to restart when one is ready. VibeRes never restarts on its own.")
+                        .font(Design.Typography.footer)
+                        .foregroundStyle(.secondary)
 
-                if let last = updateChecker.lastCheckedAt {
                     HStack {
-                        Text("Last checked")
-                            .font(.callout)
                         Spacer()
-                        Text(last.formatted(date: .abbreviated, time: .shortened))
-                            .foregroundStyle(.secondary)
-                            .font(.callout)
+                        Button("Check for Updates…") { updater.checkForUpdates() }
                     }
                 }
             } header: {
-                Text("Status")
-            }
-
-            Section {
-                HStack {
-                    Button {
-                        Task { await updateChecker.checkNow() }
-                    } label: {
-                        if updateChecker.isChecking {
-                            HStack(spacing: 6) {
-                                ProgressView().controlSize(.small)
-                                Text("Checking…")
-                            }
-                        } else {
-                            Text("Check now")
-                        }
-                    }
-                    .disabled(updateChecker.isChecking)
-                    Spacer()
-                }
-                Text("VibeRes also checks once a day in the background. Brew users can run `brew upgrade --cask m-moravcik/viberes/viberes-app` to install the new build.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("Updates")
             }
         }
         .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
     }
 }

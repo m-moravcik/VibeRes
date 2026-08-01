@@ -5,7 +5,7 @@ import SwiftUI
 struct VibeResApp: App {
     @State private var displayStore: DisplayStore
     @State private var profileStore: ProfileStore
-    @State private var updateChecker: UpdateChecker
+    @State private var updater: UpdaterProviding
     @State private var preferences: Preferences
 
     init() {
@@ -23,10 +23,8 @@ struct VibeResApp: App {
         }
         _displayStore = State(initialValue: DisplayStore())
         _profileStore = State(initialValue: ProfileStore())
-        let checker = UpdateChecker()
-        // Schedule the first check on the next runloop tick so init stays fast.
-        Task { @MainActor in checker.checkIfDue() }
-        _updateChecker = State(initialValue: checker)
+        // Sparkle schedules its own checks; there is nothing to kick off here.
+        _updater = State(initialValue: makeUpdaterController())
         let prefs = Preferences()
         // Re-register if a stored "launch at login" intent no longer matches
         // what SMAppService reports. Without this the setting can quietly stop
@@ -41,7 +39,8 @@ struct VibeResApp: App {
             MenuContent()
                 .environment(displayStore)
                 .environment(profileStore)
-                .environment(updateChecker)
+                .environment(\.updater, updater)
+                .environment(updater.updateStatus)
                 .environment(preferences)
                 .frame(minWidth: 280)
         } label: {
@@ -58,7 +57,8 @@ struct VibeResApp: App {
             SettingsView()
                 .environment(displayStore)
                 .environment(profileStore)
-                .environment(updateChecker)
+                .environment(\.updater, updater)
+                .environment(updater.updateStatus)
                 .environment(preferences)
         }
     }
