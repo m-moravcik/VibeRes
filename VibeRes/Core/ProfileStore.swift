@@ -713,10 +713,10 @@ final class ProfileStore {
         case .ambiguous(let count):
             return .skippedAmbiguous(count: count)
         case .target(let target):
+            guard target != live.main else { return .alreadyMain }
             // Arrangement combined with mirroring is a spike unknown; leave
             // it alone rather than find out on a user's machine.
             guard !activeIDs.contains(where: isInMirrorSet) else { return .skippedMirrored }
-            guard target != live.main else { return .alreadyMain }
             guard let plan = MainDisplayPlanner.plan(bounds: live.bounds, target: target) else {
                 return .skippedNoMatch
             }

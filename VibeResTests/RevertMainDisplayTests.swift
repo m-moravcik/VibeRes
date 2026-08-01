@@ -11,6 +11,41 @@ import Testing
 @Suite("Revert restores the previous main display")
 @MainActor
 struct RevertMainDisplayTests {
+    /// `CGDisplayMode` has no public initialiser, so the mode entry needed to
+    /// exercise the mode-restore path alongside the main-restore path comes
+    /// from the real display. Nothing is applied to it — `applyMode` is
+    /// injected, same rationale as BatchApplyTests.realModes().
+    private func aRealMode() throws -> CGDisplayMode {
+        let modes = CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode]
+        return try #require(modes?.first, "no display modes available on this machine")
+    }
+
+    @Test("A failed mode restore and a successful main restore are counted independently")
+    func mixedModeAndMainRestore() throws {
+        let store = DisplayStore()
+        let mode = try aRealMode()
+        store.revert.recordBatch(
+            [(id: 1, name: "Built-in", before: mode)],
+            beforeMain: 5
+        )
+        store.applyMode = { _, _, _ in throw ResolutionSwitcher.Failure.completeConfig(.cannotComplete) }
+        store.liveArrangement = {
+            (main: 7, bounds: [
+                5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+                7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        store.applyOrigins = { _, _ in }
+
+        let restored = store.performRevert()
+
+        #expect(restored == 1, "only the origin restore succeeded — the mode restore threw")
+        #expect(store.revert.canRevert, "the failed mode entry keeps the way back armed")
+        let consumed = store.revert.consume()
+        #expect(consumed.entries.map(\.displayID) == [1], "the failed mode entry is re-recorded")
+        #expect(consumed.beforeMain == nil, "the main restore succeeded, so it must not be re-armed")
+    }
+
     @Test("performRevert translates the live arrangement back to the old main")
     func revertsMain() {
         let store = DisplayStore()

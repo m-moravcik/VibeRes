@@ -167,6 +167,21 @@ struct MainDisplayApplyTests {
         #expect(probes.originCalls().isEmpty)
     }
 
+    @Test("Mirrored but the target is already main is a no-op, not a mirror skip")
+    func mirroredAlreadyMain() {
+        let store = makeStore()
+        let probes = arrange(store, main: fake, bounds: [
+            realID: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+            fake: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+        ], mirrored: true)
+
+        let result = store.applyDetailed(profile(main: allOnes), displays: [])
+
+        #expect(result.mainChange == .alreadyMain)
+        #expect(probes.originCalls().isEmpty)
+        #expect(!result.didChangeAnything)
+    }
+
     @Test("A throwing transaction is reported with its user-facing text")
     func transactionFails() {
         let store = makeStore()
@@ -183,6 +198,46 @@ struct MainDisplayApplyTests {
         }
         #expect(message.contains("arrangement"))
         #expect(!result.didChangeAnything)
+    }
+
+    @Test("A commit that lands off the planned origin is reported as adjusted, not verified (F5)")
+    func changedButAdjusted() {
+        let store = makeStore()
+        var liveMain = realID
+        var liveBounds: [CGDirectDisplayID: CGRect] = [
+            realID: CGRect(x: 0, y: 0, width: 1800, height: 1169),
+            fake: CGRect(x: 1074, y: -1080, width: 1920, height: 1080),
+        ]
+        var calls: [[CGDirectDisplayID: CGPoint]] = []
+        store.isInMirrorSet = { _ in false }
+        store.liveArrangement = { (main: liveMain, bounds: liveBounds) }
+        // A dishonest window server: the commit does not throw, and the
+        // target does land at (0,0) — but `realID` settles one point off the
+        // planned origin. `after.main == target` alone would pass; only the
+        // F5 read-back comparison against the plan catches the drift.
+        store.applyOrigins = { plan, _ in
+            calls.append(plan)
+            for (id, origin) in plan {
+                guard var r = liveBounds[id] else { continue }
+                r.origin = id == realID ? CGPoint(x: origin.x + 1, y: origin.y) : origin
+                liveBounds[id] = r
+            }
+            if let newMain = plan.first(where: { $0.value == .zero })?.key {
+                liveMain = newMain
+            }
+        }
+
+        let history = RevertHistory()
+        let result = store.applyDetailed(profile(main: allOnes), displays: [], revert: history)
+
+        #expect(calls.count == 1, "the transaction did commit")
+        guard case .changedButAdjusted(let name)? = result.mainChange else {
+            Issue.record("expected .changedButAdjusted, got \(String(describing: result.mainChange))")
+            return
+        }
+        #expect(name == "display \(101)")
+        #expect(result.didChangeAnything)
+        #expect(history.beforeMainID == realID, "the commit did happen, so revert must still know who was main before")
     }
 
     @Test("The display name comes from the snapshot when the target is in it")
