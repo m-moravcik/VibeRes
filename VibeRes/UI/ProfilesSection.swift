@@ -362,7 +362,7 @@ struct ProfilesSection: View {
             let result = await MainActor.run {
                 profiles.applyDetailed(profile, displays: snapshotDisplays, revert: revert)
             }
-            await MainActor.run { announceOutcome(result.outcomes) }
+            await MainActor.run { announceOutcome(result) }
         }
     }
 
@@ -1361,10 +1361,10 @@ struct ProfilesSection: View {
 
     /// Translates outcome list into a single coloured note shown under the pills.
     /// Priority: any problem > any fallback > applied success > all already-at-target.
-    private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
+    private func announceOutcome(_ result: ProfileStore.ProfileApplyResult) {
         // Aggregation lives in ApplyOutcomeNote so the precedence rules are
         // testable and the copy is localisable. See ApplyOutcomeNoteTests.
-        guard let note = ApplyOutcomeNote.make(from: outcomes) else {
+        guard let note = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) else {
             lastNote = nil
             return
         }

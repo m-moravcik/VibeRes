@@ -136,4 +136,52 @@ struct ApplyOutcomeNoteTests {
             )
         ]))
     }
+
+    @Test("A verified main change rides along on an info note")
+    func mainChangeOnInfoNote() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .changed(displayName: "LG"))
+        #expect(note?.tone == .info)
+        #expect(note?.mainDetail == .mainChanged(display: "LG"))
+    }
+
+    @Test("A skipped main change lowers a clean apply to fallback tone")
+    func skippedMainIsFallback() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .skippedAmbiguous(count: 2))
+        #expect(note?.tone == .fallback)
+        #expect(note?.mainDetail == .mainAmbiguous(count: 2))
+    }
+
+    @Test("A failed main change makes the note a problem")
+    func failedMainIsProblem() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .failed("boom"))
+        #expect(note?.tone == .problem)
+        #expect(note?.mainDetail == .mainFailed(message: "boom"))
+    }
+
+    @Test("alreadyMain adds nothing to the note")
+    func alreadyMainSilent() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .alreadyMain)
+        #expect(note?.mainDetail == nil)
+        #expect(note?.tone == .info)
+    }
 }
