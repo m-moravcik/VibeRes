@@ -350,7 +350,7 @@ final class ProfileStore {
     /// actually happened — exact match, fallback to a different refresh rate
     /// or close size, or skipped because no display matched.
     struct ApplyOutcome {
-        enum Status {
+        enum Status: Equatable {
             case applied                  // exact request honoured
             case appliedWithFallback      // got close, see fallback fields
             case alreadyApplied           // mode === current; nothing changed
@@ -362,9 +362,11 @@ final class ProfileStore {
         let matcherKind: MatcherKind
         let requestedSize: (Int, Int)
         let requestedHz: Int?
-        let appliedSize: (Int, Int)?
-        let appliedHz: Int?
-        let status: Status
+        // Filled in once the transaction commits: an outcome is planned before
+        // it is known whether the display took the mode.
+        var appliedSize: (Int, Int)?
+        var appliedHz: Int?
+        var status: Status
 
         /// Slim mirror of DisplayMatcher kept on outcomes so summary copy can
         /// adapt to the matcher style without holding EDID identifiers in UI
@@ -419,10 +421,33 @@ final class ProfileStore {
         }
     }
 
+    /// A display change decided but not yet committed, with the slot in the
+    /// result it will fill once the transaction returns.
+    private struct PlannedChange {
+        let outcomeIndex: Int
+        let display: CGDirectDisplayID
+        let name: String
+        let mode: CGDisplayMode
+        let previous: CGDisplayMode?
+        let isExact: Bool
+    }
+
+    /// Test seam. Reconfiguring displays is the one thing a unit test must not
+    /// really do; injecting the transaction lets a test assert that a
+    /// three-monitor profile is one commit rather than three, and that partial
+    /// failure is reported per display.
+    @ObservationIgnored
+    var applyBatch: ([ResolutionSwitcher.BatchChange], CGConfigureOption) throws
+        -> ResolutionSwitcher.BatchOutcome = { try ResolutionSwitcher.applyBatch($0, scope: $1) }
+
     /// Apply every entry of the profile to its matching live display, picking the
     /// best mode via the same scoring used by SetResolutionIntent. Returns a
     /// per-entry outcome so the UI can distinguish between success, fallback,
     /// and skip.
+    ///
+    /// All matched displays are committed in a single transaction, so the
+    /// desktop goes straight from the old arrangement to the profile's, with no
+    /// intermediate layout and one blank instead of one per monitor.
     @discardableResult
     func applyDetailed(
         _ profile: Profile,
@@ -433,6 +458,10 @@ final class ProfileStore {
         // Collect pre-change snapshots so a single multi-display profile
         // apply can be undone with one Revert click.
         var batchSnapshot: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
+        var seenForRevert: Set<CGDirectDisplayID> = []
+        // Planned first, committed once. Nothing reaches WindowServer until
+        // every entry of the profile has been scored.
+        var planned: [PlannedChange] = []
 
         for entry in profile.entries {
             let mk: ApplyOutcome.MatcherKind = {
@@ -474,24 +503,8 @@ final class ProfileStore {
                     && mode.height == entry.pointHeight
                     && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
                     && mode.isHiDPI == entry.isHiDPI
-                do {
-                    if !isAlready {
-                        if let cur = info.currentMode {
-                            batchSnapshot.append((info.id, info.name, cur))
-                        }
-                        // Diagnostic logging — when apply silently fails the
-                        // user has zero visibility into why. The print goes
-                        // to Console.app under sk.moravcik.VibeRes; remove
-                        // once the multi-monitor apply gotcha is fully
-                        // understood and surfaced as a structured outcome.
-                        viberesLog.notice("apply \(info.name, privacy: .public): \(info.currentMode?.width ?? 0)×\(info.currentMode?.height ?? 0) → \(mode.width)×\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) modeID=\(mode.ioDisplayModeID)")
-                        try ResolutionSwitcher.apply(mode, to: info.id)
-                        viberesLog.notice("apply \(info.name, privacy: .public): SUCCESS")
-                    }
-                    let status: ApplyOutcome.Status = {
-                        if isAlready { return .alreadyApplied }
-                        return isExact ? .applied : .appliedWithFallback
-                    }()
+
+                if isAlready {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
@@ -499,24 +512,88 @@ final class ProfileStore {
                         requestedHz: entry.refreshHz,
                         appliedSize: (mode.width, mode.height),
                         appliedHz: mode.refreshHz,
-                        status: status
+                        status: .alreadyApplied
                     ))
-                } catch {
-                    viberesLog.error("apply \(info.name, privacy: .public): FAILED with \(String(describing: error), privacy: .public)")
-                    outcomes.append(ApplyOutcome(
-                        displayName: info.name,
-                        matcherKind: mk,
-                        requestedSize: (entry.pointWidth, entry.pointHeight),
-                        requestedHz: entry.refreshHz,
-                        appliedSize: nil,
-                        appliedHz: nil,
-                        status: .failed(error.userFacingText)
-                    ))
+                    continue
+                }
+
+                // Everything else is a real change: reserve its place in the
+                // result and stage it. The status here is provisional — the
+                // merge below rewrites every planned index without exception,
+                // so no `.failed` placeholder can reach a caller.
+                planned.append(PlannedChange(
+                    outcomeIndex: outcomes.count,
+                    display: info.id,
+                    name: info.name,
+                    mode: mode,
+                    previous: info.currentMode,
+                    isExact: isExact
+                ))
+                outcomes.append(ApplyOutcome(
+                    displayName: info.name,
+                    matcherKind: mk,
+                    requestedSize: (entry.pointWidth, entry.pointHeight),
+                    requestedHz: entry.refreshHz,
+                    appliedSize: (mode.width, mode.height),
+                    appliedHz: mode.refreshHz,
+                    status: .failed("not attempted")
+                ))
+            }
+        }
+
+        // One transaction for the whole profile. Applying display by display
+        // meant one full reconfiguration each: three monitors blanked three
+        // times, and in between the desktop passed through layouts that match
+        // no profile — which is also what made auto-apply retrigger on its own
+        // intermediate states.
+        if !planned.isEmpty {
+            for change in planned {
+                // Diagnostic logging — when apply silently fails the user has
+                // zero visibility into why. Goes to Console.app under
+                // sk.moravcik.VibeRes.
+                viberesLog.notice("apply \(change.name, privacy: .public): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) modeID=\(change.mode.ioDisplayModeID)")
+            }
+
+            do {
+                let result = try applyBatch(
+                    planned.map { ResolutionSwitcher.BatchChange(display: $0.display, mode: $0.mode) },
+                    .permanently
+                )
+                for change in planned {
+                    // `applied` is checked first on purpose: two entries can
+                    // match the same display, and if either staged, that
+                    // display really did change.
+                    if result.applied.contains(change.display) {
+                        outcomes[change.outcomeIndex].status = change.isExact ? .applied : .appliedWithFallback
+                        if let previous = change.previous, seenForRevert.insert(change.display).inserted {
+                            batchSnapshot.append((change.display, change.name, previous))
+                        }
+                        viberesLog.notice("apply \(change.name, privacy: .public): SUCCESS")
+                    } else {
+                        let reason = result.rejected[change.display]?.userFacingDescription
+                            ?? ResolutionSwitcher.Failure.applyMode(.failure).userFacingDescription
+                        outcomes[change.outcomeIndex].status = .failed(reason)
+                        outcomes[change.outcomeIndex].appliedSize = nil
+                        outcomes[change.outcomeIndex].appliedHz = nil
+                        viberesLog.error("apply \(change.name, privacy: .public): REJECTED — \(reason, privacy: .public)")
+                    }
+                }
+            } catch {
+                // The commit itself failed, so not one of the staged displays
+                // changed. Reporting anything as applied here would leave the
+                // user with a success message and an unchanged desktop.
+                viberesLog.error("apply: transaction failed with \(String(describing: error), privacy: .public)")
+                for change in planned {
+                    outcomes[change.outcomeIndex].status = .failed(error.userFacingText)
+                    outcomes[change.outcomeIndex].appliedSize = nil
+                    outcomes[change.outcomeIndex].appliedHz = nil
                 }
             }
         }
-        // Commit the batch atomically — Revert undoes "the last profile
-        // apply" rather than the last individual switch within it.
+
+        // Revert undoes "the last profile apply" rather than the last
+        // individual switch within it — and only records displays that
+        // actually moved, so it never offers to restore one that never changed.
         if !batchSnapshot.isEmpty, let revert = revert {
             revert.recordBatch(batchSnapshot)
         }
