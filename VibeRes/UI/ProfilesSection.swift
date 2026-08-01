@@ -86,6 +86,8 @@ struct ProfilesSection: View {
         let profileID: UUID
         var name: String
         var entries: [EntryEdit]
+        /// Row whose display becomes main on apply; nil = don't change.
+        var mainRowID: UUID?
     }
 
     struct EntryEdit: Equatable, Identifiable {
@@ -804,6 +806,23 @@ struct ProfilesSection: View {
                     editEntryRow(entry)
                 }
 
+                Text("MAIN DISPLAY")
+                    .font(Design.Typography.sectionHeader)
+                    .foregroundStyle(.tertiary)
+                    .tracking(0.5)
+
+                Picker(selection: bindingForEditMainRow) {
+                    Text("Don't change").tag(UUID?.none)
+                    ForEach(state.entries.filter(\.isIncluded)) { entry in
+                        Text(entry.displayName).tag(UUID?.some(entry.id))
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .labelsHidden()
+                .accessibilityLabel("Main display")
+                .help("Which display hosts the menu bar after this profile is applied. 'Don't change' leaves the arrangement alone.")
+
                 if state.entries.allSatisfy({ !$0.isIncluded }) {
                     Text("At least one entry must remain to save.")
                         .font(Design.Typography.note)
@@ -1062,7 +1081,12 @@ struct ProfilesSection: View {
                 availableModes: live
             )
         }
-        return EditFormState(profileID: profile.id, name: profile.name, entries: entries)
+        var state = EditFormState(profileID: profile.id, name: profile.name, entries: entries)
+        // Preselect the row that would save the same matcher the profile
+        // already stores. A hand-edited mainDisplay matching no row shows as
+        // "Don't change" and is dropped on save — the edit form owns the field.
+        state.mainRowID = entries.first(where: { profile.mainDisplay == rowMatcher($0) })?.id
+        return state
     }
 
     // MARK: - Edit bindings
@@ -1094,6 +1118,24 @@ struct ProfilesSection: View {
                 if case .editing(var s) = mode,
                    let i = s.entries.firstIndex(where: { $0.id == rowID }) {
                     s.entries[i].isIncluded = newValue
+                    // Un-including the row picked as main leaves the picker
+                    // pointing at nothing — reset to "Don't change".
+                    if !newValue, s.mainRowID == rowID { s.mainRowID = nil }
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private var bindingForEditMainRow: Binding<UUID?> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode { return s.mainRowID }
+                return nil
+            },
+            set: { newValue in
+                if case .editing(var s) = mode {
+                    s.mainRowID = newValue
                     mode = .editing(s)
                 }
             }
@@ -1179,7 +1221,7 @@ struct ProfilesSection: View {
         guard case .editing(let s) = mode else { return }
         let trimmed = s.name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        guard var profile = profiles.profiles.first(where: { $0.id == s.profileID }) else {
+        guard let profile = profiles.profiles.first(where: { $0.id == s.profileID }) else {
             mode = .idle
             return
         }
@@ -1187,15 +1229,7 @@ struct ProfilesSection: View {
         guard !kept.isEmpty else { return }
 
         let newEntries: [Profile.Entry] = kept.map { e in
-            let matcher: DisplayMatcher = {
-                switch e.matcherKind {
-                case .anyExternal: return .anyExternal
-                case .specific:
-                    return e.isBuiltIn
-                        ? .builtIn(vendor: e.vendor, model: e.model, serial: e.serial)
-                        : .edid(vendor: e.vendor, model: e.model, serial: e.serial)
-                }
-            }()
+            let matcher = rowMatcher(e)
             return Profile.Entry(
                 matcher: matcher,
                 displayName: e.displayName,
@@ -1209,17 +1243,34 @@ struct ProfilesSection: View {
         // before we rename. If save is rejected, surface the reason and
         // keep the user in the form so they can fix the conflict.
         switch profiles.replaceEntries(profile, with: newEntries) {
-        // The edit form works from the profile's own entries, not from live
-        // displays, so nothing can go missing between opening and saving.
+        // Re-fetch after replaceEntries: `profile` was captured before it and
+        // still carries the old entries — updating with it would silently undo
+        // the entry edits that replaceEntries just saved.
         case .saved, .savedWithMissingDisplays:
-            profile.name = trimmed
-            profiles.update(profile)
+            if var fresh = profiles.profiles.first(where: { $0.id == s.profileID }) {
+                fresh.name = trimmed
+                fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
+                profiles.update(fresh)
+            }
             announce("Updated '\(trimmed)'", tone: .info)
             mode = .idle
         case .rejectedMultipleAnyExternal:
             announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
         case .rejectedEmpty:
             announce("Keep at least one entry to save the profile.", tone: .problem)
+        }
+    }
+
+    /// The matcher a row would save as — single source of truth for
+    /// commitEdit and for preselecting the main-display picker.
+    private func rowMatcher(_ e: EntryEdit) -> DisplayMatcher {
+        switch e.matcherKind {
+        case .anyExternal:
+            return .anyExternal
+        case .specific:
+            return e.isBuiltIn
+                ? .builtIn(vendor: e.vendor, model: e.model, serial: e.serial)
+                : .edid(vendor: e.vendor, model: e.model, serial: e.serial)
         }
     }
 
