@@ -29,6 +29,15 @@ settings:
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
   configs:
+    Debug:
+      # Sparkle.framework and its nested helpers ship ad-hoc signed. The
+      # hardened runtime is NOT inert under an ad-hoc signature — verified:
+      # `codesign --sign - --options runtime` yields flags=0x10002(adhoc,runtime)
+      # — and it enables library validation, which then refuses to load the
+      # framework. Without this, adding the dependency breaks every local and CI
+      # build, not just releases. Release keeps the hardened runtime, which
+      # notarization requires.
+      ENABLE_HARDENED_RUNTIME: NO
     Release:
       # The scheme sets gatherCoverageData for the test action, but xcodebuild
       # applies it as a build setting to the `build` action too. That pulls in
@@ -41,6 +50,10 @@ settings:
       # Belt and braces: never let Xcode inject debug entitlements into a
       # build that is meant for distribution.
       CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+      # Gates the Sparkle call sites. The framework is embedded in every
+      # configuration — XcodeGen has no per-configuration dependency filter —
+      # but only Release compiles the updater that drives it.
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ENABLE_SPARKLE"
 
 schemes:
   VibeRes:
@@ -54,6 +67,11 @@ schemes:
         - VibeRes
       targets:
         - VibeResTests
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.9.4
 
 targets:
   VibeRes:
@@ -83,6 +101,26 @@ targets:
         # Re-add NSScreenCaptureUsageDescription only when (and if) the live
         # screenshot preview is actually implemented. Until then, declaring an
         # unused permission is misleading and would trip privacy reviewers.
+        #
+        # Sparkle. The feed lives on a stable path in the repo rather than as a
+        # release asset: `releases/latest/download/appcast.xml` 404s for every
+        # client, permanently, the moment one release is published without that
+        # asset attached.
+        SUFeedURL: https://raw.githubusercontent.com/m-moravcik/VibeRes/main/appcast.xml
+        SUPublicEDKey: ciayVzrfVUd/AHaU8EB8T7xsMfathzO3rKMGxHK1xEk=
+        SUEnableAutomaticChecks: true
+        # Load-bearing. Auto-download is off by default, and the delegate hook
+        # that raises the "update ready" row only fires after an *automatic*
+        # download — without this the row never appears and nothing logs why.
+        SUAutomaticallyUpdate: true
+        SUScheduledCheckInterval: 86400
+        # Refuse a feed that is not signed with our EdDSA key. Without it,
+        # someone able to substitute the feed cannot ship a malicious build (the
+        # enclosure signature stops that) but can pin users to an older,
+        # validly signed release.
+        SURequireSignedFeed: true
+    dependencies:
+      - package: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeRes

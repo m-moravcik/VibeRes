@@ -65,7 +65,8 @@ struct MenuContent: View {
 
 private struct RootView: View {
     @Environment(DisplayStore.self) private var store
-    @Environment(UpdateChecker.self) private var updateChecker
+    @Environment(UpdateStatus.self) private var updateStatus
+    @Environment(\.updater) private var updater
     @Binding var path: NavigationPath
 
     var body: some View {
@@ -78,9 +79,8 @@ private struct RootView: View {
                     .padding(.top, Design.Spacing.xs)
             }
 
-            if updateChecker.isUpdateAvailable, let url = updateChecker.releaseURL,
-               let latest = updateChecker.latestVersion {
-                UpdateBanner(latestVersion: latest, releaseURL: url)
+            if updateStatus.isUpdateReady {
+                UpdateReadyBanner { updater?.installUpdate() }
             }
 
             // Tight against the popover top — MenuBarExtra(.window) wraps us
@@ -486,7 +486,8 @@ private struct DisplayDetailView: View {
 /// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
-    @Environment(UpdateChecker.self) private var updateChecker
+    @Environment(UpdateStatus.self) private var updateStatus
+    @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -525,7 +526,7 @@ private struct FooterBar: View {
                         // the display list (sync, fast) and the update
                         // banner (async — fires off but doesn't block the UI).
                         store.refresh()
-                        Task { await updateChecker.checkNow() }
+                        updater?.checkForUpdates()
                     }
                 )
                 .keyboardShortcut("r")
@@ -644,30 +645,27 @@ private struct MenuRow: View {
 
 /// Subtle banner shown at the top of the root popover when GitHub has a newer
 /// release than the running app. Click → opens the release page in Safari.
-private struct UpdateBanner: View {
-    let latestVersion: String
-    let releaseURL: URL
+private struct UpdateReadyBanner: View {
+    let install: () -> Void
     @State private var isHovering = false
 
     var body: some View {
-        Button {
-            NSWorkspace.shared.open(releaseURL)
-        } label: {
+        Button(action: install) {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.down.circle.fill")
                     .font(.system(size: 13))
                     .foregroundStyle(.green)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Update available")
+                    Text("Update ready")
                         .font(.system(size: 12, weight: .semibold))
-                    Text("\(versionLabel(latestVersion)) on GitHub — click to view")
+                    Text("Click to restart into the new version")
                         .font(Design.Typography.note)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 Spacer()
-                Image(systemName: "arrow.up.right.square")
+                Image(systemName: "arrow.clockwise")
                     .font(Design.Typography.footer)
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
@@ -675,21 +673,16 @@ private struct UpdateBanner: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isHovering ? Color.green.opacity(0.16) : Color.green.opacity(0.10))
+                RoundedRectangle(cornerRadius: Design.Radius.card)
+                    .fill(Color.green.opacity(isHovering ? 0.18 : 0.10))
             )
+            .padding(.horizontal, Design.Spacing.m)
+            .padding(.top, Design.Spacing.xs)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-        .padding(.horizontal, Design.Spacing.m)
-        .padding(.top, Design.Spacing.s)
-        .accessibilityLabel("Update available — \(latestVersion) on GitHub")
-    }
-
-    /// Strip a leading "v" so the banner reads "0.3.0" rather than "v0.3.0",
-    /// matching the way the user thinks about app version numbers.
-    private func versionLabel(_ raw: String) -> String {
-        raw.hasPrefix("v") ? String(raw.dropFirst()) : raw
+        .help("Installs the downloaded update and relaunches VibeRes")
     }
 }
 

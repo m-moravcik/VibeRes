@@ -36,6 +36,13 @@ themselves in words, and launch-at-login repairs itself.
 
 ### Added
 
+- **In-app updates.** VibeRes checks once a day, downloads in the background and
+  offers a single click to restart into the new version — no browser, no
+  dragging into Applications, no replacing an app that is still running.
+  Settings → Updates turns the automatic check off. Installs from Homebrew defer
+  to `brew upgrade`, and a build that is not signed by us refuses to update
+  itself at all, because an updater that runs unverified binaries is a way in
+  rather than a feature.
 - **Optional confirmation before a resolution sticks.** Settings → General →
   "Confirm resolution changes" applies a new mode for the session only and undoes
   it after 12 seconds unless you press Keep. This is the one thing that could

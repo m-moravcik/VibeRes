@@ -177,6 +177,56 @@ the script does not rely on either one alone:
   script warns in that case. GitHub runners have assessment enabled, so the
   check has teeth in CI.
 
+### Sparkle in-app updates
+
+Releases carry an appcast so the app can update itself. Three things this
+depends on, all of them non-obvious:
+
+- **`scripts/make-appcast.sh` writes `appcast.xml` to the repo root and the
+  release workflow commits it to `main`.** The feed is served from
+  `raw.githubusercontent.com`, not from a release asset. A
+  `releases/latest/download/appcast.xml` URL 404s for *every* client,
+  permanently, the first time a release ships without that asset attached, and
+  no per-release check can stop a future release from omitting it.
+- **`SPARKLE_EDDSA_PRIVATE_KEY`** is a repo secret holding the base64 Ed25519
+  seed; the matching public key is `SUPublicEDKey` in `project.yml`. The seed is
+  also in 1Password. Sparkle can rotate the code-signing certificate **or** this
+  key, never both at once, so losing it during a certificate renewal forces
+  every user to reinstall by hand.
+- **`CURRENT_PROJECT_VERSION` must increase every release.** Sparkle compares
+  `sparkle:version`, which is `CFBundleVersion`, not the marketing version. A
+  forgotten bump makes every client see "no update" with nothing logged
+  anywhere. The release workflow checks it against the previous tag.
+
+### Nested code signing
+
+`xcodebuild`'s embed-and-sign phase signs `Sparkle.framework` but leaves its
+contents exactly as shipped — `Updater.app`, `Autoupdate` and the two XPC
+services all stay ad-hoc, with no team and no timestamp. Observed on a real
+build:
+
+```
+Sparkle.framework   Developer ID Application: Pexelo s. r. o. (7TM9VA58W5)
+Updater.app         TeamIdentifier=not set
+Autoupdate          TeamIdentifier=not set
+Downloader.xpc      TeamIdentifier=not set
+Installer.xpc       TeamIdentifier=not set
+```
+
+Notarization rejects that. `codesign --verify --deep --strict` does **not** catch
+it, because a valid ad-hoc signature is still a valid signature — so the check
+passes locally and Apple rejects the upload an hour later.
+
+`release-signed.sh` therefore re-signs the nested helpers innermost-first and
+then verifies *every* signable target for Developer ID authority, hardened
+runtime, secure timestamp and absence of debug entitlements. If you ever see it
+fail on a nested target, do not relax the check: it is doing its job.
+
+Debug builds set `ENABLE_HARDENED_RUNTIME: NO`. That is also not optional — the
+hardened runtime enables library validation, which refuses to load an
+ad-hoc-signed framework, so without it the dependency breaks every local build
+rather than only releases.
+
 ### What is not signed
 
 `Formula/viberes.rb` builds the `viberes` CLI from source on the user's own

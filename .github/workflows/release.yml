@@ -94,6 +94,24 @@ jobs:
           fi
           echo "Version match: $PROJECT_VERSION"
 
+      - name: Verify the build number increased
+        run: |
+          # Sparkle compares sparkle:version, which is CFBundleVersion. A
+          # forgotten bump makes every client see "no update" with nothing
+          # logged anywhere, so it is checked here rather than discovered later.
+          CURRENT=$(awk -F'"' '/CURRENT_PROJECT_VERSION:/ {print $2; exit}' project.yml)
+          PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -v "^${{ steps.version.outputs.tag }}$" | head -1)
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "no previous tag; skipping monotonicity check"
+            exit 0
+          fi
+          PREVIOUS=$(git show "$PREVIOUS_TAG:project.yml" | awk -F'"' '/CURRENT_PROJECT_VERSION:/ {print $2; exit}')
+          echo "CURRENT_PROJECT_VERSION: $PREVIOUS ($PREVIOUS_TAG) -> $CURRENT"
+          if [ "$CURRENT" -le "$PREVIOUS" ]; then
+            echo "::error::CURRENT_PROJECT_VERSION must increase: $PREVIOUS -> $CURRENT"
+            exit 1
+          fi
+
       - name: Install build tools
         run: brew install xcodegen xcbeautify
 
@@ -175,12 +193,48 @@ jobs:
           # The script writes zip / sha256 / version to $GITHUB_OUTPUT itself.
           ./scripts/release-signed.sh
 
+      - name: Generate and sign the appcast
+        env:
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: |
+          if [ -z "$SPARKLE_EDDSA_PRIVATE_KEY" ]; then
+            echo "::error::secret SPARKLE_EDDSA_PRIVATE_KEY is not set — clients would get an unsigned feed."
+            exit 1
+          fi
+          KEY="$RUNNER_TEMP/sparkle_ed25519.key"
+          printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" > "$KEY"
+          chmod 600 "$KEY"
+          SPARKLE_EDDSA_PRIVATE_KEY_PATH="$KEY" DERIVED_DATA=./build \
+            ./scripts/make-appcast.sh "${{ steps.package.outputs.zip }}" appcast.xml
+          rm -f "$KEY"
+
+      - name: Commit the appcast to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # The feed lives on a stable path rather than as a release asset: a
+          # release published without the asset would 404 every client's update
+          # check permanently.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B appcast-update origin/main
+          cp appcast.xml appcast.xml.new && mv appcast.xml.new appcast.xml
+          git add appcast.xml
+          if git diff --staged --quiet; then
+            echo "appcast unchanged"
+            exit 0
+          fi
+          git commit -m "Publish appcast for ${VERSION}"
+          git push origin appcast-update:main
+
       # Runs even on failure so a broken build never leaves the private key or
       # the API key sitting on the runner for the rest of the job.
       - name: Remove signing material
         if: always()
         run: |
-          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/cert.p12"
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/sparkle_ed25519.key"
           security list-keychains -d user -s login.keychain-db || true
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
 

@@ -61,3 +61,6 @@ icon-build/
 
 # Localisation coverage check output
 build-localisation/
+
+# Sparkle private signing key — never in the repo
+sparkle_ed25519.key
