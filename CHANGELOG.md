@@ -4,6 +4,16 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.5] — 2026-08-01
+
+### Fixed
+
+- **Saving a profile no longer drops a display in silence.** The save form reads
+  the displays attached at the moment you press Save, so a monitor unplugged
+  while the form was open simply never made it into the profile — you picked
+  three displays and got two, with nothing said. It now tells you, and `viberes`
+  reports it too.
+
 ## [0.8.4] — 2026-08-01
 
 **Highlights:** The popover stops closing on you mid-change, failures explain
