@@ -677,8 +677,7 @@ final class ProfileStore {
         // actually moved, so it never offers to restore one that never changed.
         // A main-only change (all modes already at target) must still arm it.
         if !batchSnapshot.isEmpty || previousMainID != nil, let revert = revert {
-            revert.recordBatch(batchSnapshot)
-            // Task 5 wires previousMainID into RevertHistory.
+            revert.recordBatch(batchSnapshot, beforeMain: previousMainID)
         }
         return ProfileApplyResult(outcomes: outcomes, mainChange: mainChange)
     }

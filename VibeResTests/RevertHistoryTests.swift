@@ -29,8 +29,28 @@ struct RevertHistoryTests {
     func consumeWhenEmpty() {
         let h = RevertHistory()
         let snapshot = h.consume()
-        #expect(snapshot.isEmpty)
+        #expect(snapshot.entries.isEmpty)
         #expect(h.canRevert == false)
+    }
+
+    @Test("A main-only apply arms Revert with no mode entries")
+    func mainOnlyArmsRevert() {
+        let history = RevertHistory()
+        history.recordBatch([], beforeMain: 42)
+        #expect(history.canRevert)
+        let consumed = history.consume()
+        #expect(consumed.entries.isEmpty)
+        #expect(consumed.beforeMain == 42)
+        #expect(!history.canRevert, "consume clears the main id too")
+    }
+
+    @Test("clear drops the previous main id")
+    func clearDropsMain() {
+        let history = RevertHistory()
+        history.recordBatch([], beforeMain: 42)
+        history.clear()
+        #expect(!history.canRevert)
+        #expect(history.consume().beforeMain == nil)
     }
 
     // Recording / consume / batch round-trip is covered by the integration

@@ -82,7 +82,8 @@ struct MainDisplayApplyTests {
             fake: CGRect(x: 1074, y: -1080, width: 1920, height: 1080),
         ])
 
-        let result = store.applyDetailed(profile(main: allOnes), displays: [])
+        let history = RevertHistory()
+        let result = store.applyDetailed(profile(main: allOnes), displays: [], revert: history)
 
         #expect(probes.originCalls().count == 1)
         let plan = probes.originCalls().first
@@ -92,6 +93,7 @@ struct MainDisplayApplyTests {
         #expect(result.mainChange == .changed(displayName: "display \(101)"))
         #expect(result.didChangeAnything)
         #expect(probes.currentMain() == fake)
+        #expect(history.beforeMainID == realID, "revert must know who was main before")
     }
 
     @Test("nil mainDisplay never touches arrangement state")

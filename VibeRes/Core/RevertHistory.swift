@@ -20,12 +20,19 @@ final class RevertHistory {
 
     private(set) var entries: [Entry] = []
 
+    /// The display that was main before the last recorded batch, when that
+    /// batch also moved the menu bar. Restoring it is a fresh translation of
+    /// the live arrangement at revert time — no origins are stored here,
+    /// because a stored partial plan is exactly what spike F1 mangles.
+    private(set) var beforeMainID: CGDirectDisplayID?
+
     /// True when there's at least one captured change to undo.
-    var canRevert: Bool { !entries.isEmpty }
+    var canRevert: Bool { !entries.isEmpty || beforeMainID != nil }
 
     /// Human-readable description of what Revert will do, e.g.
     /// "Built-in → 1800×1169" or "Built-in, LG UltraFine".
     var summary: String {
+        if entries.isEmpty, beforeMainID != nil { return "main display" }
         switch entries.count {
         case 0: return ""
         case 1:
@@ -47,16 +54,21 @@ final class RevertHistory {
     /// Capture multiple displays atomically — used when a single click
     /// changes several monitors (profile apply). Replaces any prior history
     /// so Revert undoes "the last action" not "the last single switch".
-    func recordBatch(_ batch: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)]) {
+    func recordBatch(
+        _ batch: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)],
+        beforeMain: CGDirectDisplayID? = nil
+    ) {
         entries = batch.map { Entry(displayID: $0.id, displayName: $0.name, before: $0.before) }
+        beforeMainID = beforeMain
     }
 
     /// Returns the captured entries and clears history. Caller is responsible
     /// for actually re-applying the `before` modes; on success there's
     /// nothing left to revert.
-    func consume() -> [Entry] {
-        let snapshot = entries
+    func consume() -> (entries: [Entry], beforeMain: CGDirectDisplayID?) {
+        let snapshot = (entries, beforeMainID)
         entries.removeAll()
+        beforeMainID = nil
         return snapshot
     }
 
@@ -64,5 +76,6 @@ final class RevertHistory {
     /// state changes make a saved `before` mode stale.
     func clear() {
         entries.removeAll()
+        beforeMainID = nil
     }
 }

@@ -323,6 +323,17 @@ final class DisplayStore {
         try ResolutionSwitcher.apply($0, to: $1, scope: $2)
     }
 
+    /// Injected for the same reason as `applyMode`: reverting a main-display
+    /// change must be assertable without rearranging the machine.
+    var applyOrigins: ([CGDirectDisplayID: CGPoint], CGConfigureOption) throws -> Void =
+        { try ResolutionSwitcher.applyOrigins($0, scope: $1) }
+
+    var liveArrangement: () -> (main: CGDirectDisplayID, bounds: [CGDirectDisplayID: CGRect]) = {
+        var bounds: [CGDirectDisplayID: CGRect] = [:]
+        for id in ResolutionSwitcher.activeDisplayIDs() { bounds[id] = CGDisplayBounds(id) }
+        return (CGMainDisplayID(), bounds)
+    }
+
     /// Test seam. The real implementation hunts down an AppKit window, which a
     /// unit test has no business doing; overriding it lets a test observe
     /// *whether* a refresh decided to dismiss.
@@ -452,15 +463,17 @@ final class DisplayStore {
         performRevert()
     }
 
-    /// Re-apply each display's `before` mode and clear the history. Returns
-    /// the count of displays touched so the caller can surface a toast.
+    /// Re-apply each display's `before` mode, then — if the recorded batch
+    /// also moved the menu bar — translate the live arrangement back so the
+    /// previous main hosts it again. Returns the count of restorations so the
+    /// caller can surface a toast.
     @discardableResult
     func performRevert() -> Int {
         let snapshot = revert.consume()
         var failed: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
         var restored = 0
 
-        for entry in snapshot {
+        for entry in snapshot.entries {
             do {
                 try applyMode(entry.before, entry.displayID, .permanently)
                 restored += 1
@@ -472,7 +485,31 @@ final class DisplayStore {
             }
         }
 
-        if !failed.isEmpty { revert.recordBatch(failed) }
+        // Origins go after modes for the same reason profile apply orders
+        // them this way: only the post-mode live arrangement is guaranteed to
+        // be a consistent layout to translate (F2), never a stale one (F1).
+        var failedMain: CGDirectDisplayID?
+        if let beforeMain = snapshot.beforeMain {
+            let live = liveArrangement()
+            if live.main != beforeMain {
+                if let plan = MainDisplayPlanner.plan(bounds: live.bounds, target: beforeMain) {
+                    do {
+                        try applyOrigins(plan, .permanently)
+                        restored += 1
+                    } catch {
+                        failedMain = beforeMain
+                        lastError = error.userFacingText
+                    }
+                }
+                // No plan means the old main is no longer active — there is
+                // nothing to restore onto, and keeping it armed would promise
+                // a revert that can never run.
+            }
+        }
+
+        if !failed.isEmpty || failedMain != nil {
+            revert.recordBatch(failed, beforeMain: failedMain)
+        }
         if restored > 0 { refresh() }
         // Only what actually came back, so a caller cannot report a success
         // that did not happen.
