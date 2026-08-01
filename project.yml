@@ -11,8 +11,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    MARKETING_VERSION: "0.8.3"
-    CURRENT_PROJECT_VERSION: "18"
+    MARKETING_VERSION: "0.8.4"
+    CURRENT_PROJECT_VERSION: "19"
     # Signing identity and team are intentionally NOT pinned here. Day-to-day
     # builds and CI sign ad-hoc (CODE_SIGN_IDENTITY="-"), which keeps the repo
     # buildable by anyone without an Apple Developer account. The notarized
@@ -119,6 +119,12 @@ targets:
         # enclosure signature stops that) but can pin users to an older,
         # validly signed release.
         SURequireSignedFeed: true
+        # Sparkle *requires* this alongside SURequireSignedFeed and refuses to
+        # start without it (SPUUpdater.m: "For security reasons,
+        # SUVerifyUpdateBeforeExtraction needs to also be enabled if
+        # SURequireSignedFeed is enabled"). 0.8.3 shipped with only the former,
+        # so its updater died at launch with nothing in the logs.
+        SUVerifyUpdateBeforeExtraction: true
     dependencies:
       - package: Sparkle
     settings:
