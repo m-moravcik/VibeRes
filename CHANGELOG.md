@@ -4,6 +4,47 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.6] — 2026-08-01
+
+**Highlights:** The way back survives a failed revert, a multi-display profile
+can no longer be applied halfway, and Screen Recording recovers without a
+relaunch.
+
+### Fixed
+
+- **A failed revert used to leave you with no way back.** Revert cleared its
+  history first and applied the old modes with the errors thrown away, so if the
+  restore failed you were left on an unreadable screen with the undo gone and
+  nothing said. It now restores what it can, keeps the entries it could not, and
+  reports the failure. Confirming a change that cannot be made permanent keeps
+  the countdown armed for the same reason.
+- **A multi-display profile could be applied halfway.** Each display was
+  committed in its own display transaction, so a failure on the third monitor
+  left the first two already changed with nothing to undo them. The whole profile
+  is now one transaction: a mode the display refuses is dropped before the
+  commit, and a commit that fails changes nothing.
+- **Revert offered to restore displays that never changed.** The undo snapshot
+  was recorded before each switch was attempted and kept even when the switch
+  failed, which also inflated the "restored N displays" count.
+- **Denying Screen Recording once disabled Live Preview until you relaunched.**
+  Granting the permission in System Settings afterwards had no effect, because
+  the denial was cached for the lifetime of the process. Turning Live Preview
+  back on now re-checks.
+- **The Shortcuts action accepted values that could terminate the app.** Width,
+  height, and refresh rate are now bounded the way `viberes` has always bounded
+  them, and the scoring arithmetic survives extreme input regardless.
+
+### Changed
+
+- **The Screen Recording prompt now explains itself.** macOS was asking for the
+  permission with no reason given, because the app shipped without a usage
+  description. It says the preview is rendered on your Mac and never leaves it.
+- **Settings no longer scrolls.** "Confirm resolution changes" moved from
+  Startup to Display, where it belongs, and the descriptions lost the words that
+  were only padding.
+- Profile storage is bounded — a corrupted or hand-edited `profiles.json` can no
+  longer stall launch.
+
 ## [0.8.5] — 2026-08-01
 
 ### Fixed
