@@ -6,25 +6,28 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.8.5</title>
-      <pubDate>Sat, 01 Aug 2026 11:03:44 +0000</pubDate>
-      <sparkle:version>20</sparkle:version>
-      <sparkle:shortVersionString>0.8.5</sparkle:shortVersionString>
+      <title>0.9.0</title>
+      <pubDate>Tue, 11 Aug 2026 15:19:27 +0000</pubDate>
+      <sparkle:version>22</sparkle:version>
+      <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<h3>Fixed</h3>
+<p><strong>Highlights:</strong> Profiles can now optionally make a chosen display the main one (the one with the menu bar) when applied, selected in the Save/Edit form via a &quot;Main display&quot; picker. Default is &quot;Don&#x27;t change&quot; to preserve today&#x27;s behaviour. Revert also restores the previous main display. The display detail gets a one-click <strong>Make main display</strong> action, and the pill bar now highlights the profile that matches the current setup.</p>
+<h3>Added</h3>
 <ul>
-<li><strong>Saving a profile no longer drops a display in silence.</strong> The save form reads the displays attached at the moment you press Save, so a monitor unplugged while the form was open simply never made it into the profile — you picked three displays and got two, with nothing said. It now tells you, and <code>viberes</code> reports it too.</li>
+<li><strong>Make main display from the display detail</strong> — drill into any display and move the menu bar there with one click, no profile needed. The arrangement only shifts (relative positions are preserved), and Revert takes it back.</li>
+<li><strong>The active profile is highlighted</strong> — the pill whose saved setup matches what the displays are currently doing shows a checkmark and an accent border, so &quot;which one is on right now&quot; is visible at a glance. The small <code>✱</code> badge keeps its old meaning (flexible profile) and is unrelated.</li>
+<li><strong>Profiles can pin the main display</strong> — when saving or editing a profile, you can now choose which display becomes main (hosts the menu bar) when the profile is applied. The picker offers the profile&#x27;s displays plus a &quot;Don&#x27;t change&quot; option (the default, so existing profiles behave exactly as before). <code>viberes profile apply</code> reports the main-display outcome in the note, and <code>viberes profile list</code> shows a <code>main:</code> line for each profile&#x27;s choice. Revert (<code>⌘Z</code> or the footer button) also restores the previous main display — the previous main is tracked too, not just the modes.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.8.5/VibeRes-0.8.5.zip"
-                 sparkle:edSignature="yucm05MyjisgNEIjIo1nL4lkT20QWy0kSnY/ZpDVqeAIDH1XNxBcHUzcoXmnYP2fbdj5hjlV/6cmXXM35bbsBg=="
-                 length="2856757"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.9.0/VibeRes-0.9.0.zip"
+                 sparkle:edSignature="LwgVX4cB9HvJckJGAesxOqpZ5dTCVM+zhxQ+mPvi6Ln36qSygMfYJp1J8qnzrZtZY3YfDa/kSsCpLJ9nxPFDDA=="
+                 length="2972824"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: gy9fc/tfE+VHCe375AkzJ2YhFRkMjFhBezAWZ7sKMPd4v3zd7xLv4hTmvA1l52+ZYDvWFY1Fs6FgewL2fs1PDw==
-length: 1400
+edSignature: 7afv4WX0Q/Iaa/QZkeFs9grsXNulZ7gOfFZVXk57BCq+mMs6Tkvin0Kas114rd8O1P/bvUH8jk/YoxiQ6mn5Aw==
+length: 2789
 -->
