@@ -4,15 +4,24 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.9.0] — 2026-08-01
+## [0.9.0] — 2026-08-03
 
 **Highlights:** Profiles can now optionally make a chosen display the main one
 (the one with the menu bar) when applied, selected in the Save/Edit form via a
 "Main display" picker. Default is "Don't change" to preserve today's behaviour.
-Revert also restores the previous main display.
+Revert also restores the previous main display. The display detail gets a
+one-click **Make main display** action, and the pill bar now highlights the
+profile that matches the current setup.
 
 ### Added
 
+- **Make main display from the display detail** — drill into any display and
+  move the menu bar there with one click, no profile needed. The arrangement
+  only shifts (relative positions are preserved), and Revert takes it back.
+- **The active profile is highlighted** — the pill whose saved setup matches
+  what the displays are currently doing shows a checkmark and an accent
+  border, so "which one is on right now" is visible at a glance. The small
+  `✱` badge keeps its old meaning (flexible profile) and is unrelated.
 - **Profiles can pin the main display** — when saving or editing a profile,
   you can now choose which display becomes main (hosts the menu bar) when the
   profile is applied. The picker offers the profile's displays plus a "Don't
