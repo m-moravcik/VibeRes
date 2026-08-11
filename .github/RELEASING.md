@@ -225,7 +225,10 @@ fail on a nested target, do not relax the check: it is doing its job.
 Debug builds set `ENABLE_HARDENED_RUNTIME: NO`. That is also not optional — the
 hardened runtime enables library validation, which refuses to load an
 ad-hoc-signed framework, so without it the dependency breaks every local build
-rather than only releases.
+rather than only releases. `make app` (a local ad-hoc *Release* build) passes
+the same flag on the `xcodebuild` command line for the mirror-image reason:
+there the app is ad-hoc while Sparkle keeps its Developer ID signature, and
+library validation rejects the Team ID mismatch at launch.
 
 ### What is not signed
 

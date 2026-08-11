@@ -4,11 +4,18 @@ DERIVED := $(shell xcodebuild -project VibeRes.xcodeproj -scheme VibeRes -showBu
 RELEASE := $(DERIVED)/Release
 PREFIX  ?= /usr/local
 
+# ENABLE_HARDENED_RUNTIME=NO for the same reason Debug builds set it in
+# project.yml: the hardened runtime enables library validation, and an
+# ad-hoc-signed binary refuses to load the Developer ID-signed
+# Sparkle.framework ("different Team IDs" at launch). Signed releases keep
+# the hardened runtime — scripts/release-signed.sh re-signs Sparkle with the
+# same team instead.
 app:
 	xcodegen generate
 	xcodebuild -project VibeRes.xcodeproj -scheme VibeRes -configuration Release \
 		-destination 'platform=macOS' \
-		CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO build
+		CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO \
+		ENABLE_HARDENED_RUNTIME=NO build
 
 # Release build: real Developer ID signature, notarized and stapled.
 # See scripts/release-signed.sh for the credentials it expects.
