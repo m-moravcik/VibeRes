@@ -133,7 +133,9 @@ jobs:
           # Signing certificate, notarization key and the Sparkle private key are
           # all reachable from this job, so the code being built has to be code
           # that went through main — not whatever an arbitrary tag points at.
-          git fetch origin main --depth=0 --quiet
+          # The checkout above already ran with fetch-depth: 0, so this only
+          # needs to update the origin/main ref (git rejects --depth=0).
+          git fetch origin main --quiet
           if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/main; then
             echo "::error::$TAG is not an ancestor of origin/main; refusing to release with signing secrets."
             exit 1
