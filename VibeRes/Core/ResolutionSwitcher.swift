@@ -2,10 +2,15 @@ import CoreGraphics
 import Foundation
 
 enum ResolutionSwitcher {
-    enum Failure: Error {
+    enum Failure: Error, Equatable {
         case beginConfig(CGError)
         case applyMode(CGError)
         case completeConfig(CGError)
+        case applyOrigin(CGError)
+        /// The origin plan does not cover exactly the active display set. A
+        /// partial arrangement statement is completed for you — badly (spike
+        /// F1) — so it is refused before any CG call is made.
+        case originCoverage
 
         /// Plain-English explanation for the popover and for `viberes` output.
         ///
@@ -16,7 +21,9 @@ enum ResolutionSwitcher {
         var userFacingDescription: String {
             let code: CGError
             switch self {
-            case .beginConfig(let c), .applyMode(let c), .completeConfig(let c):
+            case .originCoverage:
+                return "the display set changed while applying — arrangement left unchanged"
+            case .beginConfig(let c), .applyMode(let c), .completeConfig(let c), .applyOrigin(let c):
                 code = c
             }
 
@@ -103,6 +110,55 @@ enum ResolutionSwitcher {
         let completeErr = CGCompleteDisplayConfiguration(config, scope)
         guard completeErr == .success else { throw Failure.completeConfig(completeErr) }
         return BatchOutcome(applied: staged, rejected: rejected)
+    }
+
+    /// Moves the whole arrangement in one transaction so that one display ends
+    /// up at (0,0) — i.e. becomes main and hosts the menu bar.
+    ///
+    /// All-or-nothing by design, unlike the mode path above: spike F1 showed a
+    /// partial origin change is silently "completed" by the window server into
+    /// a mangled layout, so a plan is refused outright unless it covers every
+    /// active display. The active-list gate sits here, immediately before
+    /// Begin, because a display asleep or unplugged since the plan was built
+    /// is online-but-not-active (F7) and would take the whole transaction down
+    /// at commit (F6).
+    static func applyOrigins(
+        _ plan: [CGDirectDisplayID: CGPoint],
+        scope: CGConfigureOption = .permanently,
+        activeIDs: [CGDirectDisplayID]? = nil
+    ) throws {
+        let active = activeIDs ?? activeDisplayIDs()
+        guard !plan.isEmpty, Set(plan.keys) == Set(active) else {
+            throw Failure.originCoverage
+        }
+
+        var config: CGDisplayConfigRef?
+        let beginErr = CGBeginDisplayConfiguration(&config)
+        guard beginErr == .success else { throw Failure.beginConfig(beginErr) }
+
+        for (id, origin) in plan {
+            let err = CGConfigureDisplayOrigin(config, id, Int32(origin.x), Int32(origin.y))
+            guard err == .success else {
+                // One refused origin poisons the whole statement (F1); there
+                // is no per-display fallback like the mode path has.
+                CGCancelDisplayConfiguration(config)
+                throw Failure.applyOrigin(err)
+            }
+        }
+
+        let completeErr = CGCompleteDisplayConfiguration(config, scope)
+        guard completeErr == .success else { throw Failure.completeConfig(completeErr) }
+    }
+
+    /// Live *active* display list — not `online`: asleep or clamshell displays
+    /// are online but not active, and configuring one fails with undocumented
+    /// errors (F7).
+    static func activeDisplayIDs() -> [CGDirectDisplayID] {
+        var count: UInt32 = 0
+        guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else { return [] }
+        var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
+        guard CGGetActiveDisplayList(count, &ids, &count) == .success else { return [] }
+        return Array(ids.prefix(Int(count)))
     }
 
     /// Applies a display mode to a single display.

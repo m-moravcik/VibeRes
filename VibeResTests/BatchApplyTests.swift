@@ -96,7 +96,7 @@ struct BatchApplyTests {
         let displays = ids.map {
             info(id: $0, name: "Mon \($0)", modes: modes, current: current)
         }
-        let outcomes = store.applyDetailed(profile(target: target), displays: displays)
+        let outcomes = store.applyDetailed(profile(target: target), displays: displays).outcomes
 
         #expect(calls.count == 1, "one profile apply must be one display reconfiguration")
         #expect(calls.first?.count == 3, "all three displays belong to the same transaction")
@@ -121,7 +121,7 @@ struct BatchApplyTests {
         let displays = ids.prefix(2).map {
             info(id: $0, name: "Mon \($0)", modes: modes, current: target)
         }
-        let outcomes = store.applyDetailed(profile(target: target), displays: displays)
+        let outcomes = store.applyDetailed(profile(target: target), displays: displays).outcomes
 
         #expect(calls == 0, "a no-op profile must not blank the screens")
         #expect(outcomes.allSatisfy { $0.status == .alreadyApplied })
@@ -144,7 +144,7 @@ struct BatchApplyTests {
         let displays = ids.map {
             info(id: $0, name: "Mon \($0)", modes: modes, current: current)
         }
-        let outcomes = store.applyDetailed(profile(target: target), displays: displays)
+        let outcomes = store.applyDetailed(profile(target: target), displays: displays).outcomes
 
         let failed = outcomes.filter(\.isProblem)
         #expect(failed.count == 1)
@@ -163,7 +163,7 @@ struct BatchApplyTests {
         let displays = ids.map {
             info(id: $0, name: "Mon \($0)", modes: modes, current: current)
         }
-        let outcomes = store.applyDetailed(profile(target: target), displays: displays)
+        let outcomes = store.applyDetailed(profile(target: target), displays: displays).outcomes
 
         #expect(outcomes.count == 3)
         #expect(outcomes.allSatisfy { $0.isProblem }, "nothing was committed, so nothing succeeded")

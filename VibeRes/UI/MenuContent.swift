@@ -244,6 +244,7 @@ private struct DisplayDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         currentModeCard(for: display)
+                        makeMainRow(for: display)
                         filterToggle(for: display)
                         sizeList(for: display)
                     }
@@ -353,6 +354,31 @@ private struct DisplayDetailView: View {
                     .fill(Color.accentColor.opacity(0.08))
                     .padding(.horizontal, Design.Spacing.m)
             )
+            .padding(.bottom, 6)
+        }
+    }
+
+    // MARK: Make main display
+
+    /// One-off sibling of the profile "main display" pin: only worth showing
+    /// when there is somewhere else the menu bar could go, and when it isn't
+    /// already here.
+    @ViewBuilder
+    private func makeMainRow(for display: DisplayInfo) -> some View {
+        if !display.isMain, store.displays.count > 1 {
+            HStack {
+                Button {
+                    store.makeMain(display.id)
+                } label: {
+                    Label("Make main display", systemImage: "menubar.rectangle")
+                        .font(Design.Typography.control)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Moves the menu bar and Dock to this display. The arrangement only shifts — relative positions are preserved.")
+                Spacer()
+            }
+            .padding(.horizontal, Design.Spacing.l)
             .padding(.bottom, 6)
         }
     }

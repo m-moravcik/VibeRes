@@ -62,6 +62,8 @@ struct ProfilesSection: View {
         var name: String = ""
         /// Per-display: include? + how to bind (specific vs anyExternal)
         var perDisplay: [DisplayChoice] = []
+        /// Which included display becomes main on apply; nil = don't change.
+        var mainDisplayID: CGDirectDisplayID?
     }
 
     struct DisplayChoice: Equatable, Identifiable {
@@ -84,6 +86,8 @@ struct ProfilesSection: View {
         let profileID: UUID
         var name: String
         var entries: [EntryEdit]
+        /// Row whose display becomes main on apply; nil = don't change.
+        var mainRowID: UUID?
     }
 
     struct EntryEdit: Equatable, Identifiable {
@@ -203,6 +207,7 @@ struct ProfilesSection: View {
                     ProfilePill(
                         profile: profile,
                         isCurrentlyFlexible: isFlexible(profile),
+                        isActive: profiles.isCurrentState(profile, displays: displays.displays),
                         previewProvider: { profiles.previewApply(profile, against: displays.displays) }
                     ) {
                         // Classify before applying. Clean fit (.exactMatch)
@@ -355,10 +360,10 @@ struct ProfilesSection: View {
         let snapshotDisplays = displays.displays
         let revert = displays.revert
         Task.detached(priority: .userInitiated) {
-            let outcomes = await MainActor.run {
+            let result = await MainActor.run {
                 profiles.applyDetailed(profile, displays: snapshotDisplays, revert: revert)
             }
-            await MainActor.run { announceOutcome(outcomes) }
+            await MainActor.run { announceOutcome(result) }
         }
     }
 
@@ -565,6 +570,23 @@ struct ProfilesSection: View {
                     displayChoiceRow(choice)
                 }
 
+                Text("MAIN DISPLAY")
+                    .font(Design.Typography.sectionHeader)
+                    .foregroundStyle(.tertiary)
+                    .tracking(0.5)
+
+                Picker(selection: bindingForMainDisplay) {
+                    Text("Don't change").tag(CGDirectDisplayID?.none)
+                    ForEach(state.perDisplay.filter(\.isIncluded)) { choice in
+                        Text(choice.displayName).tag(CGDirectDisplayID?.some(choice.displayID))
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .labelsHidden()
+                .accessibilityLabel("Main display")
+                .help("Which display hosts the menu bar after this profile is applied. 'Don't change' leaves the arrangement alone.")
+
                 HStack {
                     Spacer()
                     Button("Cancel") { mode = .idle }
@@ -687,6 +709,24 @@ struct ProfilesSection: View {
                 if case .saving(var s) = mode,
                    let i = s.perDisplay.firstIndex(where: { $0.id == id }) {
                     s.perDisplay[i].isIncluded = newValue
+                    // Un-including the display that was picked as main leaves
+                    // the picker pointing at nothing — reset to "Don't change".
+                    if !newValue, s.mainDisplayID == id { s.mainDisplayID = nil }
+                    mode = .saving(s)
+                }
+            }
+        )
+    }
+
+    private var bindingForMainDisplay: Binding<CGDirectDisplayID?> {
+        Binding(
+            get: {
+                if case .saving(let s) = mode { return s.mainDisplayID }
+                return nil
+            },
+            set: { newValue in
+                if case .saving(var s) = mode {
+                    s.mainDisplayID = newValue
                     mode = .saving(s)
                 }
             }
@@ -766,6 +806,23 @@ struct ProfilesSection: View {
                 ForEach(state.entries) { entry in
                     editEntryRow(entry)
                 }
+
+                Text("MAIN DISPLAY")
+                    .font(Design.Typography.sectionHeader)
+                    .foregroundStyle(.tertiary)
+                    .tracking(0.5)
+
+                Picker(selection: bindingForEditMainRow) {
+                    Text("Don't change").tag(UUID?.none)
+                    ForEach(state.entries.filter(\.isIncluded)) { entry in
+                        Text(entry.displayName).tag(UUID?.some(entry.id))
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .labelsHidden()
+                .accessibilityLabel("Main display")
+                .help("Which display hosts the menu bar after this profile is applied. 'Don't change' leaves the arrangement alone.")
 
                 if state.entries.allSatisfy({ !$0.isIncluded }) {
                     Text("At least one entry must remain to save.")
@@ -1025,7 +1082,12 @@ struct ProfilesSection: View {
                 availableModes: live
             )
         }
-        return EditFormState(profileID: profile.id, name: profile.name, entries: entries)
+        var state = EditFormState(profileID: profile.id, name: profile.name, entries: entries)
+        // Preselect the row that would save the same matcher the profile
+        // already stores. A hand-edited mainDisplay matching no row shows as
+        // "Don't change" and is dropped on save — the edit form owns the field.
+        state.mainRowID = entries.first(where: { profile.mainDisplay == rowMatcher($0) })?.id
+        return state
     }
 
     // MARK: - Edit bindings
@@ -1057,6 +1119,24 @@ struct ProfilesSection: View {
                 if case .editing(var s) = mode,
                    let i = s.entries.firstIndex(where: { $0.id == rowID }) {
                     s.entries[i].isIncluded = newValue
+                    // Un-including the row picked as main leaves the picker
+                    // pointing at nothing — reset to "Don't change".
+                    if !newValue, s.mainRowID == rowID { s.mainRowID = nil }
+                    mode = .editing(s)
+                }
+            }
+        )
+    }
+
+    private var bindingForEditMainRow: Binding<UUID?> {
+        Binding(
+            get: {
+                if case .editing(let s) = mode { return s.mainRowID }
+                return nil
+            },
+            set: { newValue in
+                if case .editing(var s) = mode {
+                    s.mainRowID = newValue
                     mode = .editing(s)
                 }
             }
@@ -1142,7 +1222,7 @@ struct ProfilesSection: View {
         guard case .editing(let s) = mode else { return }
         let trimmed = s.name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        guard var profile = profiles.profiles.first(where: { $0.id == s.profileID }) else {
+        guard let profile = profiles.profiles.first(where: { $0.id == s.profileID }) else {
             mode = .idle
             return
         }
@@ -1150,15 +1230,7 @@ struct ProfilesSection: View {
         guard !kept.isEmpty else { return }
 
         let newEntries: [Profile.Entry] = kept.map { e in
-            let matcher: DisplayMatcher = {
-                switch e.matcherKind {
-                case .anyExternal: return .anyExternal
-                case .specific:
-                    return e.isBuiltIn
-                        ? .builtIn(vendor: e.vendor, model: e.model, serial: e.serial)
-                        : .edid(vendor: e.vendor, model: e.model, serial: e.serial)
-                }
-            }()
+            let matcher = rowMatcher(e)
             return Profile.Entry(
                 matcher: matcher,
                 displayName: e.displayName,
@@ -1172,17 +1244,34 @@ struct ProfilesSection: View {
         // before we rename. If save is rejected, surface the reason and
         // keep the user in the form so they can fix the conflict.
         switch profiles.replaceEntries(profile, with: newEntries) {
-        // The edit form works from the profile's own entries, not from live
-        // displays, so nothing can go missing between opening and saving.
+        // Re-fetch after replaceEntries: `profile` was captured before it and
+        // still carries the old entries — updating with it would silently undo
+        // the entry edits that replaceEntries just saved.
         case .saved, .savedWithMissingDisplays:
-            profile.name = trimmed
-            profiles.update(profile)
+            if var fresh = profiles.profiles.first(where: { $0.id == s.profileID }) {
+                fresh.name = trimmed
+                fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
+                profiles.update(fresh)
+            }
             announce("Updated '\(trimmed)'", tone: .info)
             mode = .idle
         case .rejectedMultipleAnyExternal:
             announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
         case .rejectedEmpty:
             announce("Keep at least one entry to save the profile.", tone: .problem)
+        }
+    }
+
+    /// The matcher a row would save as — single source of truth for
+    /// commitEdit and for preselecting the main-display picker.
+    private func rowMatcher(_ e: EntryEdit) -> DisplayMatcher {
+        switch e.matcherKind {
+        case .anyExternal:
+            return .anyExternal
+        case .specific:
+            return e.isBuiltIn
+                ? .builtIn(vendor: e.vendor, model: e.model, serial: e.serial)
+                : .edid(vendor: e.vendor, model: e.model, serial: e.serial)
         }
     }
 
@@ -1208,7 +1297,12 @@ struct ProfilesSection: View {
         }
         guard !selection.isEmpty else { return }
 
-        switch profiles.captureCurrent(name: trimmed, displays: displays.displays, selection: selection) {
+        switch profiles.captureCurrent(
+            name: trimmed,
+            displays: displays.displays,
+            selection: selection,
+            mainSelection: s.perDisplay.first(where: { $0.isIncluded && $0.displayID == s.mainDisplayID })?.displayID
+        ) {
         case .saved:
             mode = .idle
             warnIfDisplaysAreIndistinguishable(selection: selection)
@@ -1244,10 +1338,9 @@ struct ProfilesSection: View {
             return
         }
         autoApplyLog.notice("autoApply: invoking applyDetailed for '\(match.name, privacy: .public)' across \(displays.displays.count) display(s)")
-        let outcomes = profiles.applyDetailed(match, displays: displays.displays)
-        let didChangeAnything = outcomes.contains(where: \.didChange)
-        autoApplyLog.notice("autoApply: outcomes=\(outcomes.count) didChange=\(didChangeAnything)")
-        if didChangeAnything {
+        let result = profiles.applyDetailed(match, displays: displays.displays)
+        autoApplyLog.notice("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
+        if result.didChangeAnything {
             announce("Applied '\(match.name)' for the new display setup.", tone: .info)
         }
     }
@@ -1269,10 +1362,10 @@ struct ProfilesSection: View {
 
     /// Translates outcome list into a single coloured note shown under the pills.
     /// Priority: any problem > any fallback > applied success > all already-at-target.
-    private func announceOutcome(_ outcomes: [ProfileStore.ApplyOutcome]) {
+    private func announceOutcome(_ result: ProfileStore.ProfileApplyResult) {
         // Aggregation lives in ApplyOutcomeNote so the precedence rules are
         // testable and the copy is localisable. See ApplyOutcomeNoteTests.
-        guard let note = ApplyOutcomeNote.make(from: outcomes) else {
+        guard let note = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) else {
             lastNote = nil
             return
         }
@@ -1300,6 +1393,11 @@ struct ProfilesSection: View {
 private struct ProfilePill: View {
     let profile: Profile
     let isCurrentlyFlexible: Bool
+    /// True when the profile matches the desktop's current state right now —
+    /// applying it would change nothing. Distinct from `isCurrentlyFlexible`
+    /// (the `✱` badge), which only says the profile's matcher is role-based;
+    /// both can be true at once.
+    let isActive: Bool
     /// Lazily computed preview shown on hover so the user knows *before*
     /// clicking what the apply will do. Re-evaluated on each hover so the
     /// preview reflects live display state, not a stale snapshot.
@@ -1316,8 +1414,14 @@ private struct ProfilePill: View {
     var body: some View {
         Button(action: onApply) {
             HStack(spacing: 4) {
-                Image(systemName: iconName)
-                    .font(.system(size: 9))
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tint)
+                } else {
+                    Image(systemName: iconName)
+                        .font(.system(size: 9))
+                }
                 Text(profile.name)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
@@ -1331,8 +1435,16 @@ private struct ProfilePill: View {
             .padding(.vertical, 3)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isHovering ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.18))
+                    .fill(isHovering
+                          ? Color.accentColor.opacity(0.25)
+                          : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18)))
             )
+            .overlay {
+                if isActive {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .strokeBorder(Color.accentColor.opacity(0.8), lineWidth: 1)
+                }
+            }
         }
         .buttonStyle(.plain)
         .onHover { hover in
@@ -1361,7 +1473,7 @@ private struct ProfilePill: View {
     /// click on the pill while the preview is visible.
     private var plainPreviewTooltip: String {
         guard let preview = cachedPreview else { return tooltip }
-        var lines = ["Applying '\(profile.name)' will:"]
+        var lines = activeTooltipPrefix + ["Applying '\(profile.name)' will:"]
         for row in preview.rows {
             let prefix: String = {
                 switch row.action {
@@ -1436,7 +1548,13 @@ private struct ProfilePill: View {
     }
 
     private var tooltip: String {
-        "Apply '\(profile.name)' (\(profile.humanSummary))"
+        (activeTooltipPrefix + ["Apply '\(profile.name)' (\(profile.humanSummary))"]).joined(separator: "\n")
+    }
+
+    /// First line prepended to both tooltip variants when the pill is active —
+    /// empty when it isn't, so joining it never leaves a stray blank line.
+    private var activeTooltipPrefix: [String] {
+        isActive ? ["Active — matches the current setup"] : []
     }
 }
 

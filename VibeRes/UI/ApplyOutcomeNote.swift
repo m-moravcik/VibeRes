@@ -10,7 +10,7 @@ import SwiftUI
 /// resolve a String Catalog against. Localisable copy therefore belongs here,
 /// built from the outcome's structured fields rather than from `summary`.
 struct ApplyOutcomeNote: Equatable {
-    enum Tone: Equatable {
+    enum Tone: Equatable, Comparable {
         case info
         case fallback
         case problem
@@ -29,6 +29,13 @@ struct ApplyOutcomeNote: Equatable {
         case noExternalConnected
         case noUsableMode(display: String, width: Int, height: Int)
         case failed(display: String, message: String)
+
+        case mainChanged(display: String)
+        case mainAdjusted(display: String)
+        case mainNotConnected
+        case mainAmbiguous(count: Int)
+        case mainMirrored
+        case mainFailed(message: String)
     }
 
     enum Content: Equatable {
@@ -40,8 +47,55 @@ struct ApplyOutcomeNote: Equatable {
 
     let tone: Tone
     let content: Content
+    /// The main-display line, rendered after the per-display content. Kept
+    /// separate from Content so the aggregation precedence above stays about
+    /// modes only.
+    let mainDetail: Detail?
 
-    static func make(from outcomes: [ProfileStore.ApplyOutcome]) -> ApplyOutcomeNote? {
+    init(tone: Tone, content: Content, mainDetail: Detail? = nil) {
+        self.tone = tone
+        self.content = content
+        self.mainDetail = mainDetail
+    }
+
+    static func make(
+        from outcomes: [ProfileStore.ApplyOutcome],
+        mainChange: ProfileStore.MainChangeOutcome? = nil
+    ) -> ApplyOutcomeNote? {
+        let base = modeNote(from: outcomes)
+        guard let (detail, mainTone) = mainDetail(for: mainChange) else { return base }
+        // The main line rides on whatever the modes produced; when the modes
+        // produced nothing (rare mixed statuses), it still deserves a note.
+        let content = base?.content ?? .alreadyAtSavedSettings
+        return ApplyOutcomeNote(
+            tone: max(base?.tone ?? .info, mainTone),
+            content: content,
+            mainDetail: detail
+        )
+    }
+
+    private static func mainDetail(
+        for change: ProfileStore.MainChangeOutcome?
+    ) -> (Detail, Tone)? {
+        switch change {
+        case nil, .alreadyMain:
+            return nil
+        case .changed(let name):
+            return (.mainChanged(display: name), .info)
+        case .changedButAdjusted(let name):
+            return (.mainAdjusted(display: name), .fallback)
+        case .skippedNoMatch:
+            return (.mainNotConnected, .fallback)
+        case .skippedAmbiguous(let count):
+            return (.mainAmbiguous(count: count), .fallback)
+        case .skippedMirrored:
+            return (.mainMirrored, .fallback)
+        case .failed(let message):
+            return (.mainFailed(message: message), .problem)
+        }
+    }
+
+    private static func modeNote(from outcomes: [ProfileStore.ApplyOutcome]) -> ApplyOutcomeNote? {
         guard !outcomes.isEmpty else { return nil }
 
         // Precedence is deliberate: one broken display matters more than three
@@ -201,6 +255,48 @@ extension ApplyOutcomeNote.Detail {
                 defaultValue: "\(display): \(message)",
                 comment: "Applying a mode failed. 1: display name, 2: system error text"
             ))
+
+        case let .mainChanged(display):
+            return String(localized: LocalizedStringResource(
+                "note.detail.mainChanged",
+                defaultValue: "Main display \u{2192} \(display)",
+                comment: "The menu bar moved to this display. 1: display name"
+            ))
+
+        case let .mainAdjusted(display):
+            return String(localized: LocalizedStringResource(
+                "note.detail.mainAdjusted",
+                defaultValue: "Main display \u{2192} \(display), but macOS adjusted the arrangement",
+                comment: "Main display was set but the layout differs from what was requested. 1: display name"
+            ))
+
+        case .mainNotConnected:
+            return String(localized: LocalizedStringResource(
+                "note.detail.mainNotConnected",
+                defaultValue: "Main display unchanged — the saved display is not connected",
+                comment: "The profile's main display is not attached"
+            ))
+
+        case let .mainAmbiguous(count):
+            return String(localized: LocalizedStringResource(
+                "note.detail.mainAmbiguous",
+                defaultValue: "Main display unchanged — \(count) connected displays match",
+                comment: "Several displays match the saved main. 1: how many"
+            ))
+
+        case .mainMirrored:
+            return String(localized: LocalizedStringResource(
+                "note.detail.mainMirrored",
+                defaultValue: "Main display unchanged — displays are mirrored",
+                comment: "Arrangement is not touched while mirroring is on"
+            ))
+
+        case let .mainFailed(message):
+            return String(localized: LocalizedStringResource(
+                "note.detail.mainFailed",
+                defaultValue: "Main display unchanged: \(message)",
+                comment: "Setting the main display failed. 1: system error text"
+            ))
         }
     }
 }
@@ -213,29 +309,35 @@ extension ApplyOutcomeNote {
     /// into another would put an opaque `%@` in the middle of a translatable
     /// sentence.
     var localizedDescription: String {
+        let base: String
         switch content {
         case let .problems(details):
-            return Self.joined(details)
+            base = Self.joined(details)
 
         case let .fallbacks(details):
-            return Self.joined(details)
+            base = Self.joined(details)
 
         case let .applied(detail, extraCount):
-            guard extraCount > 0 else { return detail.localizedDescription }
-            let more = String(localized: LocalizedStringResource(
-                "note.moreDisplays",
-                defaultValue: " (+\(extraCount) more)",
-                comment: "Appended when a profile also applied to further displays. 1: how many others"
-            ))
-            return detail.localizedDescription + more
+            if extraCount > 0 {
+                let more = String(localized: LocalizedStringResource(
+                    "note.moreDisplays",
+                    defaultValue: " (+\(extraCount) more)",
+                    comment: "Appended when a profile also applied to further displays. 1: how many others"
+                ))
+                base = detail.localizedDescription + more
+            } else {
+                base = detail.localizedDescription
+            }
 
         case .alreadyAtSavedSettings:
-            return String(localized: LocalizedStringResource(
+            base = String(localized: LocalizedStringResource(
                 "note.alreadyAtSavedSettings",
                 defaultValue: "Already at the saved settings.",
                 comment: "The profile was applied but nothing needed changing"
             ))
         }
+        guard let mainDetail else { return base }
+        return base + "; " + mainDetail.localizedDescription
     }
 
     private static func joined(_ details: [Detail]) -> String {

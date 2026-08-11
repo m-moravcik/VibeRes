@@ -11,8 +11,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    MARKETING_VERSION: "0.8.6"
-    CURRENT_PROJECT_VERSION: "21"
+    MARKETING_VERSION: "0.9.0"
+    CURRENT_PROJECT_VERSION: "22"
     # Signing identity and team are intentionally NOT pinned here. Day-to-day
     # builds and CI sign ad-hoc (CODE_SIGN_IDENTITY="-"), which keeps the repo
     # buildable by anyone without an Apple Developer account. The notarized

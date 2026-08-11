@@ -225,6 +225,15 @@ func cmdProfileList() {
     }
     for p in store.profiles {
         print("\(p.name)\t\(p.entries.count) display\(p.entries.count == 1 ? "" : "s")\t\(p.id)")
+        if let main = p.mainDisplay {
+            let kind: String
+            switch main {
+            case .builtIn: kind = "built-in"
+            case .anyExternal: kind = "any external"
+            case .edid: kind = "specific"
+            }
+            print("  main: \(kind)")
+        }
     }
 }
 
@@ -299,10 +308,10 @@ func cmdProfileApply(_ name: String) {
         fail("no profile named \"\(name)\"")
     }
     let displays = DisplayManager.snapshot()
-    let outcomes = store.applyDetailed(profile, displays: displays)
+    let result = store.applyDetailed(profile, displays: displays)
     var hadProblem = false
     print("# applied profile \"\(profile.name)\"")
-    for o in outcomes {
+    for o in result.outcomes {
         let icon: String
         switch o.status {
         case .applied: icon = "✓"
@@ -311,6 +320,18 @@ func cmdProfileApply(_ name: String) {
         case .skippedNoMatch, .skippedNoMode, .failed: icon = "✗"; hadProblem = true
         }
         print("  \(icon) \(o.summary)")
+    }
+    if let main = result.mainChange {
+        switch main {
+        case .changed(let name):
+            print("  ✓ main display → \(name)")
+        case .alreadyMain:
+            print("  = main display already \(profile.name)'s choice")
+        case .changedButAdjusted:
+            print("  ~ \(main.problemSummary ?? "")"); hadProblem = true
+        case .skippedNoMatch, .skippedAmbiguous, .skippedMirrored, .failed:
+            print("  ✗ \(main.problemSummary ?? "")"); hadProblem = true
+        }
     }
     if hadProblem { exit(2) }
 }
