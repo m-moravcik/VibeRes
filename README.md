@@ -25,11 +25,7 @@ Upgrade later: `brew upgrade --cask m-moravcik/viberes/viberes-app` and `brew up
 
 ### Manual
 
-If you don't use Homebrew, download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases), unzip into `/Applications`, and on first launch right-click → **Open** (ad-hoc signed). Or strip the quarantine flag yourself:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/VibeRes.app
-```
+If you don't use Homebrew, download `VibeRes-*.zip` from [Releases](https://github.com/m-moravcik/VibeRes/releases), unzip it into `/Applications`, and open it normally. Release builds are signed with a Developer ID certificate, notarized by Apple, and stapled, so Gatekeeper should not require a right-click or quarantine workaround.
 
 ### Build from source
 
@@ -148,7 +144,7 @@ make test         # 89 tests, 14 suites, Swift Testing
 ### Releasing
 
 Cutting a release is `git tag vX.Y.Z && git push --tags`. The
-[Release workflow](.github/workflows/release.yml) builds, packages, publishes
+[Release workflow](.github/workflows/release.yml) builds, signs, notarizes, staples, packages, and publishes
 to GitHub Releases, and syncs the Homebrew formula and cask to the tap repo
 automatically. Full process documented in [`.github/RELEASING.md`](.github/RELEASING.md).
 
@@ -166,7 +162,7 @@ The fix is one command:
 tccutil reset ScreenCapture sk.moravcik.VibeRes
 ```
 
-Then quit and relaunch VibeRes, click the menu-bar icon → drill into a display → hover a resolution row, and grant Screen Recording one last time. From then on it stays granted. (This is a known limitation of ad-hoc signed builds on macOS Tahoe; a notarized release will not have the issue.)
+Then quit and relaunch VibeRes, click the menu-bar icon → drill into a display → hover a resolution row, and grant Screen Recording one last time. From then on it stays granted. A signed, notarized release does not need a Gatekeeper workaround, but macOS can still require this permission reset after an app upgrade.
 
 VibeRes also self-detects this loop. After two failed grant attempts in a single session it stops calling `ScreenCaptureKit` altogether and falls back to the geometric preview — so you are not nagged with prompts indefinitely.
 
