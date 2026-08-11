@@ -207,6 +207,7 @@ struct ProfilesSection: View {
                     ProfilePill(
                         profile: profile,
                         isCurrentlyFlexible: isFlexible(profile),
+                        isActive: profiles.isCurrentState(profile, displays: displays.displays),
                         previewProvider: { profiles.previewApply(profile, against: displays.displays) }
                     ) {
                         // Classify before applying. Clean fit (.exactMatch)
@@ -1392,6 +1393,11 @@ struct ProfilesSection: View {
 private struct ProfilePill: View {
     let profile: Profile
     let isCurrentlyFlexible: Bool
+    /// True when the profile matches the desktop's current state right now —
+    /// applying it would change nothing. Distinct from `isCurrentlyFlexible`
+    /// (the `✱` badge), which only says the profile's matcher is role-based;
+    /// both can be true at once.
+    let isActive: Bool
     /// Lazily computed preview shown on hover so the user knows *before*
     /// clicking what the apply will do. Re-evaluated on each hover so the
     /// preview reflects live display state, not a stale snapshot.
@@ -1408,8 +1414,14 @@ private struct ProfilePill: View {
     var body: some View {
         Button(action: onApply) {
             HStack(spacing: 4) {
-                Image(systemName: iconName)
-                    .font(.system(size: 9))
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tint)
+                } else {
+                    Image(systemName: iconName)
+                        .font(.system(size: 9))
+                }
                 Text(profile.name)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
@@ -1423,8 +1435,16 @@ private struct ProfilePill: View {
             .padding(.vertical, 3)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isHovering ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.18))
+                    .fill(isHovering
+                          ? Color.accentColor.opacity(0.25)
+                          : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18)))
             )
+            .overlay {
+                if isActive {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .strokeBorder(Color.accentColor.opacity(0.8), lineWidth: 1)
+                }
+            }
         }
         .buttonStyle(.plain)
         .onHover { hover in
@@ -1453,7 +1473,7 @@ private struct ProfilePill: View {
     /// click on the pill while the preview is visible.
     private var plainPreviewTooltip: String {
         guard let preview = cachedPreview else { return tooltip }
-        var lines = ["Applying '\(profile.name)' will:"]
+        var lines = activeTooltipPrefix + ["Applying '\(profile.name)' will:"]
         for row in preview.rows {
             let prefix: String = {
                 switch row.action {
@@ -1528,7 +1548,13 @@ private struct ProfilePill: View {
     }
 
     private var tooltip: String {
-        "Apply '\(profile.name)' (\(profile.humanSummary))"
+        (activeTooltipPrefix + ["Apply '\(profile.name)' (\(profile.humanSummary))"]).joined(separator: "\n")
+    }
+
+    /// First line prepended to both tooltip variants when the pill is active —
+    /// empty when it isn't, so joining it never leaves a stray blank line.
+    private var activeTooltipPrefix: [String] {
+        isActive ? ["Active — matches the current setup"] : []
     }
 }
 

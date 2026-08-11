@@ -815,6 +815,35 @@ final class ProfileStore {
         }
     }
 
+    /// True when applying the profile right now would change nothing:
+    /// every entry binds to at least one connected display, every display it
+    /// binds to is already at the entry's saved mode, and — when the profile
+    /// pins a main display — that display is currently main. This is what
+    /// the pill bar highlights as "active": the profile the desktop is
+    /// actually in, as opposed to one that merely *could* be applied.
+    func isCurrentState(_ profile: Profile, displays: [DisplayInfo]) -> Bool {
+        guard !profile.entries.isEmpty else { return false }
+
+        for entry in profile.entries {
+            let matches = displays.filter { entry.matcher.matches($0.id) }
+            guard !matches.isEmpty else { return false }
+            for info in matches {
+                guard let current = info.currentMode,
+                      current.width == entry.pointWidth,
+                      current.height == entry.pointHeight,
+                      entry.refreshHz == nil || entry.refreshHz == current.refreshHz,
+                      current.isHiDPI == entry.isHiDPI
+                else { return false }
+            }
+        }
+
+        if let main = profile.mainDisplay {
+            let matches = displays.filter { main.matches($0.id) }
+            guard matches.count == 1, matches[0].isMain else { return false }
+        }
+        return true
+    }
+
     /// Compute a "what would happen" preview without mutating any display.
     /// Used by the hover tooltip and the partial-match confirmation panel so
     /// the user sees the exact set of changes before committing.
