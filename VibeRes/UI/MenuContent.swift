@@ -597,7 +597,11 @@ private struct FooterBar: View {
     private var revertLabel: String {
         let n = store.revert.entries.count
         switch n {
-        case 0: return "Revert last change"
+        case 0:
+            // A main-only revert has no entries but does have a summary
+            // ("main display") — show it rather than the generic fallback.
+            let summary = store.revert.summary
+            return summary.isEmpty ? "Revert last change" : "Revert \(summary)"
         case 1: return "Revert \(store.revert.summary)"
         default: return "Revert last change (\(n) displays)"
         }

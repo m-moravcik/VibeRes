@@ -156,9 +156,21 @@ enum ResolutionSwitcher {
     static func activeDisplayIDs() -> [CGDirectDisplayID] {
         var count: UInt32 = 0
         guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else { return [] }
+        // Same cap as DisplayManager.snapshot() (DisplayManager.swift:30): a
+        // corrupt count must not drive a pathological allocation.
+        count = min(count, 32)
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
         guard CGGetActiveDisplayList(count, &ids, &count) == .success else { return [] }
         return Array(ids.prefix(Int(count)))
+    }
+
+    /// Live arrangement snapshot: current main + bounds of every active
+    /// display. The default body of the `liveArrangement` seams in
+    /// ProfileStore and DisplayStore, kept here so the two cannot drift.
+    static func currentArrangement() -> (main: CGDirectDisplayID, bounds: [CGDirectDisplayID: CGRect]) {
+        var bounds: [CGDirectDisplayID: CGRect] = [:]
+        for id in activeDisplayIDs() { bounds[id] = CGDisplayBounds(id) }
+        return (CGMainDisplayID(), bounds)
     }
 
     /// Applies a display mode to a single display.

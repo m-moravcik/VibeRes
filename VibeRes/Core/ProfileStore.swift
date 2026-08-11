@@ -342,10 +342,13 @@ final class ProfileStore {
 
         // The main pick must be one of the *saved* displays: a selection that
         // was unchecked (or unplugged) before Save has no entry to anchor to.
+        // A display with no current mode produces no entry either (see the
+        // loop above) — its matcher would have nothing to anchor a "main" to.
         var mainDisplay: DisplayMatcher?
         if let mainSelection,
            let kind = selection[mainSelection],
-           displays.contains(where: { $0.id == mainSelection }) {
+           let mainInfo = displays.first(where: { $0.id == mainSelection }),
+           mainInfo.currentMode != nil {
             mainDisplay = Self.matcher(for: mainSelection, kind: kind)
         }
         add(Profile(name: name, entries: entries, mainDisplay: mainDisplay))
@@ -515,9 +518,7 @@ final class ProfileStore {
 
     @ObservationIgnored
     var liveArrangement: () -> (main: CGDirectDisplayID, bounds: [CGDirectDisplayID: CGRect]) = {
-        var bounds: [CGDirectDisplayID: CGRect] = [:]
-        for id in ResolutionSwitcher.activeDisplayIDs() { bounds[id] = CGDisplayBounds(id) }
-        return (CGMainDisplayID(), bounds)
+        ResolutionSwitcher.currentArrangement()
     }
 
     @ObservationIgnored

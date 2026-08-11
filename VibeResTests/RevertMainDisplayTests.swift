@@ -29,13 +29,20 @@ struct RevertMainDisplayTests {
             beforeMain: 5
         )
         store.applyMode = { _, _, _ in throw ResolutionSwitcher.Failure.completeConfig(.cannotComplete) }
+        var currentMain: CGDirectDisplayID = 7
         store.liveArrangement = {
-            (main: 7, bounds: [
+            (main: currentMain, bounds: [
                 5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
                 7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
             ])
         }
-        store.applyOrigins = { _, _ in }
+        // Honours the plan (F5 read-back): landing at origin .zero is what
+        // makes a display main.
+        store.applyOrigins = { plan, _ in
+            if let landed = plan.first(where: { $0.value == .zero })?.key {
+                currentMain = landed
+            }
+        }
 
         let restored = store.performRevert()
 
@@ -50,14 +57,22 @@ struct RevertMainDisplayTests {
     func revertsMain() {
         let store = DisplayStore()
         var plans: [[CGDirectDisplayID: CGPoint]] = []
+        var currentMain: CGDirectDisplayID = 7
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
-            (main: 7, bounds: [
+            (main: currentMain, bounds: [
                 5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
                 7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
             ])
         }
-        store.applyOrigins = { plan, _ in plans.append(plan) }
+        // Honours the plan (F5 read-back): landing at origin .zero is what
+        // makes a display main.
+        store.applyOrigins = { plan, _ in
+            plans.append(plan)
+            if let landed = plan.first(where: { $0.value == .zero })?.key {
+                currentMain = landed
+            }
+        }
         store.revert.recordBatch([], beforeMain: 5)
 
         let restored = store.performRevert()
@@ -67,6 +82,29 @@ struct RevertMainDisplayTests {
         #expect(plans.first?[7] == CGPoint(x: 1800, y: 0))
         #expect(restored == 1)
         #expect(!store.revert.canRevert)
+    }
+
+    @Test("A commit that silently leaves main unchanged is not counted as restored (F5)")
+    func silentlyUnchangedMainNotCountedAsRestored() {
+        let store = DisplayStore()
+        store.applyMode = { _, _, _ in }
+        store.liveArrangement = {
+            (main: 7, bounds: [
+                5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+                7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        // Commits without throwing, but the read-back arrangement never
+        // moves — macOS silently ignored the request.
+        store.applyOrigins = { _, _ in }
+        store.revert.recordBatch([], beforeMain: 5)
+
+        let restored = store.performRevert()
+
+        #expect(restored == 0)
+        #expect(store.revert.canRevert)
+        #expect(store.revert.consume().beforeMain == 5)
+        #expect(store.lastError != nil)
     }
 
     @Test("An old main that is no longer active is skipped, not guessed at")

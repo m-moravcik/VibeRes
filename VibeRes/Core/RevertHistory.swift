@@ -33,13 +33,14 @@ final class RevertHistory {
     /// "Built-in → 1800×1169" or "Built-in, LG UltraFine".
     var summary: String {
         if entries.isEmpty, beforeMainID != nil { return "main display" }
+        let mainSuffix = beforeMainID != nil ? " + main display" : ""
         switch entries.count {
         case 0: return ""
         case 1:
             let e = entries[0]
-            return "\(e.displayName) → \(e.before.width)×\(e.before.height)"
+            return "\(e.displayName) → \(e.before.width)×\(e.before.height)\(mainSuffix)"
         default:
-            return entries.map(\.displayName).joined(separator: ", ")
+            return entries.map(\.displayName).joined(separator: ", ") + mainSuffix
         }
     }
 

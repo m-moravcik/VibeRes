@@ -329,9 +329,7 @@ final class DisplayStore {
         { try ResolutionSwitcher.applyOrigins($0, scope: $1) }
 
     var liveArrangement: () -> (main: CGDirectDisplayID, bounds: [CGDirectDisplayID: CGRect]) = {
-        var bounds: [CGDirectDisplayID: CGRect] = [:]
-        for id in ResolutionSwitcher.activeDisplayIDs() { bounds[id] = CGDisplayBounds(id) }
-        return (CGMainDisplayID(), bounds)
+        ResolutionSwitcher.currentArrangement()
     }
 
     /// Test seam, same rationale as `ProfileStore.isInMirrorSet`: arrangement
@@ -531,7 +529,16 @@ final class DisplayStore {
                 if let plan = MainDisplayPlanner.plan(bounds: live.bounds, target: beforeMain) {
                     do {
                         try applyOrigins(plan, .permanently)
-                        restored += 1
+                        // F5 symmetry: a non-throwing commit is not evidence —
+                        // read the arrangement back and confirm the old main
+                        // actually landed before counting it as restored.
+                        let after = liveArrangement()
+                        if after.main == beforeMain {
+                            restored += 1
+                        } else {
+                            failedMain = beforeMain
+                            lastError = "the previous main display could not be restored — macOS adjusted the arrangement"
+                        }
                     } catch {
                         failedMain = beforeMain
                         lastError = error.userFacingText

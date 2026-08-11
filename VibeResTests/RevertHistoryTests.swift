@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import VibeRes
@@ -51,6 +52,22 @@ struct RevertHistoryTests {
         history.clear()
         #expect(!history.canRevert)
         #expect(history.consume().beforeMain == nil)
+    }
+
+    @Test("A mixed batch summary names the display and the main display")
+    func mixedBatchSummaryMentionsBoth() throws {
+        let history = RevertHistory()
+        let mode = try #require((CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode])?.first)
+        history.recordBatch([(id: 1, name: "Built-in", before: mode)], beforeMain: 5)
+        #expect(history.summary.contains("Built-in"))
+        #expect(history.summary.contains("main display"))
+    }
+
+    @Test("A main-only summary stays 'main display'")
+    func mainOnlySummaryStaysMainDisplay() {
+        let history = RevertHistory()
+        history.recordBatch([], beforeMain: 5)
+        #expect(history.summary == "main display")
     }
 
     // Recording / consume / batch round-trip is covered by the integration

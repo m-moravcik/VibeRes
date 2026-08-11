@@ -1252,9 +1252,15 @@ struct ProfilesSection: View {
                 fresh.name = trimmed
                 fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
                 profiles.update(fresh)
+                announce("Updated '\(trimmed)'", tone: .info)
+                mode = .idle
+            } else {
+                // replaceEntries just saved, but the profile vanished before
+                // the re-fetch — unreachable in practice, but the prior code
+                // announced success here regardless.
+                announce("Could not update the profile — it no longer exists.", tone: .problem)
+                mode = .idle
             }
-            announce("Updated '\(trimmed)'", tone: .info)
-            mode = .idle
         case .rejectedMultipleAnyExternal:
             announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
         case .rejectedEmpty:

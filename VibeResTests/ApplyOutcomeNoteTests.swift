@@ -173,6 +173,42 @@ struct ApplyOutcomeNoteTests {
         #expect(note?.mainDetail == .mainFailed(message: "boom"))
     }
 
+    @Test("A changed-but-adjusted main reports mainAdjusted at fallback tone")
+    func changedButAdjustedIsFallback() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .changedButAdjusted(displayName: "LG"))
+        #expect(note?.tone == .fallback)
+        #expect(note?.mainDetail == .mainAdjusted(display: "LG"))
+    }
+
+    @Test("A main matcher with no live display reports mainNotConnected at fallback tone")
+    func skippedNoMatchIsFallback() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .skippedNoMatch)
+        #expect(note?.tone == .fallback)
+        #expect(note?.mainDetail == .mainNotConnected)
+    }
+
+    @Test("A mirrored arrangement reports mainMirrored at fallback tone")
+    func skippedMirroredIsFallback() {
+        let outcomes = [ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: (2560, 1440), requestedHz: 60,
+            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+        )]
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .skippedMirrored)
+        #expect(note?.tone == .fallback)
+        #expect(note?.mainDetail == .mainMirrored)
+    }
+
     @Test("alreadyMain adds nothing to the note")
     func alreadyMainSilent() {
         let outcomes = [ProfileStore.ApplyOutcome(

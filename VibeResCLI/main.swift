@@ -107,6 +107,18 @@ func bestMatch(in modes: [CGDisplayMode], spec: ResolutionSpec) -> CGDisplayMode
     )
 }
 
+// MARK: - Profile main-display formatting
+
+/// Compact "main:" line label — shared by `profile list` and `profile show`
+/// so the two commands cannot drift on the mapping.
+func mainKindLabel(_ matcher: DisplayMatcher) -> String {
+    switch matcher {
+    case .builtIn: return "built-in"
+    case .anyExternal: return "any external"
+    case .edid: return "specific"
+    }
+}
+
 // MARK: - Commands
 
 func cmdHelp() {
@@ -226,13 +238,7 @@ func cmdProfileList() {
     for p in store.profiles {
         print("\(p.name)\t\(p.entries.count) display\(p.entries.count == 1 ? "" : "s")\t\(p.id)")
         if let main = p.mainDisplay {
-            let kind: String
-            switch main {
-            case .builtIn: kind = "built-in"
-            case .anyExternal: kind = "any external"
-            case .edid: kind = "specific"
-            }
-            print("  main: \(kind)")
+            print("  main: \(mainKindLabel(main))")
         }
     }
 }
@@ -299,6 +305,9 @@ func cmdProfileShow(_ name: String) {
         let scale = entry.isHiDPI ? "HiDPI" : "Native"
         print("  - \(entry.displayName) [\(kind)]\t\(entry.pointWidth)x\(entry.pointHeight) \(hz) \(scale)")
     }
+    if let main = p.mainDisplay {
+        print("  main: \(mainKindLabel(main))")
+    }
 }
 
 @MainActor
@@ -323,10 +332,10 @@ func cmdProfileApply(_ name: String) {
     }
     if let main = result.mainChange {
         switch main {
-        case .changed(let name):
-            print("  ✓ main display → \(name)")
+        case .changed(let displayName):
+            print("  ✓ main display → \(displayName)")
         case .alreadyMain:
-            print("  = main display already \(profile.name)'s choice")
+            print("  = main display unchanged (already main)")
         case .changedButAdjusted:
             print("  ~ \(main.problemSummary ?? "")"); hadProblem = true
         case .skippedNoMatch, .skippedAmbiguous, .skippedMirrored, .failed:

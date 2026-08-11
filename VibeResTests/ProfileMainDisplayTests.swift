@@ -56,6 +56,12 @@ struct CaptureMainSelectionTests {
                            modes: mode.map { [$0] } ?? [], currentMode: mode, groups: [])
     }
 
+    /// A display with no current mode — the entry loop in `captureCurrent`
+    /// skips these, so nothing anchors a `mainDisplay` matcher to them.
+    private func infoWithNoCurrentMode(_ id: CGDirectDisplayID) -> DisplayInfo {
+        DisplayInfo(id: id, name: "Mon \(id)", isMain: false, modes: [], currentMode: nil, groups: [])
+    }
+
     @Test("The chosen display's matcher is stored as mainDisplay")
     func mainSelectionStored() {
         let store = makeStore()
@@ -91,6 +97,31 @@ struct CaptureMainSelectionTests {
             selection: [101: .specific],
             mainSelection: 102
         )
+        #expect(store.profiles.first?.mainDisplay == nil)
+    }
+
+    @Test("A main selection with no current mode has no entry to anchor to")
+    func mainSelectionWithNilCurrentModeIgnored() {
+        let store = makeStore()
+        let displays = [info(101), infoWithNoCurrentMode(102)]
+        let result = store.captureCurrent(
+            name: "Desk", displays: displays,
+            selection: [101: .specific, 102: .specific],
+            mainSelection: 102
+        )
+        #expect(result == .saved)
+        #expect(store.profiles.first?.mainDisplay == nil)
+    }
+
+    @Test("A main selection for a display that's no longer connected is ignored")
+    func mainSelectionForUnpluggedDisplayIgnored() {
+        let store = makeStore()
+        let result = store.captureCurrent(
+            name: "Desk", displays: [info(101)],
+            selection: [101: .specific, 102: .specific],
+            mainSelection: 102
+        )
+        #expect(result == .savedWithMissingDisplays(count: 1))
         #expect(store.profiles.first?.mainDisplay == nil)
     }
 }

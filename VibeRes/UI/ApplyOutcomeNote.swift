@@ -63,7 +63,7 @@ struct ApplyOutcomeNote: Equatable {
         mainChange: ProfileStore.MainChangeOutcome? = nil
     ) -> ApplyOutcomeNote? {
         let base = modeNote(from: outcomes)
-        guard let (detail, mainTone) = mainDetail(for: mainChange) else { return base }
+        guard let (detail, mainTone) = resolveMainDetail(for: mainChange) else { return base }
         // The main line rides on whatever the modes produced; when the modes
         // produced nothing (rare mixed statuses), it still deserves a note.
         let content = base?.content ?? .alreadyAtSavedSettings
@@ -74,7 +74,7 @@ struct ApplyOutcomeNote: Equatable {
         )
     }
 
-    private static func mainDetail(
+    private static func resolveMainDetail(
         for change: ProfileStore.MainChangeOutcome?
     ) -> (Detail, Tone)? {
         switch change {
