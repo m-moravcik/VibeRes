@@ -290,9 +290,11 @@ jobs:
             ./scripts/make-appcast.sh "$ASSET" appcast.xml
 
           # Prove the pairing before it is published, not after a user hits it.
+          # --ed-key-file is required even for --verify: without it sign_update
+          # looks for the key in the runner's keychain, where it never is.
           SIGN_UPDATE="$(find ./build/SourcePackages/artifacts -name sign_update -type f -perm +111 | head -1)"
           SIG="$(python3 -c "import re,sys; print(re.search(r'sparkle:edSignature=\"([^\"]+)\"', open('appcast.xml').read()).group(1))")"
-          "$SIGN_UPDATE" --verify "$ASSET" "$SIG" \
+          "$SIGN_UPDATE" --ed-key-file "$KEY" --verify "$ASSET" "$SIG" \
             || { echo "::error::appcast signature does not verify against the published asset"; exit 1; }
           echo "feed verified against the published asset"
           rm -f "$KEY"
@@ -346,6 +348,7 @@ jobs:
       - name: Smoke-check the published feed
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
         run: |
           # Fetch the feed and the asset the way a user's copy of VibeRes will,
           # and verify the pairing. Everything before this point tested our own
@@ -367,9 +370,16 @@ jobs:
           ACTUAL="$(stat -f%z "$RUNNER_TEMP/public.zip")"
           [ "$ACTUAL" = "$LEN" ] || { echo "::error::feed says $LEN bytes, asset is $ACTUAL"; exit 1; }
 
+          # The earlier step deleted its key file; a user's copy verifies with
+          # the embedded public key, which is derived from this same seed —
+          # cryptographically the identical check.
+          KEY="$RUNNER_TEMP/sparkle_ed25519_smoke.key"
+          printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" > "$KEY"
+          chmod 600 "$KEY"
           SIGN_UPDATE="$(find ./build/SourcePackages/artifacts -name sign_update -type f -perm +111 | head -1)"
-          "$SIGN_UPDATE" --verify "$RUNNER_TEMP/public.zip" "$SIG" \
-            || { echo "::error::the public feed does not verify against the public asset"; exit 1; }
+          "$SIGN_UPDATE" --ed-key-file "$KEY" --verify "$RUNNER_TEMP/public.zip" "$SIG" \
+            || { rm -f "$KEY"; echo "::error::the public feed does not verify against the public asset"; exit 1; }
+          rm -f "$KEY"
           echo "public feed and public asset agree"
 
       # Runs even on failure so a broken build never leaves the private key or
