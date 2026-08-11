@@ -334,6 +334,11 @@ final class DisplayStore {
         return (CGMainDisplayID(), bounds)
     }
 
+    /// Test seam, same rationale as `ProfileStore.isInMirrorSet`: arrangement
+    /// combined with mirroring is unmeasured territory, so `makeMain` refuses
+    /// to touch it rather than find out on a user's machine.
+    var isInMirrorSet: (CGDirectDisplayID) -> Bool = { CGDisplayIsInMirrorSet($0) != 0 }
+
     /// Test seam. The real implementation hunts down an AppKit window, which a
     /// unit test has no business doing; overriding it lets a test observe
     /// *whether* a refresh decided to dismiss.
@@ -385,6 +390,37 @@ final class DisplayStore {
         } catch {
             lastError = error.userFacingText
         }
+    }
+
+    /// Makes `id` the main display right now — the one-off sibling of the
+    /// profile path (`ProfileStore.applyMainDisplay`), same rules: a
+    /// full-coverage translation of the live arrangement, all-or-nothing,
+    /// read back after commit (spike F5), and Revert armed with the
+    /// previous main. No-ops when `id` is already main or not active;
+    /// refuses to touch a mirrored arrangement (unmeasured territory).
+    func makeMain(_ id: CGDirectDisplayID) {
+        let live = liveArrangement()
+        guard live.main != id, live.bounds[id] != nil else { return }
+        guard !live.bounds.keys.contains(where: isInMirrorSet) else {
+            lastError = "displays are mirrored — main display left unchanged"
+            return
+        }
+        guard let plan = MainDisplayPlanner.plan(bounds: live.bounds, target: id) else { return }
+        do {
+            try applyOrigins(plan, .permanently)
+        } catch {
+            lastError = error.userFacingText
+            return
+        }
+        // Replaces prior history on purpose: Revert undoes the last action.
+        revert.recordBatch([], beforeMain: live.main)
+        let after = liveArrangement()
+        if after.main != id || !MainDisplayPlanner.verified(plan: plan, actualBounds: after.bounds) {
+            lastError = "main display set, but macOS adjusted the arrangement"
+        } else {
+            lastError = nil
+        }
+        refresh()
     }
 
     // MARK: - Confirmation countdown
