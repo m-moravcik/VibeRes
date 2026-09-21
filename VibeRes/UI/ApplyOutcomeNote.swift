@@ -160,18 +160,18 @@ struct ApplyOutcomeNote: Equatable {
         case .applied, .alreadyApplied:
             return .applied(
                 display: outcome.displayName,
-                width: size.0,
-                height: size.1,
+                width: size.width,
+                height: size.height,
                 hz: outcome.appliedHz
             )
         case .appliedWithFallback:
             return .fallback(
                 display: outcome.displayName,
-                wantedWidth: outcome.requestedSize.0,
-                wantedHeight: outcome.requestedSize.1,
+                wantedWidth: outcome.requestedSize.width,
+                wantedHeight: outcome.requestedSize.height,
                 wantedHz: outcome.requestedHz,
-                usedWidth: size.0,
-                usedHeight: size.1,
+                usedWidth: size.width,
+                usedHeight: size.height,
                 usedHz: outcome.appliedHz
             )
         case .skippedNoMatch:
@@ -185,8 +185,8 @@ struct ApplyOutcomeNote: Equatable {
         case .skippedNoMode:
             return .noUsableMode(
                 display: outcome.displayName,
-                width: outcome.requestedSize.0,
-                height: outcome.requestedSize.1
+                width: outcome.requestedSize.width,
+                height: outcome.requestedSize.height
             )
         case .failed(let problem):
             return .failed(display: outcome.displayName, problem: problem)

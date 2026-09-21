@@ -68,23 +68,23 @@ struct ApplyOutcomeTests {
     func isProblemFlag() {
         // .applied is the only non-problem status; everything else surfaces.
         let applied = ProfileStore.ApplyOutcome(
-            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
-            appliedSize: (0, 0), appliedHz: nil, status: .applied
+            displayName: "X", matcherKind: .specific, requestedSize: PointSize(width: 0, height: 0), requestedHz: nil,
+            appliedSize: PointSize(width: 0, height: 0), appliedHz: nil, status: .applied
         )
         let fallback = ProfileStore.ApplyOutcome(
-            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
-            appliedSize: (0, 0), appliedHz: nil, status: .appliedWithFallback
+            displayName: "X", matcherKind: .specific, requestedSize: PointSize(width: 0, height: 0), requestedHz: nil,
+            appliedSize: PointSize(width: 0, height: 0), appliedHz: nil, status: .appliedWithFallback
         )
         let skip1 = ProfileStore.ApplyOutcome(
-            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: PointSize(width: 0, height: 0), requestedHz: nil,
             appliedSize: nil, appliedHz: nil, status: .skippedNoMatch
         )
         let skip2 = ProfileStore.ApplyOutcome(
-            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: PointSize(width: 0, height: 0), requestedHz: nil,
             appliedSize: nil, appliedHz: nil, status: .skippedNoMode
         )
         let failed = ProfileStore.ApplyOutcome(
-            displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
+            displayName: "X", matcherKind: .specific, requestedSize: PointSize(width: 0, height: 0), requestedHz: nil,
             appliedSize: nil, appliedHz: nil, status: .failed(.other("boom"))
         )
         #expect(applied.isProblem == false)
@@ -99,9 +99,9 @@ struct ApplyOutcomeTests {
         let outcome = ProfileStore.ApplyOutcome(
             displayName: "LG UltraFine",
             matcherKind: .specific,
-            requestedSize: (2560, 1440),
+            requestedSize: PointSize(width: 2560, height: 1440),
             requestedHz: 75,
-            appliedSize: (2560, 1440),
+            appliedSize: PointSize(width: 2560, height: 1440),
             appliedHz: 60,
             status: .appliedWithFallback
         )

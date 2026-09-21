@@ -446,11 +446,11 @@ final class ProfileStore {
         }
         let displayName: String
         let matcherKind: MatcherKind
-        let requestedSize: (Int, Int)
+        let requestedSize: PointSize
         let requestedHz: Int?
         // Filled in once the transaction commits: an outcome is planned before
         // it is known whether the display took the mode.
-        var appliedSize: (Int, Int)?
+        var appliedSize: PointSize?
         var appliedHz: Int?
         var status: Status
 
@@ -470,12 +470,12 @@ final class ProfileStore {
             switch status {
             case .applied:
                 let hz = appliedHz.map { " @ \($0)Hz" } ?? ""
-                return "\(displayName) → \(appliedSize.map { "\($0.0)×\($0.1)" } ?? "?")\(hz)"
+                return "\(displayName) → \(appliedSize?.formatted ?? "?")\(hz)"
             case .alreadyApplied:
                 return "\(displayName) already at requested mode"
             case .appliedWithFallback:
-                let req = "\(requestedSize.0)×\(requestedSize.1)" + (requestedHz.map { " @\($0)Hz" } ?? "")
-                let got = (appliedSize.map { "\($0.0)×\($0.1)" } ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
+                let req = requestedSize.formatted + (requestedHz.map { " @\($0)Hz" } ?? "")
+                let got = (appliedSize?.formatted ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
                 return "\(displayName): wanted \(req), used \(got) (closest available)"
             case .skippedNoMatch:
                 switch matcherKind {
@@ -483,7 +483,7 @@ final class ProfileStore {
                 case .specific: return "\(displayName) not connected"
                 }
             case .skippedNoMode:
-                return "\(displayName): no usable mode for \(requestedSize.0)×\(requestedSize.1)"
+                return "\(displayName): no usable mode for \(requestedSize.formatted)"
             case .failed(let problem):
                 return "\(displayName): \(problem.englishDescription)"
             }
@@ -626,7 +626,7 @@ final class ProfileStore {
                 outcomes.append(ApplyOutcome(
                     displayName: entry.displayName,
                     matcherKind: mk,
-                    requestedSize: (entry.pointWidth, entry.pointHeight),
+                    requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                     requestedHz: entry.refreshHz,
                     appliedSize: nil,
                     appliedHz: nil,
@@ -639,7 +639,7 @@ final class ProfileStore {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
-                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                         requestedHz: entry.refreshHz,
                         appliedSize: nil,
                         appliedHz: nil,
@@ -661,9 +661,9 @@ final class ProfileStore {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
-                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                         requestedHz: entry.refreshHz,
-                        appliedSize: (mode.width, mode.height),
+                        appliedSize: PointSize(width: mode.width, height: mode.height),
                         appliedHz: mode.refreshHz,
                         status: .alreadyApplied
                     ))
@@ -685,9 +685,9 @@ final class ProfileStore {
                 outcomes.append(ApplyOutcome(
                     displayName: info.name,
                     matcherKind: mk,
-                    requestedSize: (entry.pointWidth, entry.pointHeight),
+                    requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                     requestedHz: entry.refreshHz,
-                    appliedSize: (mode.width, mode.height),
+                    appliedSize: PointSize(width: mode.width, height: mode.height),
                     appliedHz: mode.refreshHz,
                     status: .failed(.other("not attempted"))
                 ))
