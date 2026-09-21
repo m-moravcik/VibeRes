@@ -51,7 +51,32 @@ final class PopoverAccessibilityTests: XCTestCase {
         statusItem.click()
         let popover = app.dialogs.firstMatch
         XCTAssertTrue(popover.waitForExistence(timeout: 10), "the popover never opened")
+        dismissOnboardingIfPresent(in: popover)
+        XCTAssertTrue(
+            popover.buttons["Quit"].waitForExistence(timeout: 5),
+            // Printed rather than described: the first CI run failed here with
+            // the tour on screen, and a bare "not found" cost a round trip to
+            // work that out.
+            "the root view is not on screen. Popover contains:\n\(popover.debugDescription)"
+        )
         return popover
+    }
+
+    /// A fresh account has never seen the welcome tour, and the tour takes over
+    /// the whole popover until it is answered — which is why every test here
+    /// failed the first time they ran on a CI runner and passed on a machine
+    /// that had already dismissed it.
+    ///
+    /// Clicking Skip is the same thing a person would do, and it leaves the
+    /// preference set exactly as their first launch would.
+    private func dismissOnboardingIfPresent(in popover: XCUIElement) {
+        let skip = popover.buttons["Skip"]
+        guard skip.waitForExistence(timeout: 2) else { return }
+        skip.click()
+        XCTAssertTrue(
+            popover.buttons["Quit"].waitForExistence(timeout: 5),
+            "skipping the welcome tour should reveal the root view"
+        )
     }
 
     /// Drills into the first display, or skips when this machine reports no
@@ -134,6 +159,17 @@ final class PopoverAccessibilityTests: XCTestCase {
                 "a resolution row announces \(row.label.isEmpty ? "nothing" : row.label)"
             )
         }
+    }
+
+    /// The tour is the first thing a new user meets, and it is the one screen
+    /// that can trap them: it covers the popover entirely, so a Skip that does
+    /// not work leaves the app with no reachable controls at all.
+    func testTheWelcomeTourCanBeSkippedWhenItAppears() throws {
+        let popover = openPopover()
+        // `openPopover` already skipped it if this account had never seen it.
+        // Either way the root view has to be what is on screen now.
+        XCTAssertTrue(popover.buttons["Quit"].exists)
+        XCTAssertFalse(popover.buttons["Skip"].exists, "the tour should not come back")
     }
 
     func testTheDetailViewCanBeLeftAgain() throws {
