@@ -289,6 +289,7 @@ private struct DisplayDetailView: View {
                         currentModeCard(for: display)
                         makeMainRow(for: display)
                         filterToggle(for: display)
+                        livePreviewHint
                         sizeList(for: display)
                     }
                     .padding(.vertical, 8)
@@ -440,6 +441,58 @@ private struct DisplayDetailView: View {
                 .controlSize(.small)
                 .labelsHidden()
                 .help("'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors.")
+            }
+            .padding(.horizontal, Design.Spacing.l)
+            .padding(.bottom, 6)
+        }
+    }
+
+    // MARK: Live preview hint
+
+    /// Offers live preview once, where it would be used.
+    ///
+    /// The feature that separates VibeRes from the alternatives shipped off by
+    /// default with its only mention in a Settings tab, so most people never
+    /// found out it exists. The hint sits directly above the rows it applies
+    /// to, turns the feature on in place rather than sending the user to
+    /// Settings, and never comes back once it has been answered.
+    @ViewBuilder
+    private var livePreviewHint: some View {
+        if !preferences.livePreviewEnabled, !preferences.livePreviewHintDismissed {
+            HStack(alignment: .center, spacing: Design.Spacing.s) {
+                Image(systemName: "sparkles")
+                    .font(Design.Typography.note)
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+
+                Text("See your desktop in the preview?")
+                    .font(Design.Typography.note)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: Design.Spacing.s)
+
+                Button("Turn on") {
+                    preferences.livePreviewEnabled = true
+                    // Same reset the Settings toggle does: re-enabling is the
+                    // user's signal to try the permission again.
+                    DesktopCapture.resetPermissionCache()
+                    preferences.livePreviewHintDismissed = true
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.mini)
+                .help("Shows a screenshot of your desktop scaled into the proposed mode. Asks for Screen Recording the first time.")
+
+                Button {
+                    preferences.livePreviewHintDismissed = true
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss")
+                .help("Dismiss")
             }
             .padding(.horizontal, Design.Spacing.l)
             .padding(.bottom, 6)

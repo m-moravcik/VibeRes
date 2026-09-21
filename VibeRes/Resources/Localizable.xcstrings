@@ -2476,6 +2476,30 @@
         }
       }
     },
+    "See your desktop in the preview?": {
+      "comment": "Hint offering live preview, shown once in the display detail",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den eigenen Schreibtisch in der Vorschau sehen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your desktop in the preview?"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chcete v náhľade vidieť svoju plochu?"
+          }
+        }
+      }
+    },
     "Set ${display} to ${width} by ${height}": {
       "extractionState": "manual",
       "localizations": {
@@ -2795,6 +2819,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uložené rozlíšenia tohto profilu sa nenávratne stratia. Displejov sa to nedotkne."
+          }
+        }
+      }
+    },
+    "Turn on": {
+      "comment": "Button on the live-preview hint that enables the feature in place",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapnúť"
           }
         }
       }
