@@ -190,6 +190,10 @@ func cmdHelp() {
       viberes profile delete <name>             Delete a profile
       viberes profile rename <old> <new>        Rename a profile
 
+    Environment:
+      VIBERES_PROFILE_DIR   Read and write profiles in this directory instead
+                            of ~/Library/Application Support/VibeRes.
+
     <display> can be a (case-insensitive substring of a) display name or its numeric ID.
     <name> can be a profile name (case-insensitive) or the id `profile list` prints.
       Profile names are unique, so a name always identifies one profile; a

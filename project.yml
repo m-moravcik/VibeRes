@@ -61,12 +61,28 @@ schemes:
       targets:
         VibeRes: all
         VibeResTests: [test]
+        # Built alongside so the CLI integration tests can find the binary
+        # next to the test bundle instead of guessing at a derived-data path.
+        viberes-cli: [test]
     test:
       gatherCoverageData: true
       coverageTargets:
         - VibeRes
       targets:
         - VibeResTests
+
+  # Separate scheme on purpose. These drive the real app through the
+  # accessibility API — the only way to assert that a resolution row is a
+  # button and not a tap gesture — and they need a windowserver session. A
+  # flaky runner must not be able to take the unit tests down with it.
+  VibeResUI:
+    build:
+      targets:
+        VibeRes: all
+        VibeResUITests: [test]
+    test:
+      targets:
+        - VibeResUITests
 
 packages:
   Sparkle:
@@ -173,6 +189,21 @@ targets:
         - VibeResTests
       gatherCoverageData: true
 
+  VibeResUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VibeResUITests
+    dependencies:
+      - target: VibeRes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeResUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: VibeRes
+        SWIFT_STRICT_CONCURRENCY: complete
+
   viberes-cli:
     type: tool
     platform: macOS
@@ -185,6 +216,11 @@ targets:
     settings:
       base:
         PRODUCT_NAME: viberes
+        # The executable is `viberes`; the *module* is not. Both products land
+        # in the same directory, and on a case-insensitive filesystem a
+        # `viberes.swiftmodule` next to `VibeRes.swiftmodule` makes the test
+        # target's `@testable import VibeRes` resolve to the CLI.
+        PRODUCT_MODULE_NAME: VibeResCLI
         # The CLI compiles the *same* VibeRes/Core sources as the app. Checking
         # them strictly in one target and loosely in the other meant a data
         # race in Core could pass CI through the side that was not looking.

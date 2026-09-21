@@ -44,8 +44,22 @@ final class ProfileStore {
         load()
     }
 
+    /// Environment override for the catalog location.
+    ///
+    /// Exists so the CLI can be driven by a test — and by anyone scripting it —
+    /// without writing to the real profile store. The GUI passes its directory
+    /// explicitly and never consults this.
+    nonisolated static let directoryEnvironmentKey = "VIBERES_PROFILE_DIR"
+
     private static func defaultDirectory() -> URL {
         let fm = FileManager.default
+        if let override = ProcessInfo.processInfo.environment[directoryEnvironmentKey],
+           !override.isEmpty {
+            let dir = URL(fileURLWithPath: (override as NSString).expandingTildeInPath,
+                          isDirectory: true)
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir
+        }
         // `.first!` was the one crash-by-construction left in a shipped path.
         // It cannot realistically return empty on macOS, which is exactly why
         // the day it does, a force unwrap is the worst possible way to find out.
