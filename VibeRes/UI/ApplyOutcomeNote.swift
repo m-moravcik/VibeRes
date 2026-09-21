@@ -28,14 +28,14 @@ struct ApplyOutcomeNote: Equatable {
         case notConnected(display: String)
         case noExternalConnected
         case noUsableMode(display: String, width: Int, height: Int)
-        case failed(display: String, message: String)
+        case failed(display: String, problem: UserFacingProblem)
 
         case mainChanged(display: String)
         case mainAdjusted(display: String)
         case mainNotConnected
         case mainAmbiguous(count: Int)
         case mainMirrored
-        case mainFailed(message: String)
+        case mainFailed(problem: UserFacingProblem)
     }
 
     enum Content: Equatable {
@@ -90,8 +90,8 @@ struct ApplyOutcomeNote: Equatable {
             return (.mainAmbiguous(count: count), .fallback)
         case .skippedMirrored:
             return (.mainMirrored, .fallback)
-        case .failed(let message):
-            return (.mainFailed(message: message), .problem)
+        case .failed(let problem):
+            return (.mainFailed(problem: problem), .problem)
         }
     }
 
@@ -188,8 +188,8 @@ struct ApplyOutcomeNote: Equatable {
                 width: outcome.requestedSize.0,
                 height: outcome.requestedSize.1
             )
-        case .failed(let message):
-            return .failed(display: outcome.displayName, message: message)
+        case .failed(let problem):
+            return .failed(display: outcome.displayName, problem: problem)
         }
     }
 }
@@ -249,11 +249,14 @@ extension ApplyOutcomeNote.Detail {
                 comment: "Display matched but offers no mode close to the saved one. 1: display, 2: saved mode"
             ))
 
-        case let .failed(display, message):
+        case let .failed(display, problem):
+            // The problem is localised first, then placed in the sentence —
+            // it used to arrive as a finished English string from Core.
+            let reason = problem.localizedDescription
             return String(localized: LocalizedStringResource(
                 "note.detail.failed",
-                defaultValue: "\(display): \(message)",
-                comment: "Applying a mode failed. 1: display name, 2: system error text"
+                defaultValue: "\(display): \(reason)",
+                comment: "Applying a mode failed. 1: display name, 2: the reason"
             ))
 
         case let .mainChanged(display):
@@ -291,11 +294,12 @@ extension ApplyOutcomeNote.Detail {
                 comment: "Arrangement is not touched while mirroring is on"
             ))
 
-        case let .mainFailed(message):
+        case let .mainFailed(problem):
+            let reason = problem.localizedDescription
             return String(localized: LocalizedStringResource(
                 "note.detail.mainFailed",
-                defaultValue: "Main display unchanged: \(message)",
-                comment: "Setting the main display failed. 1: system error text"
+                defaultValue: "Main display unchanged: \(reason)",
+                comment: "Setting the main display failed. 1: the reason"
             ))
         }
     }

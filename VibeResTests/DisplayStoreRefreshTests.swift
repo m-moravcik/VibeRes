@@ -92,4 +92,51 @@ struct DisplayStoreRefreshTests {
         #expect(effect.shouldClearRevertHistory == false)
         #expect(effect.shouldBumpAutoApplyToken == false)
     }
+
+    // MARK: Settle-loop early exit
+    //
+    // The loop used to run all four samples every time, so every lid-open cost
+    // a fixed 3.75 s of stale display list and an equally delayed auto-apply,
+    // even when the setup had settled at the first sample.
+
+    @Test("Two identical samples in a row mean the display set has settled")
+    func settledAfterTwoIdenticalSamples() {
+        let sample = [
+            DisplayStore.CurrentModeSignature(displayID: 1, modeID: 10),
+            DisplayStore.CurrentModeSignature(displayID: 2, modeID: 20),
+        ]
+        #expect(DisplayStore.wakeSettled(previous: sample, now: sample) == true)
+    }
+
+    @Test("The first sample can never settle — there is nothing to compare it to")
+    func firstSampleNeverSettles() {
+        let sample = [DisplayStore.CurrentModeSignature(displayID: 1, modeID: 10)]
+        #expect(DisplayStore.wakeSettled(previous: nil, now: sample) == false)
+    }
+
+    @Test("A display still arriving keeps the loop running")
+    func changingSampleDoesNotSettle() {
+        let first = [DisplayStore.CurrentModeSignature(displayID: 1, modeID: 10)]
+        let second = first + [DisplayStore.CurrentModeSignature(displayID: 2, modeID: 20)]
+        #expect(DisplayStore.wakeSettled(previous: first, now: second) == false)
+    }
+
+    @Test("A mode still changing on the same monitors keeps the loop running")
+    func changingModeDoesNotSettle() {
+        let first = [DisplayStore.CurrentModeSignature(displayID: 1, modeID: 10)]
+        let second = [DisplayStore.CurrentModeSignature(displayID: 1, modeID: 11)]
+        #expect(DisplayStore.wakeSettled(previous: first, now: second) == false)
+    }
+
+    @Test("Two empty samples are the transient window, not a settled state")
+    func emptySampleNeverSettles() {
+        // Riding this out is the whole reason the loop exists: WindowServer
+        // briefly answers with no displays at all after a wake.
+        #expect(DisplayStore.wakeSettled(previous: [], now: []) == false)
+    }
+
+    @Test("The settle window still has a ceiling")
+    func settleWindowIsBounded() {
+        #expect(DisplayStore.wakeSettleDelaysMs.reduce(0, +) == 3750)
+    }
 }

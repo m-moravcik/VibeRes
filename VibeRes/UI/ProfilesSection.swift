@@ -48,6 +48,11 @@ struct ProfilesSection: View {
         /// Apply Anyway / Cancel buttons. Kept inline (not NSAlert) so the
         /// popover doesn't dismiss while the user reads.
         case confirmingApply(ConfirmApplyState)
+        /// Deleting a profile is the one irreversible action in the app —
+        /// there is no undo and `⌘Z` is wired to display revert, not to the
+        /// profile store. Inline for the same reason as `confirmingApply`: an
+        /// NSAlert dismisses the popover out from under the question.
+        case confirmingDelete(profileID: UUID, name: String)
     }
 
     struct ConfirmApplyState: Equatable {
@@ -151,6 +156,8 @@ struct ProfilesSection: View {
                 editForm
             case .confirmingApply:
                 confirmApplyPanel
+            case .confirmingDelete:
+                confirmDeletePanel
             }
 
             // Watch for display add/remove events and settled wake refreshes;
@@ -166,15 +173,29 @@ struct ProfilesSection: View {
                 }
 
             if let note = lastNote {
-                HStack(alignment: .top, spacing: 4) {
-                    Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
-                                       : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
-                        .font(.system(size: 9))
-                    note.text.font(Design.Typography.note).lineLimit(3)
+                // Clickable: a note that says a monitor fell back to 60 Hz is
+                // the only explanation the user gets, and it used to vanish on
+                // a six-second timer whether or not anyone had read it. Now
+                // only the reassuring ones expire on their own — see
+                // `scheduleNoteClear` — and any of them can be dismissed.
+                Button {
+                    lastNote = nil
+                } label: {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
+                                           : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
+                            .font(.system(size: 10))
+                            .accessibilityHidden(true)
+                        note.text.font(Design.Typography.note).lineLimit(3)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .foregroundStyle(noteColor)
                 .padding(.horizontal, Design.Spacing.l)
                 .padding(.top, 2)
+                .help("Dismiss")
             }
         }
         .padding(.bottom, Design.Spacing.xs)
@@ -202,12 +223,17 @@ struct ProfilesSection: View {
             }
             .padding(.horizontal, Design.Spacing.l)
         } else {
+            // Resolved once per render rather than once per pill: the check
+            // walks every entry against every live display, so asking it
+            // inside the loop made the pill bar quadratic in the thing users
+            // add most.
+            let active = activeProfileIDs
             FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(Array(profiles.profiles.enumerated()), id: \.element.id) { index, profile in
                     ProfilePill(
                         profile: profile,
                         isCurrentlyFlexible: isFlexible(profile),
-                        isActive: profiles.isCurrentState(profile, displays: displays.displays),
+                        isActive: active.contains(profile.id),
                         previewProvider: { profiles.previewApply(profile, against: displays.displays) }
                     ) {
                         // Classify before applying. Clean fit (.exactMatch)
@@ -245,7 +271,7 @@ struct ProfilesSection: View {
                     } onEdit: {
                         mode = .editing(buildInitialEditState(for: profile))
                     } onDelete: {
-                        profiles.delete(profile)
+                        mode = .confirmingDelete(profileID: profile.id, name: profile.name)
                     }
                     // ⌘1…⌘9 while the popover has key focus. Not a global
                     // hotkey — those were rejected in the backlog because they
@@ -258,6 +284,17 @@ struct ProfilesSection: View {
             }
             .padding(.horizontal, Design.Spacing.l)
         }
+    }
+
+    /// The profiles whose saved setup is what the displays are doing right
+    /// now — the pills that draw the checkmark and the accent border.
+    private var activeProfileIDs: Set<UUID> {
+        let live = displays.displays
+        return Set(
+            profiles.profiles
+                .filter { profiles.isCurrentState($0, displays: live) }
+                .map(\.id)
+        )
     }
 
     /// Applies ⌘<n> to the first nine pills and nothing to the rest.
@@ -356,15 +393,24 @@ struct ProfilesSection: View {
     /// Performs the actual apply on a background task and announces the
     /// outcome. Extracted so both the clean-apply path and the
     /// "Apply anyway" confirmation button share the same code.
+    /// Applies the profile and announces the outcome. Shared by the
+    /// clean-apply path and the "Apply anyway" confirmation button.
+    ///
+    /// Deliberately on the main actor. This used to be wrapped in a
+    /// `Task.detached` whose entire body was two `MainActor.run` calls, which
+    /// moved no work off the UI actor and only made readers believe it had.
+    /// The cost here is `CGCompleteDisplayConfiguration`, and moving that off
+    /// the main actor buys nothing observable — the desktop is blanked for the
+    /// duration either way — while needing `@unchecked Sendable` holes for
+    /// `CGDisplayMode`. Measured in the 2026-08-01 audit: scoring three
+    /// displays against a real 60-mode list takes 86 µs.
     private func commitApply(_ profile: Profile) {
-        let snapshotDisplays = displays.displays
-        let revert = displays.revert
-        Task.detached(priority: .userInitiated) {
-            let result = await MainActor.run {
-                profiles.applyDetailed(profile, displays: snapshotDisplays, revert: revert)
-            }
-            await MainActor.run { announceOutcome(result) }
-        }
+        let result = profiles.applyDetailed(
+            profile,
+            displays: displays.displays,
+            revert: displays.revert
+        )
+        announceOutcome(result)
     }
 
     // MARK: - Confirm apply panel
@@ -434,7 +480,7 @@ struct ProfilesSection: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.displayName)
                     .font(.system(size: 11, weight: .medium))
-                Text(rowDetail(row))
+                Text(verbatim: row.detailText)
                     .font(Design.Typography.note)
                     .foregroundStyle(.secondary)
             }
@@ -462,43 +508,6 @@ struct ProfilesSection: View {
         case .skippedNotConnected: return .red
         case .skippedNoMode: return .orange
         }
-    }
-
-    private func rowDetail(_ row: ProfileApplyPreview.Row) -> String {
-        let saved = "\(row.savedWidth)×\(row.savedHeight)"
-            + (row.savedHz.map { " @ \($0)Hz" } ?? "")
-            + (row.savedIsHiDPI ? " HiDPI" : "")
-        switch row.action {
-        case .willApplyExact:
-            return "→ \(saved)"
-        case .willApplyFallback(let w, let h, let hz):
-            let got = "\(w)×\(h)" + (hz.map { " @ \($0)Hz" } ?? "")
-            return "wanted \(saved), will use \(got)"
-        case .alreadyApplied(let w, let h, let hz, let isHiDPI):
-            let current = "\(w)×\(h)"
-                + (hz.map { " @ \($0)Hz" } ?? "")
-                + (isHiDPI ? " HiDPI" : "")
-            return rowAlreadyMatchesSaved(row, width: w, height: h, hz: hz, isHiDPI: isHiDPI)
-                ? "already at \(saved)"
-                : "already at \(current) (closest to \(saved))"
-        case .skippedNotConnected:
-            return "not connected — skip"
-        case .skippedNoMode:
-            return "no usable mode for \(row.savedWidth)×\(row.savedHeight)"
-        }
-    }
-
-    private func rowAlreadyMatchesSaved(
-        _ row: ProfileApplyPreview.Row,
-        width: Int,
-        height: Int,
-        hz: Int?,
-        isHiDPI: Bool
-    ) -> Bool {
-        width == row.savedWidth
-            && height == row.savedHeight
-            && (row.savedHz == nil || row.savedHz == hz)
-            && isHiDPI == row.savedIsHiDPI
     }
 
     private func warningIcon(for c: DisplaySetClassifier.Classification) -> String {
@@ -545,6 +554,47 @@ struct ProfilesSection: View {
     private func isDisjoint(_ c: DisplaySetClassifier.Classification) -> Bool {
         if case .disjoint = c { return true }
         return false
+    }
+
+    // MARK: - Confirm delete panel
+
+    @ViewBuilder
+    private var confirmDeletePanel: some View {
+        if case .confirmingDelete(let id, let name) = mode {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "trash.fill")
+                        .foregroundStyle(.red)
+                    Text("Delete '\(name)'?")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+
+                Text("The saved resolutions for this profile are gone for good. Your displays are not touched.")
+                    .font(Design.Typography.footer)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack {
+                    Spacer()
+                    // Cancel is the default action: Return should not be the
+                    // key that destroys the profile.
+                    Button("Cancel") { mode = .idle }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .keyboardShortcut(.cancelAction)
+                    Button("Delete") {
+                        if let profile = profiles.profiles.first(where: { $0.id == id }) {
+                            profiles.delete(profile)
+                            announce("Deleted '\(name)'", tone: .info)
+                        }
+                        mode = .idle
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+            .padding(Design.Spacing.l)
+        }
     }
 
     // MARK: - Save form
@@ -1229,6 +1279,14 @@ struct ProfilesSection: View {
         let kept = s.entries.filter(\.isIncluded)
         guard !kept.isEmpty else { return }
 
+        // Name first. `replaceEntries` writes to disk, so a name the store will
+        // refuse has to be caught before the entries are committed — otherwise
+        // the user gets half a save and an error explaining the other half.
+        guard !profiles.nameIsTaken(trimmed, excluding: s.profileID) else {
+            announce("A profile named '\(trimmed)' already exists. Pick another name.", tone: .problem)
+            return
+        }
+
         let newEntries: [Profile.Entry] = kept.map { e in
             let matcher = rowMatcher(e)
             return Profile.Entry(
@@ -1251,7 +1309,12 @@ struct ProfilesSection: View {
             if var fresh = profiles.profiles.first(where: { $0.id == s.profileID }) {
                 fresh.name = trimmed
                 fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
-                profiles.update(fresh)
+                guard profiles.update(fresh) == .saved else {
+                    // The entries are already saved; only the name and main
+                    // pick did not land. Say so rather than claim an update.
+                    announce("Entries saved, but the name could not be changed.", tone: .problem)
+                    return
+                }
                 announce("Updated '\(trimmed)'", tone: .info)
                 mode = .idle
             } else {
@@ -1265,6 +1328,13 @@ struct ProfilesSection: View {
             announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
         case .rejectedEmpty:
             announce("Keep at least one entry to save the profile.", tone: .problem)
+        case .rejectedDuplicateName(let name):
+            announce("A profile named '\(name)' already exists. Pick another name.", tone: .problem)
+        case .rejectedEmptyName:
+            announce("Give the profile a name.", tone: .problem)
+        case .rejectedNotFound:
+            announce("Could not update the profile — it no longer exists.", tone: .problem)
+            mode = .idle
         }
     }
 
@@ -1322,6 +1392,14 @@ struct ProfilesSection: View {
             announce("Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.", tone: .problem)
         case .rejectedEmpty:
             announce("Pick at least one display to save.", tone: .problem)
+        case .rejectedDuplicateName(let name):
+            // Stay in the form: the name field is right there and is the only
+            // thing that needs changing.
+            announce("A profile named '\(name)' already exists. Pick another name.", tone: .problem)
+        case .rejectedEmptyName:
+            announce("Give the profile a name.", tone: .problem)
+        case .rejectedNotFound:
+            announce("Could not save the profile — it is no longer in the list.", tone: .problem)
         }
     }
 
@@ -1358,7 +1436,14 @@ struct ProfilesSection: View {
         scheduleNoteClear()
     }
 
+    /// Auto-clears a note after six seconds — but only a reassuring one.
+    ///
+    /// A `.fallback` or `.problem` note is the one place the user is told that
+    /// a monitor did not get what the profile asked for. Expiring that on a
+    /// timer means whoever glanced away never finds out, so those stay until
+    /// they are clicked or replaced by the next apply.
     private func scheduleNoteClear() {
+        guard lastNoteTone == .info else { return }
         let token = lastNote
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(6))
@@ -1389,8 +1474,16 @@ struct ProfilesSection: View {
             return
         }
         profile.name = trimmed
-        profiles.update(profile)
-        mode = .idle
+        switch profiles.update(profile) {
+        case .saved, .savedWithMissingDisplays:
+            mode = .idle
+        case .rejectedDuplicateName(let name):
+            // Keep the user in the rename field — the fix is one keystroke away.
+            announce("A profile named '\(name)' already exists. Pick another name.", tone: .problem)
+        case .rejectedEmptyName, .rejectedEmpty, .rejectedMultipleAnyExternal, .rejectedNotFound:
+            announce("Could not rename the profile.", tone: .problem)
+            mode = .idle
+        }
     }
 }
 
@@ -1481,67 +1574,12 @@ private struct ProfilePill: View {
         guard let preview = cachedPreview else { return tooltip }
         var lines = activeTooltipPrefix + ["Applying '\(profile.name)' will:"]
         for row in preview.rows {
-            let prefix: String = {
-                switch row.action {
-                case .willApplyExact: return "✓"
-                case .willApplyFallback: return "⚠"
-                case .alreadyApplied: return "="
-                case .skippedNotConnected: return "✗"
-                case .skippedNoMode: return "?"
-                }
-            }()
-            lines.append("  \(prefix) \(row.displayName) — \(previewDetail(row))")
+            lines.append("  \(row.tooltipMarker) \(row.displayName) — \(row.detailText)")
         }
         if !preview.untouched.isEmpty {
             lines.append("Leaves untouched: " + preview.untouched.joined(separator: ", "))
         }
         return lines.joined(separator: "\n")
-    }
-
-    private func previewDetail(_ row: ProfileApplyPreview.Row) -> String {
-        let saved = "\(row.savedWidth)×\(row.savedHeight)"
-            + (row.savedHz.map { " @ \($0)Hz" } ?? "")
-            + (row.savedIsHiDPI ? " HiDPI" : "")
-        switch row.action {
-        case .willApplyExact:
-            return "→ \(saved)"
-        case .willApplyFallback(let w, let h, let hz):
-            let got = "\(w)×\(h)" + (hz.map { " @ \($0)Hz" } ?? "")
-            return "wanted \(saved), will use \(got)"
-        case .alreadyApplied(let w, let h, let hz, let isHiDPI):
-            let current = "\(w)×\(h)"
-                + (hz.map { " @ \($0)Hz" } ?? "")
-                + (isHiDPI ? " HiDPI" : "")
-            return rowAlreadyMatchesSaved(row, width: w, height: h, hz: hz, isHiDPI: isHiDPI)
-                ? "already at \(saved)"
-                : "already at \(current) (closest to \(saved))"
-        case .skippedNotConnected:
-            return "not connected — skip"
-        case .skippedNoMode:
-            return "no usable mode for \(row.savedWidth)×\(row.savedHeight)"
-        }
-    }
-
-    private func rowAlreadyMatchesSaved(
-        _ row: ProfileApplyPreview.Row,
-        width: Int,
-        height: Int,
-        hz: Int?,
-        isHiDPI: Bool
-    ) -> Bool {
-        width == row.savedWidth
-            && height == row.savedHeight
-            && (row.savedHz == nil || row.savedHz == hz)
-            && isHiDPI == row.savedIsHiDPI
-    }
-
-    /// True if the profile contains an "any external" matcher — these
-    /// profiles travel and deserve a small badge to communicate that.
-    private var isFlexible: Bool {
-        profile.entries.contains { entry in
-            if case .anyExternal = entry.matcher { return true }
-            return false
-        }
     }
 
     private var iconName: String {

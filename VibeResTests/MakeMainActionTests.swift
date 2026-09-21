@@ -100,7 +100,7 @@ struct MakeMainActionTests {
         store.makeMain(fake)
 
         #expect(probes.calls().isEmpty)
-        #expect(store.lastError?.contains("mirrored") == true)
+        #expect(store.lastError == .mirroredArrangement)
     }
 
     @Test("A throwing transaction is reported and revert is not armed")
@@ -147,6 +147,6 @@ struct MakeMainActionTests {
 
         #expect(calls.count == 1, "the transaction did commit")
         #expect(store.revert.beforeMainID == real, "the commit did happen, so revert must still know who was main before")
-        #expect(store.lastError?.contains("adjusted") == true)
+        #expect(store.lastError == .mainDisplayAdjusted)
     }
 }

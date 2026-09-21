@@ -32,9 +32,13 @@ enum Design {
         static let navTitle: Font = .system(size: 13, weight: .semibold)
         static let footer: Font = .system(size: 11)
         /// Outcome notes and other secondary annotations under a control.
-        static let note: Font = .system(size: 10)
+        ///
+        /// 11pt, not 10: macOS treats 11pt as the floor for text that carries
+        /// meaning, and these sizes were being rendered in `.secondary` and
+        /// `.tertiary`, which takes the contrast down with them.
+        static let note: Font = .system(size: 11)
         /// All-caps section labels ("PROFILES", "ENTRIES").
-        static let sectionHeader: Font = .system(size: 9, weight: .semibold, design: .rounded)
+        static let sectionHeader: Font = .system(size: 10, weight: .semibold, design: .rounded)
         /// Inline buttons and pickers inside the popover.
         static let control: Font = .system(size: 12, weight: .medium)
     }

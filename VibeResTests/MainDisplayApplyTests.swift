@@ -192,11 +192,13 @@ struct MainDisplayApplyTests {
 
         let result = store.applyDetailed(profile(main: allOnes), displays: [])
 
-        guard case .failed(let message)? = result.mainChange else {
+        guard case .failed(let problem)? = result.mainChange else {
             Issue.record("expected .failed, got \(String(describing: result.mainChange))")
             return
         }
-        #expect(message.contains("arrangement"))
+        // The thrown failure travels as a value now, so the assertion can name
+        // it instead of grepping an English sentence for a substring.
+        #expect(problem == .switchFailed(.originCoverage))
         #expect(!result.didChangeAnything)
     }
 

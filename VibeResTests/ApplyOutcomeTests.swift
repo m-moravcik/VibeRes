@@ -85,7 +85,7 @@ struct ApplyOutcomeTests {
         )
         let failed = ProfileStore.ApplyOutcome(
             displayName: "X", matcherKind: .specific, requestedSize: (0, 0), requestedHz: nil,
-            appliedSize: nil, appliedHz: nil, status: .failed("boom")
+            appliedSize: nil, appliedHz: nil, status: .failed(.other("boom"))
         )
         #expect(applied.isProblem == false)
         #expect(fallback.isProblem == true)

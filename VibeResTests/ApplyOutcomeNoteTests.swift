@@ -83,12 +83,12 @@ struct ApplyOutcomeNoteTests {
     func problemsCarryAllDetails() {
         let note = ApplyOutcomeNote.make(from: [
             outcome(.skippedNoMatch, display: "Dell"),
-            outcome(.failed("boom"), display: "LG"),
+            outcome(.failed(.other("boom")), display: "LG"),
         ])
 
         #expect(note?.content == .problems([
             .notConnected(display: "Dell"),
-            .failed(display: "LG", message: "boom"),
+            .failed(display: "LG", problem: .other("boom")),
         ]))
     }
 
@@ -168,9 +168,9 @@ struct ApplyOutcomeNoteTests {
             requestedSize: (2560, 1440), requestedHz: 60,
             appliedSize: (2560, 1440), appliedHz: 60, status: .applied
         )]
-        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .failed("boom"))
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .failed(.other("boom")))
         #expect(note?.tone == .problem)
-        #expect(note?.mainDetail == .mainFailed(message: "boom"))
+        #expect(note?.mainDetail == .mainFailed(problem: .other("boom")))
     }
 
     @Test("A changed-but-adjusted main reports mainAdjusted at fallback tone")

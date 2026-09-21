@@ -65,18 +65,21 @@ struct MenuContent: View {
 
 private struct RootView: View {
     @Environment(DisplayStore.self) private var store
+    @Environment(ProfileStore.self) private var profiles
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Binding var path: NavigationPath
 
     var body: some View {
         VStack(spacing: 0) {
-            if let err = store.lastError {
-                Text(err)
-                    .font(Design.Typography.footer)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, Design.Spacing.l)
-                    .padding(.top, Design.Spacing.xs)
+            // Display problems first — they are about what is on screen right
+            // now. A profile that could not be read or written is also worth
+            // saying: `ProfileStore` recorded it and nothing ever showed it.
+            if let problem = store.lastError {
+                ProblemRow(problem: problem) { store.dismissLastError() }
+            }
+            if let problem = profiles.lastError {
+                ProblemRow(problem: problem) { profiles.dismissLastError() }
             }
 
             if updateStatus.isUpdateReady {
@@ -138,6 +141,38 @@ private struct RootView: View {
 
             FooterBar()
         }
+    }
+}
+
+/// The error row in the popover, with the acknowledgement it used to lack.
+///
+/// The copy is resolved through `UserFacingProblem.localizedDescription`, so a
+/// Slovak or German interface no longer carries an English sentence about a
+/// CoreGraphics failure.
+private struct ProblemRow: View {
+    let problem: UserFacingProblem
+    let dismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Design.Spacing.s) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(Design.Typography.footer)
+                .accessibilityHidden(true)
+            Text(verbatim: problem.localizedDescription)
+                .font(Design.Typography.footer)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: Design.Spacing.s)
+            Button(action: dismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
+            .help("Dismiss")
+        }
+        .foregroundStyle(.red)
+        .padding(.horizontal, Design.Spacing.l)
+        .padding(.top, Design.Spacing.xs)
     }
 }
 
@@ -239,6 +274,14 @@ private struct DisplayDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             navHeader
+
+            // A failed apply used to be completely silent here: the error row
+            // lived only on the root view, and applying a mode does not pop
+            // the navigation stack — so the user clicked a resolution, nothing
+            // changed, and nothing said why.
+            if let problem = store.lastError {
+                ProblemRow(problem: problem) { store.dismissLastError() }
+            }
 
             if let display {
                 ScrollView {
@@ -439,12 +482,27 @@ private struct DisplayDetailView: View {
                 .padding(.top, Design.Spacing.xs)
             }
         }
-        .task(id: displayID) {
-            // Lazily fetch one snapshot per detail-view appearance. Permission
-            // prompt fires here on the first run for users who enabled Live
-            // Preview. Failures fall back silently to the geometric variant.
-            guard preferences.livePreviewEnabled else { return }
+        // One snapshot per detail-view appearance, taken on the *first hover*
+        // rather than on appearance.
+        //
+        // It used to fire on appearance, which meant someone who turned on
+        // "Live preview on hover" was asked for Screen Recording the moment
+        // they opened a display — before they had hovered anything, and with
+        // nothing on screen connecting the prompt to the feature. Apple's
+        // guidance is to ask at the point of use, and this is that point.
+        // Failures still fall back silently to the geometric preview.
+        .task(id: hoveredGroupID) {
+            guard preferences.livePreviewEnabled,
+                  hoveredGroupID != nil,
+                  desktopSnapshot == nil
+            else { return }
             desktopSnapshot = await DesktopCapture.snapshot(of: displayID)
+        }
+        .onChange(of: displayID) { _, _ in
+            // Belt and braces: a detail view is rebuilt per display, but a
+            // reused instance must not paint one display's desktop into
+            // another's preview.
+            desktopSnapshot = nil
         }
     }
 
@@ -779,19 +837,39 @@ private struct CompactResolutionRow: View {
         group.modesByRefresh.last?.mode
     }
 
+    /// The row is a `Button`, not an `HStack` with an `.onTapGesture`.
+    ///
+    /// It used to be the latter, which made the app's primary action
+    /// mouse-only: a tap gesture is not an accessibility element with an
+    /// action, so VoiceOver announced a static group and keyboard focus never
+    /// landed on the row. Simple Mode — the default for fresh installs — hides
+    /// the per-rate chips, so that gesture was the *only* way to apply a mode.
+    ///
+    /// The two modes build different button shapes rather than nesting
+    /// buttons, because a button inside a button is where SwiftUI's hit
+    /// testing on macOS gets unpredictable:
+    ///  - Simple Mode: the whole row is one button.
+    ///  - Advanced Mode: the size label is a button that applies the highest
+    ///    rate, and each chip is its own button beside it — so clicking the
+    ///    label or the gap still means "I don't care, give me the best rate"
+    ///    instead of being a dead zone.
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            Text("\(formatThousands(group.pointWidth)) × \(formatThousands(group.pointHeight))")
-                .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
-                .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
-                .frame(minWidth: 100, alignment: .leading)
-                .accessibilityLabel("\(group.pointWidth) by \(group.pointHeight)\(isCurrentSize ? ", current" : "")")
-
-            Spacer(minLength: 6)
-
             if simpleMode {
-                simpleHzLabel
+                rowButton {
+                    HStack(alignment: .center, spacing: 10) {
+                        sizeLabel
+                        Spacer(minLength: 6)
+                        simpleHzLabel
+                    }
+                }
             } else {
+                rowButton {
+                    HStack(alignment: .center, spacing: 0) {
+                        sizeLabel
+                        Spacer(minLength: 6)
+                    }
+                }
                 refreshSegment
                     .fixedSize()
             }
@@ -805,28 +883,48 @@ private struct CompactResolutionRow: View {
         )
         .contentShape(Rectangle())
         .onHover { onHoverChange($0) }
-        .help(tooltipText)
-        .accessibilityValue(tooltipText)
-        .onTapGesture {
-            // Tap anywhere on the row applies the highest available rate
-            // for this size. This works in both modes:
-            //  - Simple Mode hides chips entirely → row tap is the only
-            //    interaction.
-            //  - Advanced Mode shows chips for explicit refresh-rate picks,
-            //    but a click on the row body (e.g. on the "1800 × 1169"
-            //    text or the gap between text and chip group) shouldn't be
-            //    a dead zone — it just means "I don't care, give me the
-            //    best rate". Particularly important on displays with one
-            //    refresh rate (M2 Air, plain 60 Hz externals) where the
-            //    chip group is a tiny target.
+    }
+
+    /// Wraps a row label in the apply button, with the accessibility and
+    /// tooltip surface both modes share.
+    @ViewBuilder
+    private func rowButton<Label: View>(@ViewBuilder label: () -> Label) -> some View {
+        Button {
             if let mode = preferredMode {
                 apply(mode)
             }
+        } label: {
+            label()
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabelText)
+        .accessibilityValue(tooltipText)
+        .help(tooltipText)
+    }
+
+    /// What VoiceOver reads for the row's action. In Simple Mode it has to
+    /// carry the refresh rate too, because the Hz label beside it is decorative.
+    private var accessibilityLabelText: String {
+        var text = "\(group.pointWidth) by \(group.pointHeight)"
+        if simpleMode, let hz = preferredMode?.refreshHz {
+            text += ", \(hz) hertz"
+        }
+        if isCurrentSize { text += ", current" }
+        return text
+    }
+
+    private var sizeLabel: some View {
+        Text("\(formatThousands(group.pointWidth)) × \(formatThousands(group.pointHeight))")
+            .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
+            .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+            .frame(minWidth: 100, alignment: .leading)
+            .accessibilityHidden(true)
     }
 
     /// Subtle Hz hint shown in Simple Mode — communicates the preferred
-    /// refresh rate without the chip group's chrome.
+    /// refresh rate without the chip group's chrome. Hidden from VoiceOver
+    /// because `accessibilityLabelText` already says it.
     @ViewBuilder
     private var simpleHzLabel: some View {
         if let preferred = preferredMode {
