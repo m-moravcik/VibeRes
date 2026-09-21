@@ -64,3 +64,10 @@ build-localisation/
 
 # Sparkle private signing key — never in the repo
 sparkle_ed25519.key
+
+# Internal audit reports — findings are worked off in the code and the
+# changelog, not published as a standing list of this repo's weak points.
+docs/*audit*.md
+
+# Python bytecode from scripts/
+__pycache__/
