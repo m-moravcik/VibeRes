@@ -71,7 +71,15 @@ schemes:
 packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    exactVersion: 2.9.4
+    # Pinned exactly, and the pin is the thing that has to be watched: an
+    # updater is the one dependency whose compromise is arbitrary code
+    # execution. 2.9.4 was covered by three advisories — GHSA-3x7w-j75x-ppq5
+    # and GHSA-4v99-qgq9-6pxp (both high, symlink races in the privileged
+    # installer, <= 2.9.5) and GHSA-gmj2-gq3j-vqmj (<= 2.9.4). 2.10.0 is
+    # outside all three ranges. `.github/workflows/dependency-audit.yml`
+    # re-checks this pin against the advisory API weekly so the next one is
+    # not found by hand.
+    exactVersion: 2.10.0
 
 targets:
   VibeRes:
@@ -156,7 +164,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeResTests
         GENERATE_INFOPLIST_FILE: YES
-        SWIFT_STRICT_CONCURRENCY: minimal
+        # Same checking as the app. These tests drive the app's own actors, so
+        # a weaker setting here means a concurrency defect is caught in one
+        # target and waved through in the target that exercises it.
+        SWIFT_STRICT_CONCURRENCY: complete
     scheme:
       testTargets:
         - VibeResTests
@@ -174,6 +185,9 @@ targets:
     settings:
       base:
         PRODUCT_NAME: viberes
-        SWIFT_STRICT_CONCURRENCY: minimal
+        # The CLI compiles the *same* VibeRes/Core sources as the app. Checking
+        # them strictly in one target and loosely in the other meant a data
+        # race in Core could pass CI through the side that was not looking.
+        SWIFT_STRICT_CONCURRENCY: complete
         GENERATE_INFOPLIST_FILE: YES
         ENABLE_HARDENED_RUNTIME: NO
