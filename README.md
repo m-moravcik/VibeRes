@@ -4,10 +4,10 @@
 
 A modern menubar resolution switcher for macOS. Native SwiftUI, live hover preview, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
 
-> Requires **macOS 26 Tahoe**, Apple Silicon. See [Older macOS](#older-macos) for backporting notes.
+> Requires **macOS 26 Tahoe**. Universal binary — developed and tested on Apple silicon, and the Intel slice ships for the Macs Tahoe still supports. See [Older macOS](#older-macos) for backporting notes.
 
 [![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-89%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-268%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
@@ -85,7 +85,7 @@ When you click a pill, a coloured note shows the outcome: green for an exact mat
 
 ### Editing a profile
 
-Right-click any pill to apply, update, rename, or delete. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile. When saving or editing, you can optionally choose which display becomes main (hosts the menu bar) when the profile applies; the default "Don't change" keeps today's behaviour. For a one-off change without a profile, drill into a display and hit **Make main display** — the menu bar moves there, relative positions stay put, and Revert takes it back.
+Right-click any pill to apply, update, rename, or delete. Delete asks first — there is no undo for a profile, and `⌘Z` undoes display changes, not profile ones. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile. When saving or editing, you can optionally choose which display becomes main (hosts the menu bar) when the profile applies; the default "Don't change" keeps today's behaviour. For a one-off change without a profile, drill into a display and hit **Make main display** — the menu bar moves there, relative positions stay put, and Revert takes it back.
 
 ---
 
@@ -112,7 +112,7 @@ viberes profile rename <old> <new>
 viberes profile delete <name>
 ```
 
-`<display>` is a case-insensitive substring of the display name *or* its numeric ID (`1`, `3`, etc.). Examples:
+`<display>` is a case-insensitive substring of the display name *or* its numeric ID (`1`, `3`, etc.). `<name>` is a profile name (case-insensitive) *or* the id `viberes profile list` prints. Profile names are unique, so a name always identifies one profile — a catalog saved by an older version could hold duplicates, and those are reported rather than guessed between. Examples:
 
 ```bash
 viberes set "Built-in" 1800x1169@120
@@ -146,10 +146,12 @@ Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.a
 brew install xcodegen
 make app          # GUI
 make cli          # viberes binary
-make test         # 89 tests, 14 suites, Swift Testing
+make test         # 268 tests, 44 suites, Swift Testing
 ```
 
 `project.yml` is the source of truth. `*.xcodeproj` is regenerated and not committed.
+
+What the app is meant to do, and why it is built this way, is in [`PRD.md`](PRD.md). Deferred ideas and the reasoning behind the deferral are in [`BACKLOG.md`](BACKLOG.md).
 
 ### Releasing
 
@@ -164,7 +166,7 @@ automatically. Full process documented in [`.github/RELEASING.md`](.github/RELEA
 
 ### Live preview keeps re-prompting for Screen Recording
 
-The prompt comes from opening a display's resolution list, not from hovering a row — [Live preview](#preview-on-hover) captures one still per display view. Seeing it once per session is expected the first time; seeing it every single time is not.
+The prompt comes from the first time you hover a resolution row with [Live preview](#preview-on-hover) on — that is the point the app needs the permission, and it captures one still per display view. Seeing it once per session is expected the first time; seeing it every single time is not.
 
 Released builds have been Developer ID signed, notarized and stapled since 0.8.2, so the grant survives `brew upgrade --cask`. Builds you make yourself (`make app`) are ad-hoc signed, and macOS keys Screen Recording grants by code-signature hash rather than bundle ID — replacing such a bundle leaves a stale grant behind, and `CGPreflightScreenCaptureAccess` keeps reporting no access even though VibeRes looks enabled in System Settings → Privacy & Security → Screen Recording.
 
