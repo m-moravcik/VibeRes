@@ -36,8 +36,9 @@ presentation).
   not unique value VibeRes brings.
 
 **If we revisit**
-- Make it a dedicated v0.9.0 or v1.0.0 release with mirror as the single
-  headline feature. Don't bolt it onto a patch.
+- Make it a dedicated v1.0.0 release with mirror as the single headline
+  feature. Don't bolt it onto a patch. (0.9.0 went to main-display
+  selection instead.)
 - UI exploration first (Figma or whiteboard) for Save / Edit form before
   any code. Verify the form stays compact.
 - Decide upfront: does mirror replace the slave's resolution in the
@@ -111,25 +112,6 @@ to 1800×1169 HiDPI".
 - Treat manual mode picks within 60s as "user override, suspend auto-apply
   for this app session" to avoid the fighting-the-user problem.
 
-### Sparkle in-app updater
-
-Replace the current "Open release" link with in-place updates via Sparkle.
-
-**Why it would help**
-- Non-brew GUI users (downloaded the ZIP directly) currently have to
-  manually replace the .app. Sparkle would handle download + replace.
-- Brew users are fine via `brew upgrade --cask`, but they're a minority.
-
-**Why it's deferred**
-- Sparkle requires EdDSA signing (free, but setup work).
-- Ad-hoc signed apps work but reviewer caution flags it.
-- App is small enough that current flow (release notification banner +
-  link) is acceptable for now.
-
-**If we revisit**
-- Add when monthly download count from GitHub releases passes ~100
-  non-brew users. Until then, current UpdateChecker banner is fine.
-
 ### Hotkey per profile
 
 Bind global keyboard shortcuts to apply a specific profile (e.g.
@@ -149,36 +131,34 @@ Bind global keyboard shortcuts to apply a specific profile (e.g.
 - Only if Shortcuts.app integration proves too cumbersome for end users
   (e.g. measured friction in feedback).
 
+## Shipped, kept here so they are not re-proposed
+
+### Sparkle in-app updates — shipped in 0.8.2
+
+Deferred here until "monthly non-brew downloads pass ~100"; shipped earlier
+because the manual "download the ZIP and replace the .app" step was the only
+update path for anyone not using Homebrew. EdDSA signing, a signed feed, and a
+gate that refuses to self-update anything not Developer ID signed by this
+project. See `PRD.md` §4.12.
+
+### Hover preview double-click — resolved by dropping the popover
+
+The SwiftUI `.popover` used for the profile-pill preview spawned an NSPanel
+that ate the first click on the pill. The preview is now a plain `.help(...)`
+tooltip built from the same `ProfileApplyPreview` rows, so there is no panel to
+intercept anything. The trade — no icons or colour in the tooltip — was
+accepted and has not been complained about since.
+
 ## Known limitations (accepted, not deferred)
-
-### Hover preview popover requires double-click
-
-When a profile pill is hovered, the SwiftUI popover spawns an NSPanel that
-intercepts the first click on the pill. Pressing the pill while the preview
-is visible can require a second tap to actually apply.
-
-**Why we accept it**
-- The system tooltip alternative (`.help(...)`) lost the icons and colours
-  that make the preview actually useful.
-- The inline `.overlay` alternative rendered inside FlowLayout and visibly
-  overflowed onto neighbouring pills and the display list.
-- The popover is the best-looking compromise. If you don't hover first
-  (click straight through from a finger movement), it applies on the
-  first click.
-
-**When to revisit**
-- If SwiftUI ships a hit-test-transparent popover variant in a future
-  macOS release.
-- If we migrate from `MenuBarExtra(.window)` to native `NSStatusItem +
-  NSPopover` (~200 LoC refactor), which gives full control over panel
-  hit-testing.
 
 ### Display arrangement reset by macOS on extreme resolution change
 
 When applying a resolution that doesn't fit existing arrangement geometry
 (e.g. 640×480 on a 4K monitor), macOS itself reshuffles monitors to
-"reasonable" positions. VibeRes never touches arrangement, so the
-unexpected reshuffle is a macOS behavior, not a VibeRes bug.
+"reasonable" positions. The reshuffle is macOS behaviour, not a VibeRes
+bug: the only arrangement change VibeRes makes is the deliberate,
+full-coverage translation behind "main display" (0.9.0), and it verifies the
+result by reading it back.
 
 **Workaround**
 - Open System Settings → Displays → Arrange and drag monitors back. macOS

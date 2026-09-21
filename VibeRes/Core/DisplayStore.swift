@@ -13,7 +13,16 @@ private let displayLog = Logger(subsystem: "sk.moravcik.VibeRes", category: "dis
 @MainActor
 final class DisplayStore {
     private(set) var displays: [DisplayInfo] = []
-    private(set) var lastError: String?
+    /// The last thing that went wrong, as a value the UI localises. See
+    /// `UserFacingProblem` for why this is not a `String`.
+    private(set) var lastError: UserFacingProblem?
+
+    /// Clears the error row. Nothing else did: only the *next successful*
+    /// apply reset it, so a failed revert left a red line in the popover with
+    /// no way to acknowledge it.
+    func dismissLastError() {
+        lastError = nil
+    }
 
     /// Single-step revert history. Populated by `apply(...)` on user clicks
     /// and by ProfileStore on profile apply. Cleared when the display set
@@ -94,6 +103,26 @@ final class DisplayStore {
         now: [CurrentModeSignature]
     ) -> Bool {
         previous != now
+    }
+
+    /// Backoff for the post-wake settle loop. The full run is 3.75 s, which is
+    /// the *ceiling*, not the price: `wakeSettled` stops as soon as two
+    /// consecutive samples agree.
+    nonisolated static let wakeSettleDelaysMs = [250, 500, 1000, 2000]
+
+    /// True when the display list has stopped moving and the settle loop can
+    /// commit early.
+    ///
+    /// Compared on `CurrentModeSignature`, which carries both the display id
+    /// and its current mode, so "settled" means the same monitors at the same
+    /// modes twice running — not merely the same count. An empty list is never
+    /// settled: that is the transient window this loop exists to ride out.
+    nonisolated static func wakeSettled(
+        previous: [CurrentModeSignature]?,
+        now: [CurrentModeSignature]
+    ) -> Bool {
+        guard let previous, !now.isEmpty else { return false }
+        return previous == now
     }
 
     nonisolated static func wakeRefreshEffect(
@@ -192,11 +221,22 @@ final class DisplayStore {
             }
 
             var settledDisplays: [DisplayInfo] = []
-            for delayMs in [250, 500, 1000, 2000] {
+            var previousSample: [CurrentModeSignature]?
+            for (index, delayMs) in Self.wakeSettleDelaysMs.enumerated() {
                 try? await Task.sleep(for: .milliseconds(delayMs))
                 guard !Task.isCancelled else { return }
                 settledDisplays = DisplayManager.snapshot()
-                displayLog.notice("wakeRefresh sample: displaysNow=\(settledDisplays.count) previouslyCommitted=\(self.displays.count)")
+                let sample = Self.currentModeSignatures(settledDisplays)
+                displayLog.notice("wakeRefresh sample \(index + 1): displaysNow=\(settledDisplays.count) previouslyCommitted=\(self.displays.count)")
+                // Two consecutive identical samples mean the window server has
+                // settled. Sitting out the rest of the window costs the user
+                // 3 more seconds of a stale display list and an equally
+                // delayed auto-apply, for no extra certainty.
+                if Self.wakeSettled(previous: previousSample, now: sample) {
+                    displayLog.notice("wakeRefresh settled early at sample \(index + 1)")
+                    break
+                }
+                previousSample = sample
             }
 
             guard !Task.isCancelled else { return }
@@ -386,7 +426,7 @@ final class DisplayStore {
                 armConfirmation(mode: mode, display: display)
             }
         } catch {
-            lastError = error.userFacingText
+            lastError = error.asUserFacingProblem
         }
     }
 
@@ -400,21 +440,21 @@ final class DisplayStore {
         let live = liveArrangement()
         guard live.main != id, live.bounds[id] != nil else { return }
         guard !live.bounds.keys.contains(where: isInMirrorSet) else {
-            lastError = "displays are mirrored — main display left unchanged"
+            lastError = .mirroredArrangement
             return
         }
         guard let plan = MainDisplayPlanner.plan(bounds: live.bounds, target: id) else { return }
         do {
             try applyOrigins(plan, .permanently)
         } catch {
-            lastError = error.userFacingText
+            lastError = error.asUserFacingProblem
             return
         }
         // Replaces prior history on purpose: Revert undoes the last action.
         revert.recordBatch([], beforeMain: live.main)
         let after = liveArrangement()
         if after.main != id || !MainDisplayPlanner.verified(plan: plan, actualBounds: after.bounds) {
-            lastError = "main display set, but macOS adjusted the arrangement"
+            lastError = .mainDisplayAdjusted
         } else {
             lastError = nil
         }
@@ -471,7 +511,7 @@ final class DisplayStore {
                 // unreadable. Tearing down the countdown here would remove the
                 // only automatic way back, so leave the safety net armed and
                 // say what went wrong.
-                lastError = error.userFacingText
+                lastError = error.asUserFacingProblem
                 return
             }
         }
@@ -515,7 +555,7 @@ final class DisplayStore {
                 // Keep the entry: this display is still in the mode the user
                 // wanted undone, so the way back must survive the attempt.
                 failed.append((entry.displayID, entry.displayName, entry.before))
-                lastError = error.userFacingText
+                lastError = error.asUserFacingProblem
             }
         }
 
@@ -537,11 +577,11 @@ final class DisplayStore {
                             restored += 1
                         } else {
                             failedMain = beforeMain
-                            lastError = "the previous main display could not be restored — macOS adjusted the arrangement"
+                            lastError = .previousMainNotRestored
                         }
                     } catch {
                         failedMain = beforeMain
-                        lastError = error.userFacingText
+                        lastError = error.asUserFacingProblem
                     }
                 }
                 // No plan means the old main is no longer active — there is

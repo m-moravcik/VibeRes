@@ -19,9 +19,9 @@ struct ApplyOutcomeNoteTests {
         ProfileStore.ApplyOutcome(
             displayName: display,
             matcherKind: .specific,
-            requestedSize: (1920, 1080),
+            requestedSize: PointSize(width: 1920, height: 1080),
             requestedHz: nil,
-            appliedSize: (1920, 1080),
+            appliedSize: PointSize(width: 1920, height: 1080),
             appliedHz: nil,
             status: status
         )
@@ -83,12 +83,12 @@ struct ApplyOutcomeNoteTests {
     func problemsCarryAllDetails() {
         let note = ApplyOutcomeNote.make(from: [
             outcome(.skippedNoMatch, display: "Dell"),
-            outcome(.failed("boom"), display: "LG"),
+            outcome(.failed(.other("boom")), display: "LG"),
         ])
 
         #expect(note?.content == .problems([
             .notConnected(display: "Dell"),
-            .failed(display: "LG", message: "boom"),
+            .failed(display: "LG", problem: .other("boom")),
         ]))
     }
 
@@ -97,7 +97,7 @@ struct ApplyOutcomeNoteTests {
         let flexible = ProfileStore.ApplyOutcome(
             displayName: "Desk monitor",
             matcherKind: .anyExternal,
-            requestedSize: (2560, 1440),
+            requestedSize: PointSize(width: 2560, height: 1440),
             requestedHz: nil,
             appliedSize: nil,
             appliedHz: nil,
@@ -121,9 +121,9 @@ struct ApplyOutcomeNoteTests {
         let outcome = ProfileStore.ApplyOutcome(
             displayName: "LG UltraFine",
             matcherKind: .specific,
-            requestedSize: (2560, 1440),
+            requestedSize: PointSize(width: 2560, height: 1440),
             requestedHz: 75,
-            appliedSize: (2560, 1440),
+            appliedSize: PointSize(width: 2560, height: 1440),
             appliedHz: 60,
             status: .appliedWithFallback
         )
@@ -141,8 +141,8 @@ struct ApplyOutcomeNoteTests {
     func mainChangeOnInfoNote() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
         let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .changed(displayName: "LG"))
         #expect(note?.tone == .info)
@@ -153,8 +153,8 @@ struct ApplyOutcomeNoteTests {
     func skippedMainIsFallback() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
         let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .skippedAmbiguous(count: 2))
         #expect(note?.tone == .fallback)
@@ -165,20 +165,20 @@ struct ApplyOutcomeNoteTests {
     func failedMainIsProblem() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
-        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .failed("boom"))
+        let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .failed(.other("boom")))
         #expect(note?.tone == .problem)
-        #expect(note?.mainDetail == .mainFailed(message: "boom"))
+        #expect(note?.mainDetail == .mainFailed(problem: .other("boom")))
     }
 
     @Test("A changed-but-adjusted main reports mainAdjusted at fallback tone")
     func changedButAdjustedIsFallback() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
         let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .changedButAdjusted(displayName: "LG"))
         #expect(note?.tone == .fallback)
@@ -189,8 +189,8 @@ struct ApplyOutcomeNoteTests {
     func skippedNoMatchIsFallback() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
         let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .skippedNoMatch)
         #expect(note?.tone == .fallback)
@@ -201,8 +201,8 @@ struct ApplyOutcomeNoteTests {
     func skippedMirroredIsFallback() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
         let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .skippedMirrored)
         #expect(note?.tone == .fallback)
@@ -213,8 +213,8 @@ struct ApplyOutcomeNoteTests {
     func alreadyMainSilent() {
         let outcomes = [ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
-            requestedSize: (2560, 1440), requestedHz: 60,
-            appliedSize: (2560, 1440), appliedHz: 60, status: .applied
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 60,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60, status: .applied
         )]
         let note = ApplyOutcomeNote.make(from: outcomes, mainChange: .alreadyMain)
         #expect(note?.mainDetail == nil)

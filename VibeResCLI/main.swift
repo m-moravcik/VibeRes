@@ -107,6 +107,49 @@ func bestMatch(in modes: [CGDisplayMode], spec: ResolutionSpec) -> CGDisplayMode
     )
 }
 
+// MARK: - Profile lookup
+
+/// Resolves a profile handle — a name or the id `profile list` prints — or
+/// exits with a message.
+///
+/// Every profile subcommand goes through this so none of them can quietly pick
+/// the first of two profiles sharing a name. The store refuses to create that
+/// state now, but a catalog written by an older build can already be in it.
+@MainActor
+func requireProfile(_ needle: String, in store: ProfileStore) -> Profile {
+    switch store.resolve(needle) {
+    case .found(let profile):
+        return profile
+    case .notFound:
+        fail("no profile named \"\(needle)\"")
+    case .ambiguous(let count):
+        fail("""
+        \(count) profiles are named "\(needle)" — rename one, or address it by id:
+          viberes profile list
+        """)
+    }
+}
+
+/// Turns a rejected save into an exit. Shared so the wording cannot drift
+/// between `profile save` and `profile rename`.
+@MainActor
+func failOnRejection(_ result: ProfileStore.SaveResult) {
+    switch result {
+    case .saved, .savedWithMissingDisplays:
+        return
+    case .rejectedEmptyName:
+        fail("a profile name cannot be blank")
+    case .rejectedDuplicateName(let name):
+        fail("a profile named \"\(name)\" already exists")
+    case .rejectedNotFound:
+        fail("that profile is no longer in the store")
+    case .rejectedEmpty:
+        fail("no displays selected for the profile")
+    case .rejectedMultipleAnyExternal:
+        fail("a profile can have at most one 'any external' entry — remove --any-external from one of the displays")
+    }
+}
+
 // MARK: - Profile main-display formatting
 
 /// Compact "main:" line label — shared by `profile list` and `profile show`
@@ -147,7 +190,15 @@ func cmdHelp() {
       viberes profile delete <name>             Delete a profile
       viberes profile rename <old> <new>        Rename a profile
 
+    Environment:
+      VIBERES_PROFILE_DIR   Read and write profiles in this directory instead
+                            of ~/Library/Application Support/VibeRes.
+
     <display> can be a (case-insensitive substring of a) display name or its numeric ID.
+    <name> can be a profile name (case-insensitive) or the id `profile list` prints.
+      Profile names are unique, so a name always identifies one profile; a
+      catalog saved by an older version could hold duplicates, and those are
+      reported rather than guessed at.
 
     Examples:
       viberes list
@@ -274,25 +325,21 @@ func cmdProfileSave(_ name: String, args: [String]) {
     }
     guard !selection.isEmpty else { fail("no displays matched the --only filter") }
 
-    switch store.captureCurrent(name: name, displays: displays, selection: selection) {
-    case .saved:
-        print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
+    let result = store.captureCurrent(name: name, displays: displays, selection: selection)
+    failOnRejection(result)
+    switch result {
     case .savedWithMissingDisplays(let count):
         // Worth saying in a script too: the profile is smaller than asked for.
         print("saved profile \"\(name)\" — \(count) selected display(s) were not connected and were skipped")
-    case .rejectedMultipleAnyExternal:
-        fail("a profile can have at most one 'any external' entry — remove --any-external from one of the displays")
-    case .rejectedEmpty:
-        fail("no displays selected for the profile")
+    default:
+        print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
     }
 }
 
 @MainActor
 func cmdProfileShow(_ name: String) {
     let store = ProfileStore()
-    guard let p = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
-        fail("no profile named \"\(name)\"")
-    }
+    let p = requireProfile(name, in: store)
     print("# \(p.name)\t(\(p.humanSummary))")
     for entry in p.entries {
         let kind: String
@@ -313,9 +360,7 @@ func cmdProfileShow(_ name: String) {
 @MainActor
 func cmdProfileApply(_ name: String) {
     let store = ProfileStore()
-    guard let profile = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
-        fail("no profile named \"\(name)\"")
-    }
+    let profile = requireProfile(name, in: store)
     let displays = DisplayManager.snapshot()
     let result = store.applyDetailed(profile, displays: displays)
     var hadProblem = false
@@ -348,9 +393,7 @@ func cmdProfileApply(_ name: String) {
 @MainActor
 func cmdProfileDelete(_ name: String) {
     let store = ProfileStore()
-    guard let profile = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
-        fail("no profile named \"\(name)\"")
-    }
+    let profile = requireProfile(name, in: store)
     store.delete(profile)
     print("deleted profile \"\(profile.name)\"")
 }
@@ -358,9 +401,7 @@ func cmdProfileDelete(_ name: String) {
 @MainActor
 func cmdProfileUpdate(_ name: String) {
     let store = ProfileStore()
-    guard let profile = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
-        fail("no profile named \"\(name)\"")
-    }
+    let profile = requireProfile(name, in: store)
     let displays = DisplayManager.snapshot()
     if let updated = store.updateFromCurrent(profile, displays: displays) {
         print("updated \"\(updated.name)\" with current setup (\(updated.entries.count) entries)")
@@ -372,9 +413,7 @@ func cmdProfileUpdate(_ name: String) {
 @MainActor
 func cmdProfileFlex(_ name: String) {
     let store = ProfileStore()
-    guard let profile = store.profiles.first(where: { $0.name.lowercased() == name.lowercased() }) else {
-        fail("no profile named \"\(name)\"")
-    }
+    let profile = requireProfile(name, in: store)
     let displays = DisplayManager.snapshot()
     switch store.toggleFlexible(profile, displays: displays) {
     case .madeFlexible:
@@ -389,12 +428,13 @@ func cmdProfileFlex(_ name: String) {
 @MainActor
 func cmdProfileRename(_ old: String, _ new: String) {
     let store = ProfileStore()
-    guard var profile = store.profiles.first(where: { $0.name.lowercased() == old.lowercased() }) else {
-        fail("no profile named \"\(old)\"")
-    }
+    var profile = requireProfile(old, in: store)
+    let previousName = profile.name
     profile.name = new
-    store.update(profile)
-    print("renamed \"\(old)\" → \"\(new)\"")
+    // The store can refuse — a blank name, or one another profile already
+    // holds. Printing "renamed" over a refusal is how the old code lied.
+    failOnRejection(store.update(profile))
+    print("renamed \"\(previousName)\" → \"\(new)\"")
 }
 
 // MARK: - Dispatcher

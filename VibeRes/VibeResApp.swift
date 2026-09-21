@@ -12,7 +12,7 @@ struct VibeResApp: App {
         // Wire up the AppKit-backed display name resolver before any DisplayStore
         // snapshot runs. Keeps the Core layer free of AppKit while still giving
         // the GUI the same names System Settings → Displays shows.
-        DisplayNamer.resolve = { id in
+        DisplayNamer.install { id in
             if let screen = NSScreen.screens.first(where: { s in
                 let key = NSDeviceDescriptionKey("NSScreenNumber")
                 return (s.deviceDescription[key] as? NSNumber)?.uint32Value == id

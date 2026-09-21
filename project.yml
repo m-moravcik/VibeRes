@@ -11,8 +11,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    MARKETING_VERSION: "0.9.0"
-    CURRENT_PROJECT_VERSION: "22"
+    MARKETING_VERSION: "0.10.0"
+    CURRENT_PROJECT_VERSION: "23"
     # Signing identity and team are intentionally NOT pinned here. Day-to-day
     # builds and CI sign ad-hoc (CODE_SIGN_IDENTITY="-"), which keeps the repo
     # buildable by anyone without an Apple Developer account. The notarized
@@ -61,6 +61,9 @@ schemes:
       targets:
         VibeRes: all
         VibeResTests: [test]
+        # Built alongside so the CLI integration tests can find the binary
+        # next to the test bundle instead of guessing at a derived-data path.
+        viberes-cli: [test]
     test:
       gatherCoverageData: true
       coverageTargets:
@@ -68,10 +71,31 @@ schemes:
       targets:
         - VibeResTests
 
+  # Separate scheme on purpose. These drive the real app through the
+  # accessibility API — the only way to assert that a resolution row is a
+  # button and not a tap gesture — and they need a windowserver session. A
+  # flaky runner must not be able to take the unit tests down with it.
+  VibeResUI:
+    build:
+      targets:
+        VibeRes: all
+        VibeResUITests: [test]
+    test:
+      targets:
+        - VibeResUITests
+
 packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    exactVersion: 2.9.4
+    # Pinned exactly, and the pin is the thing that has to be watched: an
+    # updater is the one dependency whose compromise is arbitrary code
+    # execution. 2.9.4 was covered by three advisories — GHSA-3x7w-j75x-ppq5
+    # and GHSA-4v99-qgq9-6pxp (both high, symlink races in the privileged
+    # installer, <= 2.9.5) and GHSA-gmj2-gq3j-vqmj (<= 2.9.4). 2.10.0 is
+    # outside all three ranges. `.github/workflows/dependency-audit.yml`
+    # re-checks this pin against the advisory API weekly so the next one is
+    # not found by hand.
+    exactVersion: 2.10.0
 
 targets:
   VibeRes:
@@ -156,11 +180,29 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeResTests
         GENERATE_INFOPLIST_FILE: YES
-        SWIFT_STRICT_CONCURRENCY: minimal
+        # Same checking as the app. These tests drive the app's own actors, so
+        # a weaker setting here means a concurrency defect is caught in one
+        # target and waved through in the target that exercises it.
+        SWIFT_STRICT_CONCURRENCY: complete
     scheme:
       testTargets:
         - VibeResTests
       gatherCoverageData: true
+
+  VibeResUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VibeResUITests
+    dependencies:
+      - target: VibeRes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeResUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: VibeRes
+        SWIFT_STRICT_CONCURRENCY: complete
 
   viberes-cli:
     type: tool
@@ -174,6 +216,14 @@ targets:
     settings:
       base:
         PRODUCT_NAME: viberes
-        SWIFT_STRICT_CONCURRENCY: minimal
+        # The executable is `viberes`; the *module* is not. Both products land
+        # in the same directory, and on a case-insensitive filesystem a
+        # `viberes.swiftmodule` next to `VibeRes.swiftmodule` makes the test
+        # target's `@testable import VibeRes` resolve to the CLI.
+        PRODUCT_MODULE_NAME: VibeResCLI
+        # The CLI compiles the *same* VibeRes/Core sources as the app. Checking
+        # them strictly in one target and loosely in the other meant a data
+        # race in Core could pass CI through the side that was not looking.
+        SWIFT_STRICT_CONCURRENCY: complete
         GENERATE_INFOPLIST_FILE: YES
         ENABLE_HARDENED_RUNTIME: NO

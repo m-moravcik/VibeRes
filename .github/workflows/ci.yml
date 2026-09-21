@@ -55,6 +55,47 @@ jobs:
           name: TestResults
           path: TestResults.xcresult
 
+  ui-test:
+    name: UI tests (accessibility)
+    runs-on: macos-26
+    timeout-minutes: 25
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      # Its own job and its own scheme. These drive the real app through the
+      # accessibility API — the only way to assert that a resolution row is a
+      # button rather than a tap gesture, which is the shape that made the
+      # app's primary action unreachable without a mouse. They need a
+      # windowserver session, so a runner without one must not be able to fail
+      # the unit tests too.
+      - name: Run UI tests
+        run: |
+          xcodebuild test \
+            -project VibeRes.xcodeproj \
+            -scheme VibeResUI \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            -resultBundlePath UITestResults.xcresult \
+            | xcbeautify --renderer github-actions
+        shell: bash
+
+      - name: Upload UI test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: UITestResults
+          path: UITestResults.xcresult
+
   build-app:
     name: Build app (Release)
     runs-on: macos-26

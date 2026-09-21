@@ -29,7 +29,12 @@ extension DisplayMatcher {
 @MainActor
 final class ProfileStore {
     private(set) var profiles: [Profile] = []
-    private(set) var lastError: String?
+    private(set) var lastError: UserFacingProblem?
+
+    /// Clears the error row — the same acknowledgement `DisplayStore` offers.
+    func dismissLastError() {
+        lastError = nil
+    }
 
     private let storeURL: URL
 
@@ -39,9 +44,27 @@ final class ProfileStore {
         load()
     }
 
+    /// Environment override for the catalog location.
+    ///
+    /// Exists so the CLI can be driven by a test — and by anyone scripting it —
+    /// without writing to the real profile store. The GUI passes its directory
+    /// explicitly and never consults this.
+    nonisolated static let directoryEnvironmentKey = "VIBERES_PROFILE_DIR"
+
     private static func defaultDirectory() -> URL {
         let fm = FileManager.default
-        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        if let override = ProcessInfo.processInfo.environment[directoryEnvironmentKey],
+           !override.isEmpty {
+            let dir = URL(fileURLWithPath: (override as NSString).expandingTildeInPath,
+                          isDirectory: true)
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir
+        }
+        // `.first!` was the one crash-by-construction left in a shipped path.
+        // It cannot realistically return empty on macOS, which is exactly why
+        // the day it does, a force unwrap is the worst possible way to find out.
+        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fm.homeDirectoryForCurrentUser.appending(path: "Library/Application Support")
         let dir = base.appendingPathComponent("VibeRes", isDirectory: true)
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
@@ -80,7 +103,7 @@ final class ProfileStore {
         // pull an implausible file into memory on the main actor at launch.
         let size = (try? storeURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard Self.isWithinSizeLimit(bytes: size) else {
-            lastError = "Saved profiles look corrupted and were not loaded."
+            lastError = .profilesUnreadable
             profiles = []
             return
         }
@@ -93,7 +116,7 @@ final class ProfileStore {
             profiles = Self.capped(try JSONDecoder().decode([Profile].self, from: data))
         } catch {
             // Sanitised — don't surface JSONDecoder internals or file paths.
-            lastError = "Failed to read saved profiles."
+            lastError = .profilesUnreadable
             profiles = []
         }
     }
@@ -111,25 +134,75 @@ final class ProfileStore {
             )
             lastError = nil
         } catch {
-            lastError = "Failed to save profiles."
+            lastError = .profilesNotSaved
         }
     }
 
-    func add(_ profile: Profile) {
+    /// Adds a profile, or says why it would not.
+    ///
+    /// Returns a result rather than nothing: these guards used to drop the
+    /// profile silently, and `captureCurrent` reported `.saved` regardless — so
+    /// `viberes profile save "   "` printed success and stored nothing.
+    @discardableResult
+    func add(_ profile: Profile) -> SaveResult {
         var p = profile
         p.name = Self.sanitised(p.name)
-        guard !p.name.isEmpty else { return }
+        guard !p.name.isEmpty else { return .rejectedEmptyName }
+        guard !nameIsTaken(p.name, excluding: p.id) else { return .rejectedDuplicateName(p.name) }
         profiles.append(p)
         save()
+        return .saved
     }
 
-    func update(_ profile: Profile) {
-        if let i = profiles.firstIndex(where: { $0.id == profile.id }) {
-            var p = profile
-            p.name = Self.sanitised(p.name)
-            guard !p.name.isEmpty else { return }
-            profiles[i] = p
-            save()
+    @discardableResult
+    func update(_ profile: Profile) -> SaveResult {
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedNotFound }
+        var p = profile
+        p.name = Self.sanitised(p.name)
+        guard !p.name.isEmpty else { return .rejectedEmptyName }
+        guard !nameIsTaken(p.name, excluding: p.id) else { return .rejectedDuplicateName(p.name) }
+        profiles[i] = p
+        save()
+        return .saved
+    }
+
+    /// True when a *different* profile already answers to this name.
+    ///
+    /// Case-insensitive, because a name is a handle a person types: "work" and
+    /// "Work" are the same handle to everyone except a byte comparison, and the
+    /// CLI resolves them the same way.
+    func nameIsTaken(_ name: String, excluding id: UUID?) -> Bool {
+        let candidate = Self.sanitised(name)
+        return profiles.contains {
+            $0.id != id && $0.name.caseInsensitiveCompare(candidate) == .orderedSame
+        }
+    }
+
+    /// How a handle typed on the command line — a name or an id — maps onto a
+    /// saved profile.
+    enum Lookup: Equatable {
+        case found(Profile)
+        case notFound
+        /// More than one profile answers to this name. `add` and `update`
+        /// refuse to create that state, but a catalog written by 0.9.0 or
+        /// edited by hand can already be in it, and picking the first match
+        /// would make `viberes profile apply Work` a coin flip.
+        case ambiguous(count: Int)
+    }
+
+    /// Resolves a name or an id to exactly one profile, or refuses to guess.
+    ///
+    /// The id is tried first and is the documented way out of an ambiguous
+    /// name — `viberes profile list` prints it for exactly this reason.
+    func resolve(_ needle: String) -> Lookup {
+        if let id = UUID(uuidString: needle) {
+            return profiles.first(where: { $0.id == id }).map(Lookup.found) ?? .notFound
+        }
+        let matches = profiles.filter { $0.name.caseInsensitiveCompare(needle) == .orderedSame }
+        switch matches.count {
+        case 0: return .notFound
+        case 1: return .found(matches[0])
+        default: return .ambiguous(count: matches.count)
         }
     }
 
@@ -248,8 +321,11 @@ final class ProfileStore {
         /// every call site would stay free to ignore it — which is the silence
         /// this exists to end.
         case savedWithMissingDisplays(count: Int)
-        case rejectedEmpty
-        case rejectedMultipleAnyExternal  // more than one `.anyExternal` entry
+        case rejectedEmpty                      // no entries to save
+        case rejectedEmptyName                  // nothing left after sanitising
+        case rejectedDuplicateName(String)      // another profile holds the name
+        case rejectedNotFound                   // the profile is no longer in the store
+        case rejectedMultipleAnyExternal        // more than one `.anyExternal` entry
     }
 
     /// How many of the user's selected displays are no longer attached.
@@ -291,7 +367,7 @@ final class ProfileStore {
     func replaceEntries(_ profile: Profile, with newEntries: [Profile.Entry]) -> SaveResult {
         guard !newEntries.isEmpty else { return .rejectedEmpty }
         guard !Self.hasMultipleAnyExternal(newEntries) else { return .rejectedMultipleAnyExternal }
-        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedEmpty }
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedNotFound }
         var updated = profiles[i]
         updated.entries = newEntries
         profiles[i] = updated
@@ -351,7 +427,11 @@ final class ProfileStore {
            mainInfo.currentMode != nil {
             mainDisplay = Self.matcher(for: mainSelection, kind: kind)
         }
-        add(Profile(name: name, entries: entries, mainDisplay: mainDisplay))
+        // Report what the store actually did. `add` refuses a blank or
+        // already-taken name, and swallowing that here is what let the CLI
+        // print `saved profile` over an empty catalog.
+        let outcome = add(Profile(name: name, entries: entries, mainDisplay: mainDisplay))
+        guard outcome == .saved else { return outcome }
 
         // A monitor unplugged between opening the form and pressing Save is no
         // longer in `displays`, so its entry never gets built. Saying nothing
@@ -373,15 +453,18 @@ final class ProfileStore {
             case alreadyApplied           // mode === current; nothing changed
             case skippedNoMatch           // nothing matched the matcher
             case skippedNoMode            // matched but no usable mode found
-            case failed(String)           // ResolutionSwitcher threw
+            /// The transaction refused this display. Carries the problem as
+            /// a value so the UI can localise it; the CLI renders
+            /// `englishDescription`.
+            case failed(UserFacingProblem)
         }
         let displayName: String
         let matcherKind: MatcherKind
-        let requestedSize: (Int, Int)
+        let requestedSize: PointSize
         let requestedHz: Int?
         // Filled in once the transaction commits: an outcome is planned before
         // it is known whether the display took the mode.
-        var appliedSize: (Int, Int)?
+        var appliedSize: PointSize?
         var appliedHz: Int?
         var status: Status
 
@@ -401,12 +484,12 @@ final class ProfileStore {
             switch status {
             case .applied:
                 let hz = appliedHz.map { " @ \($0)Hz" } ?? ""
-                return "\(displayName) → \(appliedSize.map { "\($0.0)×\($0.1)" } ?? "?")\(hz)"
+                return "\(displayName) → \(appliedSize?.formatted ?? "?")\(hz)"
             case .alreadyApplied:
                 return "\(displayName) already at requested mode"
             case .appliedWithFallback:
-                let req = "\(requestedSize.0)×\(requestedSize.1)" + (requestedHz.map { " @\($0)Hz" } ?? "")
-                let got = (appliedSize.map { "\($0.0)×\($0.1)" } ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
+                let req = requestedSize.formatted + (requestedHz.map { " @\($0)Hz" } ?? "")
+                let got = (appliedSize?.formatted ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
                 return "\(displayName): wanted \(req), used \(got) (closest available)"
             case .skippedNoMatch:
                 switch matcherKind {
@@ -414,9 +497,9 @@ final class ProfileStore {
                 case .specific: return "\(displayName) not connected"
                 }
             case .skippedNoMode:
-                return "\(displayName): no usable mode for \(requestedSize.0)×\(requestedSize.1)"
-            case .failed(let err):
-                return "\(displayName): \(err)"
+                return "\(displayName): no usable mode for \(requestedSize.formatted)"
+            case .failed(let problem):
+                return "\(displayName): \(problem.englishDescription)"
             }
         }
 
@@ -460,7 +543,7 @@ final class ProfileStore {
         case skippedNoMatch                          // matcher bound no active display
         case skippedAmbiguous(count: Int)            // matcher bound 2+ — intent unknowable
         case skippedMirrored                         // arrangement + mirroring is unmeasured
-        case failed(String)                          // the origin transaction threw
+        case failed(UserFacingProblem)               // the origin transaction threw
 
         var didChange: Bool {
             switch self {
@@ -484,8 +567,8 @@ final class ProfileStore {
                 return "main display not changed: \(count) connected displays match"
             case .skippedMirrored:
                 return "main display not changed: displays are mirrored"
-            case .failed(let message):
-                return "main display not changed: \(message)"
+            case .failed(let problem):
+                return "main display not changed: \(problem.englishDescription)"
             }
         }
     }
@@ -557,7 +640,7 @@ final class ProfileStore {
                 outcomes.append(ApplyOutcome(
                     displayName: entry.displayName,
                     matcherKind: mk,
-                    requestedSize: (entry.pointWidth, entry.pointHeight),
+                    requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                     requestedHz: entry.refreshHz,
                     appliedSize: nil,
                     appliedHz: nil,
@@ -570,7 +653,7 @@ final class ProfileStore {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
-                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                         requestedHz: entry.refreshHz,
                         appliedSize: nil,
                         appliedHz: nil,
@@ -592,9 +675,9 @@ final class ProfileStore {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
-                        requestedSize: (entry.pointWidth, entry.pointHeight),
+                        requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                         requestedHz: entry.refreshHz,
-                        appliedSize: (mode.width, mode.height),
+                        appliedSize: PointSize(width: mode.width, height: mode.height),
                         appliedHz: mode.refreshHz,
                         status: .alreadyApplied
                     ))
@@ -616,11 +699,11 @@ final class ProfileStore {
                 outcomes.append(ApplyOutcome(
                     displayName: info.name,
                     matcherKind: mk,
-                    requestedSize: (entry.pointWidth, entry.pointHeight),
+                    requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
                     requestedHz: entry.refreshHz,
-                    appliedSize: (mode.width, mode.height),
+                    appliedSize: PointSize(width: mode.width, height: mode.height),
                     appliedHz: mode.refreshHz,
-                    status: .failed("not attempted")
+                    status: .failed(.other("not attempted"))
                 ))
             }
         }
@@ -654,9 +737,9 @@ final class ProfileStore {
                         }
                         viberesLog.notice("apply \(change.name, privacy: .public): SUCCESS")
                     } else {
-                        let reason = result.rejected[change.display]?.userFacingDescription
-                            ?? ResolutionSwitcher.Failure.applyMode(.failure).userFacingDescription
-                        outcomes[change.outcomeIndex].status = .failed(reason)
+                        let failure = result.rejected[change.display] ?? .applyMode(.failure)
+                        outcomes[change.outcomeIndex].status = .failed(.switchFailed(failure))
+                        let reason = failure.userFacingDescription
                         outcomes[change.outcomeIndex].appliedSize = nil
                         outcomes[change.outcomeIndex].appliedHz = nil
                         viberesLog.error("apply \(change.name, privacy: .public): REJECTED — \(reason, privacy: .public)")
@@ -668,7 +751,7 @@ final class ProfileStore {
                 // user with a success message and an unchanged desktop.
                 viberesLog.error("apply: transaction failed with \(String(describing: error), privacy: .public)")
                 for change in planned {
-                    outcomes[change.outcomeIndex].status = .failed(error.userFacingText)
+                    outcomes[change.outcomeIndex].status = .failed(error.asUserFacingProblem)
                     outcomes[change.outcomeIndex].appliedSize = nil
                     outcomes[change.outcomeIndex].appliedHz = nil
                 }
@@ -728,7 +811,7 @@ final class ProfileStore {
                 try applyOrigins(plan, .permanently)
             } catch {
                 viberesLog.error("main display: transaction failed — \(String(describing: error), privacy: .public)")
-                return .failed(error.userFacingText)
+                return .failed(error.asUserFacingProblem)
             }
             previousMain = live.main
 

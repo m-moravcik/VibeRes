@@ -1,0 +1,45 @@
+name: Dependency audit
+
+# Sparkle is pinned by exact version, which is right for an updater and is also
+# why nothing noticed when three advisories landed against 2.9.4. This is the
+# thing that notices.
+#
+# Weekly rather than daily: advisories are published in days, not minutes, and a
+# job that cries wolf every morning gets muted.
+
+on:
+  schedule:
+    # Mondays, 07:00 UTC — a failure is waiting at the start of the week
+    # rather than on a Friday evening.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+  pull_request:
+    # A pull request that moves a pin gets checked before it merges.
+    paths:
+      - "project.yml"
+      - "scripts/check-dependency-advisories.py"
+      - ".github/workflows/dependency-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisories:
+    name: Pinned versions vs published advisories
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Check pinned dependencies against GitHub advisories
+        env:
+          # Raises the anonymous rate limit. Read-only, and the advisory
+          # endpoint is public either way.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/check-dependency-advisories.py

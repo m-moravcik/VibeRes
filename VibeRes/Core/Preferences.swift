@@ -13,6 +13,7 @@ final class Preferences {
     private static let onboardingShownKey = "VibeRes.OnboardingShown"
     private static let launchAtLoginKey = "VibeRes.LaunchAtLogin"
     private static let confirmChangesKey = "VibeRes.ConfirmDisplayChanges"
+    private static let livePreviewHintDismissedKey = "VibeRes.LivePreviewHintDismissed"
 
     var autoApplyOnDisplayChange: Bool {
         didSet {
@@ -68,6 +69,20 @@ final class Preferences {
         }
     }
 
+    /// True once the user has either taken up the live-preview hint or waved it
+    /// away.
+    ///
+    /// Live preview is the one thing VibeRes does that the alternatives do not,
+    /// and it is off by default with its only mention buried in Settings — so
+    /// most people never learn it exists. The hint sits in the display detail,
+    /// directly above the rows it applies to, and appears at most until it is
+    /// answered once.
+    var livePreviewHintDismissed: Bool {
+        didSet {
+            UserDefaults.standard.set(livePreviewHintDismissed, forKey: Self.livePreviewHintDismissedKey)
+        }
+    }
+
     /// When true, a resolution change is applied for the session only and undone
     /// after a short window unless the user confirms it.
     ///
@@ -94,7 +109,13 @@ final class Preferences {
         }
         // Live preview is opt-in: never trigger the permission dialog unless
         // the user explicitly enables it.
-        self.livePreviewEnabled = UserDefaults.standard.bool(forKey: Self.livePreviewKey)
+        let livePreview = UserDefaults.standard.bool(forKey: Self.livePreviewKey)
+        self.livePreviewEnabled = livePreview
+        // A user who already found the feature has answered the question. Read
+        // through the local, not `self`: the remaining stored properties are
+        // still uninitialised at this point.
+        self.livePreviewHintDismissed =
+            UserDefaults.standard.bool(forKey: Self.livePreviewHintDismissedKey) || livePreview
         // Simple Mode is on by default for fresh installs — non-tech users
         // get the cleanest decision surface. Existing users keep whichever
         // value they previously had (defaults to false the first time we

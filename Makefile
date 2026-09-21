@@ -1,4 +1,4 @@
-.PHONY: app signed-app signed-app-dry cli install-cli uninstall-cli test clean
+.PHONY: app signed-app signed-app-dry cli install-cli uninstall-cli test ui-test clean
 
 DERIVED := $(shell xcodebuild -project VibeRes.xcodeproj -scheme VibeRes -showBuildSettings 2>/dev/null | awk -F= '/ BUILD_DIR =/{print $$2}' | tr -d ' ')
 RELEASE := $(DERIVED)/Release
@@ -47,6 +47,16 @@ uninstall-cli:
 test:
 	xcodegen generate
 	xcodebuild -project VibeRes.xcodeproj -scheme VibeRes test \
+		CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO
+
+# Drives the real app through the accessibility API — the only way to assert
+# that a resolution row is a button and not a tap gesture. Needs Accessibility
+# permission for the test runner (System Settings > Privacy & Security >
+# Accessibility); CI runners already have it.
+ui-test:
+	xcodegen generate
+	xcodebuild -project VibeRes.xcodeproj -scheme VibeResUI test \
+		-destination 'platform=macOS' \
 		CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO
 
 clean:
