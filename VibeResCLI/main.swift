@@ -297,6 +297,10 @@ func cmdProfileList() {
 @MainActor
 func cmdProfileSave(_ name: String, args: [String]) {
     let store = ProfileStore()
+    // The name is checked first on purpose: it is wrong or right regardless of
+    // what is plugged in, and answering "no displays connected" to someone who
+    // typed a blank name is answering a question they did not ask.
+    failOnRejection(store.nameVerdict(for: name))
     let displays = DisplayManager.snapshot()
     guard !displays.isEmpty else { fail("no displays connected") }
 

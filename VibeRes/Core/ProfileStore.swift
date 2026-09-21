@@ -147,8 +147,9 @@ final class ProfileStore {
     func add(_ profile: Profile) -> SaveResult {
         var p = profile
         p.name = Self.sanitised(p.name)
-        guard !p.name.isEmpty else { return .rejectedEmptyName }
-        guard !nameIsTaken(p.name, excluding: p.id) else { return .rejectedDuplicateName(p.name) }
+        guard case .saved = nameVerdict(for: p.name, excluding: p.id) else {
+            return nameVerdict(for: p.name, excluding: p.id)
+        }
         profiles.append(p)
         save()
         return .saved
@@ -159,10 +160,25 @@ final class ProfileStore {
         guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedNotFound }
         var p = profile
         p.name = Self.sanitised(p.name)
-        guard !p.name.isEmpty else { return .rejectedEmptyName }
-        guard !nameIsTaken(p.name, excluding: p.id) else { return .rejectedDuplicateName(p.name) }
+        guard case .saved = nameVerdict(for: p.name, excluding: p.id) else {
+            return nameVerdict(for: p.name, excluding: p.id)
+        }
         profiles[i] = p
         save()
+        return .saved
+    }
+
+    /// The refusal a name would earn, or `.saved` when it is acceptable.
+    ///
+    /// Separate from `add`/`update` so a caller can ask *before* doing
+    /// expensive or irrelevant work: the CLI checks the name it was given
+    /// before it enumerates displays, because "that name is blank" is true
+    /// whatever is plugged in, and someone who mistyped a name should not be
+    /// told about their monitors instead.
+    func nameVerdict(for name: String, excluding id: UUID? = nil) -> SaveResult {
+        let candidate = Self.sanitised(name)
+        if candidate.isEmpty { return .rejectedEmptyName }
+        if nameIsTaken(candidate, excluding: id) { return .rejectedDuplicateName(candidate) }
         return .saved
     }
 

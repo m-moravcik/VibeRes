@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import VibeRes
@@ -100,12 +101,47 @@ struct CLIIntegrationTests {
         #expect(result.stdout.isEmpty, "errors belong on stderr so pipelines stay clean")
     }
 
-    @Test("An unparseable mode spec is refused before anything is applied")
+    /// Whether this machine has a display that can actually be addressed.
+    ///
+    /// Not a formality: a display that is merely *online* while the screen
+    /// sleeps is not active, and `CGGetActiveDisplayList` returns nothing for
+    /// it — the same distinction `ResolutionSwitcher.activeDisplayIDs`
+    /// documents. A test that assumed otherwise passed on a CI runner and
+    /// failed on a developer machine whose screen had gone to sleep.
+    private static let hasActiveDisplay: Bool = {
+        var count: UInt32 = 0
+        return CGGetActiveDisplayList(0, nil, &count) == .success && count > 0
+    }()
+
+    @Test(
+        "An unparseable mode spec is refused before anything is applied",
+        .enabled(if: CLIIntegrationTests.hasActiveDisplay)
+    )
     func badSpecRefused() throws {
         let dir = try temporaryDirectory()
-        let result = try run(["set", "Built-in", "garbage-spec"], profileDirectory: dir)
+        // `set` resolves the display before it parses the spec, so reaching
+        // the parser needs a display that really exists. Naming it assumed a
+        // built-in panel, which a CI runner has not — take the id `list`
+        // prints instead.
+        let listed = try firstDisplayID(profileDirectory: dir)
+        let display = try #require(listed, "a machine with an active display should list one")
+        let result = try run(["set", display, "garbage-spec"], profileDirectory: dir)
         #expect(result.status == 1)
-        #expect(result.stderr.contains("could not parse"))
+        #expect(result.stderr.contains("could not parse"),
+                "expected a parse error, got: \(result.stderr)")
+    }
+
+    /// The numeric id of the first display `viberes list` reports, or nil when
+    /// this machine reports none.
+    private func firstDisplayID(profileDirectory: URL) throws -> String? {
+        let listing = try run(["list"], profileDirectory: profileDirectory)
+        guard listing.status == 0 else { return nil }
+        // "1\tBuilt-in Display [MAIN]\t1800x1169 @120Hz HiDPI [id=66]"
+        guard let line = listing.stdout.split(separator: "\n").first,
+              let id = line.split(separator: "\t").first,
+              UInt32(id) != nil
+        else { return nil }
+        return String(id)
     }
 
     // MARK: The store is honoured
