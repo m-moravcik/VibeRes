@@ -7,7 +7,7 @@ A modern menubar resolution switcher for macOS. Native SwiftUI, live hover previ
 > Requires **macOS 26 Tahoe**. Universal binary — developed and tested on Apple silicon, and the Intel slice ships for the Macs Tahoe still supports. See [Older macOS](#older-macos) for backporting notes.
 
 [![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-268%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-299%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
@@ -125,6 +125,10 @@ viberes profile apply Presentation
 #   ~ LG UltraFine: wanted 1920×1080 @60Hz, used 1920×1080 @60Hz (closest available)
 ```
 
+Set `VIBERES_PROFILE_DIR` to read and write profiles somewhere other than
+`~/Library/Application Support/VibeRes` — useful for scripting against a
+throwaway set, and how the CLI's own tests avoid touching yours.
+
 Exit code is `0` for full success, `2` if anything fell back or was skipped. Easy to drop into shell pipelines or git hooks.
 
 ---
@@ -146,7 +150,7 @@ Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.a
 brew install xcodegen
 make app          # GUI
 make cli          # viberes binary
-make test         # 268 tests, 44 suites, Swift Testing
+make test         # 299 tests, 47 suites, Swift Testing
 ```
 
 `project.yml` is the source of truth. `*.xcodeproj` is regenerated and not committed.

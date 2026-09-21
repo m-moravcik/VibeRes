@@ -251,6 +251,8 @@ room to negotiate.
   numeric id; a profile by name or by the id `profile list` prints.
 - Exit code 0 on full success, 2 when anything fell back or was skipped, 1 on
   a usage or lookup error. Errors go to stderr.
+- `VIBERES_PROFILE_DIR` relocates the catalog, so the CLI can be scripted — and
+  tested — against a throwaway set.
 - A refused operation exits non-zero. It must never print success over a
   no-op.
 
@@ -341,18 +343,27 @@ Hard-won, and easy to rediscover the expensive way.
 
 ## 6. Quality bar
 
-- **Tests:** Swift Testing. Every pure decision — scoring, bucketing, matchers,
-  planning, countdowns, revert, outcome aggregation, the updater gate, store
-  limits, name resolution — is covered. Anything that would reconfigure a real
-  display is injected through a seam so a test never changes the machine.
-  Currently 268 tests in 44 suites.
-- **Views are not unit-tested.** Asserting on rendered SwiftUI tests the
-  framework. Behaviour that matters is pushed out of the view and into
-  something testable instead.
-- **CI gates on every push and PR:** tests, a Release app build, a Release CLI
-  build with a smoke test, and localisation coverage. A red gate is a broken
-  build, not a warning — 0.9.0 shipped with 22 untranslated strings because a
-  red localisation gate sat unattended for six weeks.
+- **Tests:** Swift Testing. Every pure decision — scoring, bucketing,
+  matchers, planning, countdowns, revert, outcome aggregation, the updater
+  gate, the screen-recording permission machine, store limits, name
+  resolution, form validity — is covered. Anything that would reconfigure a
+  real display is injected through a seam, so a test never changes the
+  machine. Currently 299 tests in 47 suites.
+- **The CLI is tested as a binary**, not as a copy of its logic: the tests run
+  `viberes` with `VIBERES_PROFILE_DIR` pointed at a temporary directory and
+  assert on exit codes and output.
+- **Views are not unit-tested**, because asserting on rendered SwiftUI tests
+  the framework. Behaviour that matters is pushed out of the view into
+  something testable — form validity, picker contents and row copy all live on
+  their state types. The one thing that cannot be: whether a control *is* a
+  control. A small XCUITest suite drives the real app through the
+  accessibility API for that, and it is verified to fail when the resolution
+  row goes back to being a tap gesture.
+- **CI gates on every push and PR:** tests, the UI suite in a job of its own,
+  a Release app build, a Release CLI build with a smoke test, and localisation
+  coverage. A red gate is a broken build, not a warning — 0.9.0 shipped with
+  22 untranslated strings because a red localisation gate sat unattended for
+  six weeks.
 - **Weekly:** pinned dependency versions are checked against published security
   advisories (`scripts/check-dependency-advisories.py`).
 - **Release:** `git tag vX.Y.Z && git push --tags`. The workflow refuses a tag
