@@ -12,11 +12,12 @@ the CLI as a user, run:
 brew install m-moravcik/viberes/viberes
 ```
 
-When releasing a new version:
+Releasing needs nothing done here. The `sync-tap` job in
+[.github/workflows/release.yml](../.github/workflows/release.yml) rewrites
+`version` and `tag:` in the tap's formula, and the version and sha256 in the
+cask, on every tag push, then commits and pushes the tap.
 
-1. Tag the release in this repo (`git tag vX.Y.Z && git push --tags`).
-2. Update `version` and `tag:` in `Formula/viberes.rb` here.
-3. Sync the file to the tap repo (`m-moravcik/homebrew-viberes/Formula/viberes.rb`).
-4. Commit and push the tap.
-
-(A future GitHub Action could automate step 3-4 on tag push.)
+The copy in this directory is not on that path, so its `version` and `tag:`
+lines trail the latest release until refreshed by hand. The part worth
+reviewing here is the build invocation - `depends_on`, `install`, `test` - not
+the version. The tap is the source of truth for what a user installs.

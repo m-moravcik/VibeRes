@@ -42,7 +42,7 @@
 - [ ] **Step 1: Build the spike**
 
 ```bash
-cd /Users/moravcikmi/Projects/VibeRes
+cd /path/to/VibeRes
 swiftc -O -o /tmp/spike scripts/display-arrangement-spike.swift -framework AppKit -framework CoreGraphics
 /tmp/spike state
 ```

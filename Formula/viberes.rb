@@ -2,16 +2,16 @@
 # source — no notarization or pre-built artifact required.
 #
 # Install with:
-#   brew install m-moravcik/VibeRes/viberes
+#   brew install m-moravcik/viberes/viberes
 #
-# Or, if you've already tapped this repo:
-#   brew tap m-moravcik/viberes https://github.com/m-moravcik/VibeRes.git
-#   brew install viberes
+# This is a reference copy. The formula Homebrew installs lives in the
+# m-moravcik/homebrew-viberes tap, where the release workflow updates it; the
+# version below is refreshed by hand. See Formula/README.md.
 class Viberes < Formula
   desc "Command-line companion for VibeRes (macOS resolution switcher)"
   homepage "https://github.com/m-moravcik/VibeRes"
-  url "https://github.com/m-moravcik/VibeRes.git", tag: "v0.9.0", revision: nil
-  version "0.9.0"
+  url "https://github.com/m-moravcik/VibeRes.git", tag: "v0.10.0", revision: nil
+  version "0.10.0"
   license "MIT"
   head "https://github.com/m-moravcik/VibeRes.git", branch: "main"
 
