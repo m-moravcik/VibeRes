@@ -6,28 +6,61 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.9.0</title>
-      <pubDate>Tue, 11 Aug 2026 15:19:27 +0000</pubDate>
-      <sparkle:version>22</sparkle:version>
-      <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
+      <title>0.10.0</title>
+      <pubDate>Tue, 22 Sep 2026 05:59:36 +0000</pubDate>
+      <sparkle:version>23</sparkle:version>
+      <sparkle:shortVersionString>0.10.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> Profiles can now optionally make a chosen display the main one (the one with the menu bar) when applied, selected in the Save/Edit form via a &quot;Main display&quot; picker. Default is &quot;Don&#x27;t change&quot; to preserve today&#x27;s behaviour. Revert also restores the previous main display. The display detail gets a one-click <strong>Make main display</strong> action, and the pill bar now highlights the profile that matches the current setup.</p>
+<p><strong>Highlights:</strong> Applying a resolution now works from the keyboard and with VoiceOver, which it never did. Profile names identify one profile, deleting a profile asks first, and a Slovak or German interface no longer answers in English. Live preview finally tells you it exists. Sparkle moves to 2.10.0, clear of three published advisories.</p>
 <h3>Added</h3>
 <ul>
-<li><strong>Make main display from the display detail</strong> — drill into any display and move the menu bar there with one click, no profile needed. The arrangement only shifts (relative positions are preserved), and Revert takes it back.</li>
-<li><strong>The active profile is highlighted</strong> — the pill whose saved setup matches what the displays are currently doing shows a checkmark and an accent border, so &quot;which one is on right now&quot; is visible at a glance. The small <code>✱</code> badge keeps its old meaning (flexible profile) and is unrelated.</li>
-<li><strong>Profiles can pin the main display</strong> — when saving or editing a profile, you can now choose which display becomes main (hosts the menu bar) when the profile is applied. The picker offers the profile&#x27;s displays plus a &quot;Don&#x27;t change&quot; option (the default, so existing profiles behave exactly as before). <code>viberes profile apply</code> reports the main-display outcome in the note, and <code>viberes profile list</code> shows a <code>main:</code> line for each profile&#x27;s choice. Revert (<code>⌘Z</code> or the footer button) also restores the previous main display — the previous main is tracked too, not just the modes.</li>
+<li><strong>Live preview offers itself where it would be used.</strong> A one-line hint sits in the display detail, directly above the rows it applies to, and turns the feature on in place instead of sending you to Settings and back. It appears at most until you answer it once, and never at all if live preview is already on. The feature stays off by default, because it asks for Screen Recording and nobody should be prompted for something they did not ask for.</li>
+<li><strong>A profile can be addressed by its id.</strong> <code>viberes profile apply</code>, <code>show</code>, <code>rename</code> and <code>delete</code> accept either the name or the id that <code>profile list</code> prints. That is the way out of a catalog written by an older version that holds two profiles under the same name.</li>
+<li><strong><code>VIBERES_PROFILE_DIR</code> relocates the CLI&#x27;s profile catalog</strong>, so scripting against a throwaway set no longer means touching the real one. The app passes its directory explicitly and never consults the variable.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>Profile names are unique, case-insensitively.</strong> Saving or renaming onto a name that already exists is refused, instead of being accepted and later resolved by whichever profile happened to come first. A catalog saved by an older version can still hold duplicates: the CLI reports those as ambiguous and points at the ids rather than guessing between them.</li>
+<li><strong>Deleting a profile asks first.</strong> The question is inline in the popover, like the existing partial-apply panel, rather than an alert that would dismiss the popover out from under it. Cancel is the default action, so Return destroys nothing.</li>
+<li><strong>The Screen Recording prompt arrives on first hover</strong>, where the preview it is asking for would actually appear, rather than the moment live preview is switched on.</li>
+<li><strong>Waking from sleep settles as soon as the displays agree.</strong> The post-wake refresh always spent 3.75 s sampling whatever the hardware was doing; it now stops at the first two consecutive samples that match.</li>
+<li><strong>Revert names a main-display-only undo</strong> instead of calling it &quot;last change&quot;, and says &quot;+ main display&quot; when it will restore both the modes and the menu bar&#x27;s home.</li>
+<li><code>viberes profile apply</code> no longer reports an unchanged main display as &quot;already &lt;profile&gt;&#x27;s choice&quot;, which described the profile rather than what happened.</li>
+<li>The smallest secondary text moved from 9-10pt up to 10-11pt.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Applying a resolution was mouse-only.</strong> The row&#x27;s apply was a tap gesture on a stack, not a button, so it was not an accessibility element with an action: VoiceOver announced a static group and keyboard focus never reached it. Simple Mode is the default and hides the per-rate chips, which made that gesture the only way to apply a mode at all. Rows are real buttons in both modes now, with nothing nested inside them, and each announces the size it applies. Measured through the accessibility API, the display detail went from 1 button to 10.</li>
+<li><strong>A translated interface carried English error sentences.</strong> The localisation gate had been failing on <code>main</code> since 2026-08-11 and the release pipeline does not run it, so 0.9.0 shipped its whole main-display feature in English for Slovak and German users. Problems are now carried as values and rendered in all three languages, and the missing strings are in the catalog.</li>
+<li><strong>A refused save reported success.</strong> A profile whose name sanitised to empty was dropped while the save still returned &quot;saved&quot;, so <code>viberes profile save &quot;   &quot;</code> printed <code>saved profile</code> over an empty catalog and exited zero.</li>
+<li><strong><code>viberes profile save</code> blamed the hardware for a bad name.</strong> It enumerated displays before it looked at the name it was given, so a blank name was answered with &quot;no displays connected&quot; - true, and not the question that was asked.</li>
+<li><strong>Errors could not be acknowledged, and were invisible where they happened.</strong> The error row had no dismiss and was cleared only by a later successful apply; it was drawn on the root view only, so a failure inside a display&#x27;s detail said nothing at all.</li>
+<li><strong>Screen Recording kept asking after it had promised to stop.</strong> After two failed grant attempts the app is supposed to go quiet for the rest of the session. The denied path returned before it reached the attempt counter, so that state was unreachable through the exact route it was written for. Granting the permission afterwards still recovers without a relaunch.</li>
+<li><strong>Revert could report a main display it had not restored.</strong> A display configuration commit that does not throw is not evidence that macOS honoured it, so the arrangement is read back and only counted when the old main display actually landed.</li>
+<li><strong>Saving a profile could pin a main display that has no entry.</strong> A display reporting no current mode produces no entry, which left the saved &quot;main&quot; choice anchored to nothing.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li><strong>Sparkle 2.9.4 -&gt; 2.10.0.</strong> Three published advisories covered the old pin: GHSA-3x7w-j75x-ppq5 and GHSA-4v99-qgq9-6pxp, both high, symlink races in the privileged installer, and GHSA-gmj2-gq3j-vqmj. None is remotely exploitable here, since each needs a local attacker racing an update, but it is the one dependency whose compromise means arbitrary code execution.</li>
+<li><strong>That pin is watched from now on.</strong> A check reads the version out of <code>project.yml</code>, compares it against GitHub&#x27;s advisory ranges, and runs weekly as well as on any change that moves a dependency. 2.9.4 had been three advisories deep for over a month with nothing in the project looking.</li>
+</ul>
+<h3>Internal</h3>
+<ul>
+<li>299 tests in 47 suites, up from 243. The CLI is tested as a binary rather than by duplicating its logic, and seven UI tests drive the real app through the accessibility API - the only way to answer whether a control is a control, since SwiftUI builds no accessibility tree for an in-process test.</li>
+<li><code>ProfilesSection.swift</code> dropped from 1613 to 847 lines, with the save and edit forms moved onto their own state types where their decisions can be tested instead of inspected on screen.</li>
+<li>Strict concurrency is <code>complete</code> on every target. The test and CLI targets compiled the same core sources under weaker checking, so a data race could have passed through the side that was not looking.</li>
+<li><code>PLAN.md</code> became <code>PRD.md</code>: a maintained product document that records what the app is for and the platform decisions behind it, replacing a pre-implementation plan that still specified macOS 13 and an AppKit shell.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.9.0/VibeRes-0.9.0.zip"
-                 sparkle:edSignature="LwgVX4cB9HvJckJGAesxOqpZ5dTCVM+zhxQ+mPvi6Ln36qSygMfYJp1J8qnzrZtZY3YfDa/kSsCpLJ9nxPFDDA=="
-                 length="2972824"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.0/VibeRes-0.10.0.zip"
+                 sparkle:edSignature="vCJUFjrcRlDug7kQhV84or+0A7WAn4oyIVAhGCInbrzNnQdxbMqcfRE5muXZlY/KE9Y9cGepBHcQ2c2LxIyKAw=="
+                 length="3002269"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: 7afv4WX0Q/Iaa/QZkeFs9grsXNulZ7gOfFZVXk57BCq+mMs6Tkvin0Kas114rd8O1P/bvUH8jk/YoxiQ6mn5Aw==
-length: 2789
+edSignature: +oo5p7+TahEJopaX8AkBy3wSKP0mndv4hDs4snNFJ0dLXC+37jDqWZM1BQegzxy+oeOpsS5rij8HjV/rrntFAA==
+length: 8494
 -->
