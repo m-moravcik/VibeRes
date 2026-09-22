@@ -4,6 +4,123 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-09-22
+
+**Highlights:** Applying a resolution now works from the keyboard and with
+VoiceOver, which it never did. Profile names identify one profile, deleting a
+profile asks first, and a Slovak or German interface no longer answers in
+English. Live preview finally tells you it exists. Sparkle moves to 2.10.0,
+clear of three published advisories.
+
+### Added
+
+- **Live preview offers itself where it would be used.** A one-line hint sits
+  in the display detail, directly above the rows it applies to, and turns the
+  feature on in place instead of sending you to Settings and back. It appears
+  at most until you answer it once, and never at all if live preview is already
+  on. The feature stays off by default, because it asks for Screen Recording
+  and nobody should be prompted for something they did not ask for.
+- **A profile can be addressed by its id.** `viberes profile apply`, `show`,
+  `rename` and `delete` accept either the name or the id that `profile list`
+  prints. That is the way out of a catalog written by an older version that
+  holds two profiles under the same name.
+- **`VIBERES_PROFILE_DIR` relocates the CLI's profile catalog**, so scripting
+  against a throwaway set no longer means touching the real one. The app passes
+  its directory explicitly and never consults the variable.
+
+### Changed
+
+- **Profile names are unique, case-insensitively.** Saving or renaming onto a
+  name that already exists is refused, instead of being accepted and later
+  resolved by whichever profile happened to come first. A catalog saved by an
+  older version can still hold duplicates: the CLI reports those as ambiguous
+  and points at the ids rather than guessing between them.
+- **Deleting a profile asks first.** The question is inline in the popover,
+  like the existing partial-apply panel, rather than an alert that would
+  dismiss the popover out from under it. Cancel is the default action, so
+  Return destroys nothing.
+- **The Screen Recording prompt arrives on first hover**, where the preview it
+  is asking for would actually appear, rather than the moment live preview is
+  switched on.
+- **Waking from sleep settles as soon as the displays agree.** The post-wake
+  refresh always spent 3.75 s sampling whatever the hardware was doing; it now
+  stops at the first two consecutive samples that match.
+- **Revert names a main-display-only undo** instead of calling it "last
+  change", and says "+ main display" when it will restore both the modes and
+  the menu bar's home.
+- `viberes profile apply` no longer reports an unchanged main display as
+  "already <profile>'s choice", which described the profile rather than what
+  happened.
+- The smallest secondary text moved from 9-10pt up to 10-11pt.
+
+### Fixed
+
+- **Applying a resolution was mouse-only.** The row's apply was a tap gesture
+  on a stack, not a button, so it was not an accessibility element with an
+  action: VoiceOver announced a static group and keyboard focus never reached
+  it. Simple Mode is the default and hides the per-rate chips, which made that
+  gesture the only way to apply a mode at all. Rows are real buttons in both
+  modes now, with nothing nested inside them, and each announces the size it
+  applies. Measured through the accessibility API, the display detail went from
+  1 button to 10.
+- **A translated interface carried English error sentences.** The localisation
+  gate had been failing on `main` since 2026-08-11 and the release pipeline does
+  not run it, so 0.9.0 shipped its whole main-display feature in English for
+  Slovak and German users. Problems are now carried as values and rendered in
+  all three languages, and the missing strings are in the catalog.
+- **A refused save reported success.** A profile whose name sanitised to empty
+  was dropped while the save still returned "saved", so
+  `viberes profile save "   "` printed `saved profile` over an empty catalog
+  and exited zero.
+- **`viberes profile save` blamed the hardware for a bad name.** It enumerated
+  displays before it looked at the name it was given, so a blank name was
+  answered with "no displays connected" - true, and not the question that was
+  asked.
+- **Errors could not be acknowledged, and were invisible where they happened.**
+  The error row had no dismiss and was cleared only by a later successful
+  apply; it was drawn on the root view only, so a failure inside a display's
+  detail said nothing at all.
+- **Screen Recording kept asking after it had promised to stop.** After two
+  failed grant attempts the app is supposed to go quiet for the rest of the
+  session. The denied path returned before it reached the attempt counter, so
+  that state was unreachable through the exact route it was written for.
+  Granting the permission afterwards still recovers without a relaunch.
+- **Revert could report a main display it had not restored.** A display
+  configuration commit that does not throw is not evidence that macOS honoured
+  it, so the arrangement is read back and only counted when the old main
+  display actually landed.
+- **Saving a profile could pin a main display that has no entry.** A display
+  reporting no current mode produces no entry, which left the saved "main"
+  choice anchored to nothing.
+
+### Security
+
+- **Sparkle 2.9.4 -> 2.10.0.** Three published advisories covered the old pin:
+  GHSA-3x7w-j75x-ppq5 and GHSA-4v99-qgq9-6pxp, both high, symlink races in the
+  privileged installer, and GHSA-gmj2-gq3j-vqmj. None is remotely exploitable
+  here, since each needs a local attacker racing an update, but it is the one
+  dependency whose compromise means arbitrary code execution.
+- **That pin is watched from now on.** A check reads the version out of
+  `project.yml`, compares it against GitHub's advisory ranges, and runs weekly
+  as well as on any change that moves a dependency. 2.9.4 had been three
+  advisories deep for over a month with nothing in the project looking.
+
+### Internal
+
+- 299 tests in 47 suites, up from 243. The CLI is tested as a binary rather
+  than by duplicating its logic, and seven UI tests drive the real app through
+  the accessibility API - the only way to answer whether a control is a
+  control, since SwiftUI builds no accessibility tree for an in-process test.
+- `ProfilesSection.swift` dropped from 1613 to 847 lines, with the save and
+  edit forms moved onto their own state types where their decisions can be
+  tested instead of inspected on screen.
+- Strict concurrency is `complete` on every target. The test and CLI targets
+  compiled the same core sources under weaker checking, so a data race could
+  have passed through the side that was not looking.
+- `PLAN.md` became `PRD.md`: a maintained product document that records what
+  the app is for and the platform decisions behind it, replacing a
+  pre-implementation plan that still specified macOS 13 and an AppKit shell.
+
 ## [0.9.0] — 2026-08-03
 
 **Highlights:** Profiles can now optionally make a chosen display the main one
