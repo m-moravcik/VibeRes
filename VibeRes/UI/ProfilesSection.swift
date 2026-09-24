@@ -17,6 +17,12 @@ struct ProfilesSection: View {
     /// same display/wake event multiple times if the popover redraws.
     @State private var lastObservedAutoApplyToken: Int = -1
     @FocusState private var nameFieldFocused: Bool
+    /// Opens the save form on appear, for the screenshot harness. See `RootView`.
+    private let opensSaveForm: Bool
+
+    init(opensSaveForm: Bool = false) {
+        self.opensSaveForm = opensSaveForm
+    }
 
     /// What the note under the pills is currently showing.
     ///
@@ -199,6 +205,11 @@ struct ProfilesSection: View {
             }
         }
         .padding(.bottom, Design.Spacing.xs)
+        .onAppear {
+            if opensSaveForm, mode == .idle {
+                mode = .saving(buildInitialFormState())
+            }
+        }
     }
 
     private var noteColor: Color {

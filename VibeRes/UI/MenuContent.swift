@@ -63,12 +63,20 @@ struct MenuContent: View {
 
 // MARK: - Root: list of displays
 
-private struct RootView: View {
+struct RootView: View {
     @Environment(DisplayStore.self) private var store
     @Environment(ProfileStore.self) private var profiles
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Binding var path: NavigationPath
+    /// Opens the inline save form on appear. Only the screenshot harness sets
+    /// it; the popover always starts on the pills.
+    private let opensSaveForm: Bool
+
+    init(path: Binding<NavigationPath>, opensSaveForm: Bool = false) {
+        _path = path
+        self.opensSaveForm = opensSaveForm
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -91,7 +99,7 @@ private struct RootView: View {
             // .padding(.top) on top of that yields the visible whitespace
             // gap users have called out.
             VStack(spacing: 0) {
-                ProfilesSection()
+                ProfilesSection(opensSaveForm: opensSaveForm)
 
                 Divider()
                     .padding(.horizontal, Design.Spacing.m)
@@ -242,7 +250,7 @@ private struct DisplayCard: View {
 // MARK: - Detail: one display's modes
 
 
-private struct DisplayDetailView: View {
+struct DisplayDetailView: View {
     let displayID: CGDirectDisplayID
     @Environment(DisplayStore.self) private var store
     @Environment(Preferences.self) private var preferences
@@ -270,6 +278,13 @@ private struct DisplayDetailView: View {
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
         case allNative
+    }
+
+    /// `hoveredGroupID` starts the view with that row under the cursor, so the
+    /// screenshot harness can show the preview. The popover passes nothing.
+    init(displayID: CGDirectDisplayID, hoveredGroupID: String? = nil) {
+        self.displayID = displayID
+        _hoveredGroupID = State(initialValue: hoveredGroupID)
     }
 
     private var display: DisplayInfo? {

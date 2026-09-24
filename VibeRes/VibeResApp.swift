@@ -9,18 +9,14 @@ struct VibeResApp: App {
     @State private var preferences: Preferences
 
     init() {
-        // Wire up the AppKit-backed display name resolver before any DisplayStore
-        // snapshot runs. Keeps the Core layer free of AppKit while still giving
-        // the GUI the same names System Settings → Displays shows.
-        DisplayNamer.install { id in
-            if let screen = NSScreen.screens.first(where: { s in
-                let key = NSDeviceDescriptionKey("NSScreenNumber")
-                return (s.deviceDescription[key] as? NSNumber)?.uint32Value == id
-            }) {
-                return screen.localizedName
-            }
-            return DisplayNamer.fallback(for: id)
+        #if DEBUG
+        // Before anything with a side effect: the harness renders and exits,
+        // and must not get as far as re-registering this build as a login item.
+        if let output = ScreenshotHarness.requestedOutput {
+            ScreenshotHarness.run(into: output)
         }
+        #endif
+        Self.installDisplayNamer()
         _displayStore = State(initialValue: DisplayStore())
         _profileStore = State(initialValue: ProfileStore())
         // Sparkle schedules its own checks; there is nothing to kick off here.
@@ -32,6 +28,21 @@ struct VibeResApp: App {
         // the toggle just reads off, with nothing to notice the regression.
         prefs.launchAtLoginIntent = LoginItem.reconcile(storedIntent: prefs.launchAtLoginIntent)
         _preferences = State(initialValue: prefs)
+    }
+
+    /// Wires up the AppKit-backed display name resolver. Must run before any
+    /// DisplayStore snapshot. Keeps the Core layer free of AppKit while still
+    /// giving the GUI the same names System Settings → Displays shows.
+    static func installDisplayNamer() {
+        DisplayNamer.install { id in
+            if let screen = NSScreen.screens.first(where: { s in
+                let key = NSDeviceDescriptionKey("NSScreenNumber")
+                return (s.deviceDescription[key] as? NSNumber)?.uint32Value == id
+            }) {
+                return screen.localizedName
+            }
+            return DisplayNamer.fallback(for: id)
+        }
     }
 
     var body: some Scene {

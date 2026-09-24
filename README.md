@@ -1,10 +1,17 @@
-<p align="center"><img src="docs/screenshots/icon.png" width="160" alt="VibeRes app icon"></p>
+<p align="center"><img src="docs/screenshots/icon.png" width="160" height="160" alt="VibeRes app icon"></p>
 
 # VibeRes
 
 A modern menubar resolution switcher for macOS. Native SwiftUI, live hover preview, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
 
 > Requires **macOS 26 Tahoe**. Universal binary — developed and tested on Apple silicon, and the Intel slice ships for the Macs Tahoe still supports. See [Older macOS](#older-macos) for backporting notes.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/hero-dark.png">
+    <img src="docs/screenshots/hero-light.png" width="440" alt="VibeRes open under its menu bar icon: saved profiles on top, the built-in display and an external monitor with their current modes below">
+  </picture>
+</p>
 
 [![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
 ![Tests](https://img.shields.io/badge/tests-299%20passing-brightgreen)
@@ -41,11 +48,21 @@ Or use Xcode (`make app`) — see [Build](#build) below.
 
 Click the menu-bar icon. The popover shows every connected display with its current mode.
 
-<p align="center"><img src="docs/screenshots/root-v2.png" width="320" alt="Root popover with profile pills and display cards"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/root-v3-dark.png">
+    <img src="docs/screenshots/root-v3-light.png" width="300" alt="Root popover: the Work, Presentation and Code profile pills, with Work active, above cards for the built-in display and an external monitor">
+  </picture>
+</p>
 
 Click a display card to drill in. Each row is one logical size; refresh rates appear as a segmented control on the right. Click anywhere on the row to apply the highest available rate, or click a specific rate. The current size is highlighted in accent colour with a **CURRENT** pill at the top.
 
-<p align="center"><img src="docs/screenshots/detail-v2.png" width="320" alt="Per-display detail with current mode card and segmented refresh selector"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/detail-v3-dark.png">
+    <img src="docs/screenshots/detail-v3-light.png" width="300" alt="Per-display detail: the current 1800 × 1169 at 120 Hz card, the Scaled and Native toggle, size rows with refresh-rate chips, and the hover preview for 1512 × 982 in the corner">
+  </picture>
+</p>
 
 **Scaled vs Native.** The toggle at the top switches between two families of modes:
 
@@ -70,7 +87,12 @@ It is deliberately frugal with that permission: one still per display view you o
 
 A profile is a named multi-display preset. Save once, switch with one click. The save form is a per-display checklist:
 
-<p align="center"><img src="docs/screenshots/save-v2.png" width="320" alt="Save profile inline form with per-display checkboxes"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/save-v3-dark.png">
+    <img src="docs/screenshots/save-v3-light.png" width="300" alt="Inline Save profile form: a name field, a checkbox per display, Match any external monitor for the external one, and the main display picker">
+  </picture>
+</p>
 
 For each external display you choose:
 
