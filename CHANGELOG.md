@@ -4,6 +4,39 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] - 2026-09-24
+
+**Highlights:** A new app icon drawn for macOS Tahoe, and the popover footer
+finally speaks Slovak and German.
+
+### Changed
+
+- **New app icon.** A monitor with the smaller mode it is about to switch to
+  drawn inside it, the same picture the hover preview shows. It is an Icon
+  Composer document compiled by Xcode, so macOS draws it with Liquid Glass and
+  in the dark, tinted and clear icon styles. The old flat bitmap was shrunk
+  into a grey tile at small sizes on Tahoe.
+
+### Fixed
+
+- **The footer stayed English in every language.** Refresh, Settings, About
+  and Quit had translations in the catalog that were never looked up, because
+  the rows rendered their labels verbatim. The Revert row is translated too,
+  including the display it names.
+- **A blank band sat under the list of sizes.** The display detail reserved a
+  fixed height for its list; since the smaller sizes started collapsed, the list
+  was shorter than that. It is now as tall as its rows, up to the old maximum.
+
+### Internal
+
+- Debug builds use their own bundle identifier, `sk.moravcik.VibeRes.debug`.
+  Sharing the shipped one mixed their preferences, login item and permission
+  grants with the installed app, and let the UI tests activate the installed
+  copy mid-test, which closed the popover under test and made the suite flap.
+- `scripts/screenshots.sh` renders the README screenshots, the icon and the
+  portfolio banner from the app itself, in light and dark, with invented
+  profiles. Debug builds only.
+
 ## [0.10.0] - 2026-09-22
 
 **Highlights:** Applying a resolution now works from the keyboard and with
