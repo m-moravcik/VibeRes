@@ -41,6 +41,16 @@ final class PopoverAccessibilityTests: XCTestCase {
     private var statusItem: XCUIElement {
         let item = app.statusItems.firstMatch
         XCTAssertTrue(item.waitForExistence(timeout: 15), "the menu-bar item never appeared")
+        // A menu bar manager parks items it has not been told to show far off
+        // screen. Say so, rather than failing later with "not hittable".
+        XCTAssertTrue(
+            item.isHittable,
+            """
+            the menu-bar item exists but is off screen at \(item.frame). A menu \
+            bar manager (Bartender, Ice) is hiding it: set the Debug build, \
+            sk.moravcik.VibeRes.debug, to always show.
+            """
+        )
         return item
     }
 

@@ -167,6 +167,15 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_EMIT_LOC_STRINGS: YES
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+      configs:
+        Debug:
+          # A Debug build is a different app to macOS. Under the shipped
+          # identifier it shared the installed copy's preferences, login item
+          # and permission grants, and XCUITest's "activate by bundle id" could
+          # bring the installed copy forward mid-test: the popover under test
+          # lost key status and closed, which is why the UI tests flapped on
+          # any Mac that also runs VibeRes.
+          PRODUCT_BUNDLE_IDENTIFIER: sk.moravcik.VibeRes.debug
 
   VibeResTests:
     type: bundle.unit-test
