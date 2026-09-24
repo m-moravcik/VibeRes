@@ -21,6 +21,9 @@ final class PopoverAccessibilityTests: XCTestCase {
     override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        // The assertions look for English labels. Pinned, because the footer
+        // is localised and a Slovak or German Mac would otherwise fail them.
+        app.launchArguments += ["-AppleLanguages", "(en)"]
         app.launch()
     }
 

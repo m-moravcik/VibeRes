@@ -713,16 +713,25 @@ private struct FooterBar: View {
     /// Compact label for the revert row — fits the menu's natural width
     /// without truncating, regardless of whether one or several displays
     /// were touched by the last apply.
-    private var revertLabel: String {
-        let n = store.revert.entries.count
-        switch n {
+    ///
+    /// Built from the history's values rather than `RevertHistory.summary`,
+    /// which stays English for the CLI and the log.
+    private var revertLabel: LocalizedStringKey {
+        let revert = store.revert
+        let alsoMain = revert.beforeMainID != nil
+        switch revert.entries.count {
         case 0:
-            // A main-only revert has no entries but does have a summary
-            // ("main display") — show it rather than the generic fallback.
-            let summary = store.revert.summary
-            return summary.isEmpty ? "Revert last change" : "Revert \(summary)"
-        case 1: return "Revert \(store.revert.summary)"
-        default: return "Revert last change (\(n) displays)"
+            // A main-only revert has no entries — name it rather than falling
+            // back to the generic label.
+            return alsoMain ? "Revert main display" : "Revert last change"
+        case 1:
+            let entry = revert.entries[0]
+            let size = "\(entry.before.width)×\(entry.before.height)"
+            return alsoMain
+                ? "Revert \(entry.displayName) → \(size) and main display"
+                : "Revert \(entry.displayName) → \(size)"
+        case let n:
+            return "Revert last change (\(n) displays)"
         }
     }
 
@@ -742,7 +751,10 @@ private struct FooterBar: View {
 
 private struct MenuRow: View {
     let icon: String
-    let label: String
+    /// A key, not a `String`: `Text(String)` is verbatim, which is how the
+    /// footer stayed English in every language while its translations sat
+    /// unused in the catalog.
+    let label: LocalizedStringKey
     let shortcut: String?
     let action: () -> Void
     var isEnabled: Bool = true

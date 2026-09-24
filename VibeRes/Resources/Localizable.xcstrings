@@ -209,6 +209,29 @@
         }
       }
     },
+    "About VibeRes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über VibeRes"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About VibeRes"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O aplikácii VibeRes"
+          }
+        }
+      }
+    },
     "Applied '%@' for the new display setup.": {
       "extractionState": "manual",
       "localizations": {
@@ -2311,6 +2334,121 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vráti aktuálne rozlíšenie vybraného displeja ako text, napríklad „1800 × 1169 @ 120 Hz“."
+          }
+        }
+      }
+    },
+    "Revert %@ → %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen: %1$@ → %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revert %1$@ → %2$@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátiť %1$@ → %2$@"
+          }
+        }
+      }
+    },
+    "Revert %@ → %@ and main display": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen: %1$@ → %2$@ und Hauptbildschirm"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revert %1$@ → %2$@ and main display"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátiť %1$@ → %2$@ a hlavný displej"
+          }
+        }
+      }
+    },
+    "Revert last change": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Änderung rückgängig machen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revert last change"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátiť poslednú zmenu"
+          }
+        }
+      }
+    },
+    "Revert last change (%lld displays)": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Änderung rückgängig machen (%lld Bildschirme)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revert last change (%lld displays)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátiť poslednú zmenu (displeje: %lld)"
+          }
+        }
+      }
+    },
+    "Revert main display": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hauptbildschirm zurücksetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revert main display"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátiť hlavný displej"
           }
         }
       }
