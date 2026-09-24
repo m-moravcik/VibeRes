@@ -257,6 +257,11 @@ private struct DisplayDetailView: View {
     /// Collapsed by default: the tail of the size list is rarely what someone
     /// came for. Resets per detail-view appearance, like the hover state.
     @State private var showSmallerSizes = false
+    /// Height of the list's content, measured, so the scroll view can be as
+    /// tall as its rows up to `listMaxHeight`. A fixed ideal height left a
+    /// blank band under the list once the smaller sizes started collapsed.
+    @State private var listContentHeight: CGFloat?
+    private static let listMaxHeight: CGFloat = 480
     /// Y-coordinate of the hovered row inside this detail view's coordinate
     /// space, used by the side popover anchor.
     /// Per-row Y midpoints, keyed by ResolutionGroup.id. Updated each
@@ -293,8 +298,11 @@ private struct DisplayDetailView: View {
                         sizeList(for: display)
                     }
                     .padding(.vertical, 8)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        listContentHeight = height
+                    }
                 }
-                .frame(idealHeight: 480)
+                .frame(idealHeight: min(listContentHeight ?? Self.listMaxHeight, Self.listMaxHeight))
                 // Floating preview pinned to the top-right of the list.
                 // After several attempts at "popover next to the hovered
                 // row" (each tripped on SwiftUI popover dismiss/recreate
