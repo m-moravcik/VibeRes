@@ -266,7 +266,10 @@ private struct HeroScene: View {
             .frame(height: 24)
             .background(dark ? Color.black.opacity(0.35) : Color.white.opacity(0.45))
 
-            HStack(spacing: 0) {
+            // Top-aligned: the popover hangs from the menu bar whatever its
+            // height, and the banner's icon and name are centred on the desktop
+            // on their own rather than against a short popover.
+            HStack(alignment: .top, spacing: 0) {
                 if banner {
                     VStack(spacing: 20) {
                         if let icon {
@@ -277,8 +280,8 @@ private struct HeroScene: View {
                         Text(verbatim: "VibeRes")
                             .font(.system(size: 40, weight: .bold))
                     }
-                    .frame(maxWidth: .infinity)
                     .padding(.bottom, 30)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     Spacer()
                 }
@@ -292,9 +295,11 @@ private struct HeroScene: View {
             .padding(.top, 6)
             // A popover near the right edge is kept on screen rather than
             // centred under its icon, so it sits flush with a small margin.
-            .padding(.trailing, banner ? 120 : 10)
+            // The banner's menu bar is wider, so the popover moves in to stay
+            // under its icon, hanging from the menu bar as a real one does.
+            .padding(.trailing, banner ? 96 : 10)
             .padding(.bottom, banner ? 0 : 48)
-            .frame(maxHeight: banner ? .infinity : nil, alignment: banner ? .center : .top)
+            .frame(maxHeight: banner ? .infinity : nil, alignment: .top)
         }
         .frame(width: banner ? 960 : 440, height: banner ? 540 : nil)
         .foregroundStyle(dark ? Color.white : Color.black)
