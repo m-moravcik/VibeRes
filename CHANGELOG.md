@@ -4,6 +4,18 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.3] - 2026-09-28
+
+**Highlights:** A display's detail opens on the tab its current mode is in.
+
+### Fixed
+
+- **The detail opened on Scaled for a monitor running a native mode.** The
+  Scaled / Native tabs always started on Scaled, so an external monitor at
+  its native resolution showed a list without its current mode in it. The
+  detail now opens on the tab of the mode the display runs in; picking the
+  other tab by hand still works as before.
+
 ## [0.10.2] - 2026-09-28
 
 **Highlights:** A profile that matches any external monitor no longer pushes
