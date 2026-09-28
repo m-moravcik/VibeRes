@@ -4,6 +4,22 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.2] - 2026-09-28
+
+**Highlights:** A profile that matches any external monitor no longer pushes
+a TV to a refresh rate it cannot show.
+
+### Fixed
+
+- **A TV went dark when a profile was applied.** An "any external" entry
+  forced the refresh rate it was saved with on some other monitor. A 4K TV
+  behind a USB-C to HDMI adapter lists 60 Hz but only shows 30 Hz through
+  that link, so applying the profile, by hand or automatically on connect,
+  switched it to a rate it could not display. The saved rate is now a
+  ceiling for such entries: a display already running slower keeps its own
+  rate. Entries locked to one monitor or to the built-in display are
+  unchanged, since their rate was saved on that very panel.
+
 ## [0.10.1] - 2026-09-24
 
 **Highlights:** A new app icon drawn for macOS Tahoe, and the popover footer
