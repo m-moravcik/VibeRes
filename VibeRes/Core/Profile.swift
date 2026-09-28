@@ -174,6 +174,24 @@ struct Profile: Identifiable, Codable, Hashable {
             try c.encodeIfPresent(refreshHz, forKey: .refreshHz)
             try c.encode(isHiDPI, forKey: .isHiDPI)
         }
+
+        /// The refresh rate to ask of one live display, given the rate it
+        /// runs at right now.
+        ///
+        /// A locked entry was saved on this very panel, so its rate is known
+        /// to work there. An `.anyExternal` rate was measured on whatever
+        /// monitor was attached at save time, and CoreGraphics lists rates a
+        /// link cannot carry (a 4K TV behind a USB-C→HDMI adapter lists 60 Hz
+        /// and goes dark on it). So the external's current rate, which macOS
+        /// remembers per display, is the ceiling: applying such a profile
+        /// never pushes a display faster than it already runs.
+        func requestedHz(currentHz: Int?) -> Int? {
+            guard case .anyExternal = matcher else { return refreshHz }
+            switch (refreshHz, currentHz) {
+            case let (saved?, current?): return min(saved, current)
+            case let (saved, current): return saved ?? current
+            }
+        }
     }
 
     /// True when applying this profile would touch any display currently connected.

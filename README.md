@@ -97,7 +97,7 @@ A profile is a named multi-display preset. Save once, switch with one click. The
 For each external display you choose:
 
 - **Specific monitor** *(default)* — locked to that exact monitor by EDID. Survives reboots and USB-C reconnects on the same physical hardware.
-- **Match any external monitor** — the entry binds by role, not identity. Use it for a "Presentation" profile that should work with whatever projector or hotel TV you plug into.
+- **Match any external monitor** — the entry binds by role, not identity. Use it for a "Presentation" profile that should work with whatever projector or hotel TV you plug into. The saved refresh rate is only a ceiling here: if the display already runs slower (say a TV that only manages 30 Hz through an adapter), it stays at its own rate.
 
 Built-in is always specific. Excluded displays are left untouched, so a "Code" profile can touch only the laptop and ignore externals.
 

@@ -179,6 +179,10 @@ against the code. "Evidence" names where it lives.
   surviving reboots and reconnects) or **any external** (bound by role, so the
   profile travels to whatever projector is in the room). Built-in is always
   specific. Unlisted displays are left untouched.
+- An "any external" entry's refresh rate is a ceiling, not a target: the
+  display's current rate wins when it is lower. The saved rate was measured on
+  another monitor, and CoreGraphics lists rates a link cannot carry (a 4K TV
+  behind a USB-C to HDMI adapter lists 60 Hz and goes dark on it).
 - At most one "any external" entry per profile: more than one would have every
   entry match every external, and the last would win after blinking through the
   others.

@@ -665,12 +665,13 @@ final class ProfileStore {
                 continue
             }
             for info in matches {
-                guard let mode = bestMatch(in: info.modes, entry: entry) else {
+                let hz = entry.requestedHz(currentHz: info.currentMode?.refreshHz)
+                guard let mode = bestMatch(in: info.modes, entry: entry, refreshHz: hz) else {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
                         requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
-                        requestedHz: entry.refreshHz,
+                        requestedHz: hz,
                         appliedSize: nil,
                         appliedHz: nil,
                         status: .skippedNoMode
@@ -684,7 +685,7 @@ final class ProfileStore {
                 let isAlready = mode.ioDisplayModeID == info.currentMode?.ioDisplayModeID
                 let isExact = mode.width == entry.pointWidth
                     && mode.height == entry.pointHeight
-                    && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
+                    && (hz == nil || hz == mode.refreshHz)
                     && mode.isHiDPI == entry.isHiDPI
 
                 if isAlready {
@@ -692,7 +693,7 @@ final class ProfileStore {
                         displayName: info.name,
                         matcherKind: mk,
                         requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
-                        requestedHz: entry.refreshHz,
+                        requestedHz: hz,
                         appliedSize: PointSize(width: mode.width, height: mode.height),
                         appliedHz: mode.refreshHz,
                         status: .alreadyApplied
@@ -716,7 +717,7 @@ final class ProfileStore {
                     displayName: info.name,
                     matcherKind: mk,
                     requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
-                    requestedHz: entry.refreshHz,
+                    requestedHz: hz,
                     appliedSize: PointSize(width: mode.width, height: mode.height),
                     appliedHz: mode.refreshHz,
                     status: .failed(.other("not attempted"))
@@ -931,7 +932,7 @@ final class ProfileStore {
                 guard let current = info.currentMode,
                       current.width == entry.pointWidth,
                       current.height == entry.pointHeight,
-                      entry.refreshHz == nil || entry.refreshHz == current.refreshHz,
+                      entry.requestedHz(currentHz: current.refreshHz).map { $0 == current.refreshHz } ?? true,
                       current.isHiDPI == entry.isHiDPI
                 else { return false }
             }
@@ -967,14 +968,15 @@ final class ProfileStore {
             }
             for info in matches {
                 touchedIDs.insert(info.id)
-                guard let mode = bestMatch(in: info.modes, entry: entry) else {
+                let hz = entry.requestedHz(currentHz: info.currentMode?.refreshHz)
+                guard let mode = bestMatch(in: info.modes, entry: entry, refreshHz: hz) else {
                     rows.append(ProfileApplyPreview.Row(
                         id: UUID(),
                         displayName: info.name,
                         action: .skippedNoMode,
                         savedWidth: entry.pointWidth,
                         savedHeight: entry.pointHeight,
-                        savedHz: entry.refreshHz,
+                        savedHz: hz,
                         savedIsHiDPI: entry.isHiDPI
                     ))
                     continue
@@ -982,7 +984,7 @@ final class ProfileStore {
                 let isAlready = mode.ioDisplayModeID == info.currentMode?.ioDisplayModeID
                 let isExact = mode.width == entry.pointWidth
                     && mode.height == entry.pointHeight
-                    && (entry.refreshHz == nil || entry.refreshHz == mode.refreshHz)
+                    && (hz == nil || hz == mode.refreshHz)
                     && mode.isHiDPI == entry.isHiDPI
                 let action: ProfileApplyPreview.Row.Action = {
                     if isAlready {
@@ -1013,7 +1015,7 @@ final class ProfileStore {
                     action: action,
                     savedWidth: entry.pointWidth,
                     savedHeight: entry.pointHeight,
-                    savedHz: entry.refreshHz,
+                    savedHz: hz,
                     savedIsHiDPI: entry.isHiDPI
                 ))
             }
@@ -1023,13 +1025,15 @@ final class ProfileStore {
         return ProfileApplyPreview(rows: rows, untouched: untouched)
     }
 
-    private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry) -> CGDisplayMode? {
+    /// `refreshHz` is the entry's rate as resolved for one display
+    /// (`Profile.Entry.requestedHz`), not the raw saved value.
+    private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry, refreshHz: Int?) -> CGDisplayMode? {
         ModeScoring.bestMatch(
             in: modes,
             request: ModeScoring.Request(
                 width: entry.pointWidth,
                 height: entry.pointHeight,
-                refreshHz: entry.refreshHz,
+                refreshHz: refreshHz,
                 preferHiDPI: entry.isHiDPI
             )
         )
