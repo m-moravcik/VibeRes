@@ -932,7 +932,7 @@ final class ProfileStore {
                 guard let current = info.currentMode,
                       current.width == entry.pointWidth,
                       current.height == entry.pointHeight,
-                      entry.requestedHz(currentHz: current.refreshHz).map { $0 == current.refreshHz } ?? true,
+                      entry.requestedHz(currentHz: current.refreshHz).map({ $0 == current.refreshHz }) ?? true,
                       current.isHiDPI == entry.isHiDPI
                 else { return false }
             }
