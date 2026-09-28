@@ -6,36 +6,26 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.10.1</title>
-      <pubDate>Thu, 24 Sep 2026 18:11:27 +0000</pubDate>
-      <sparkle:version>24</sparkle:version>
-      <sparkle:shortVersionString>0.10.1</sparkle:shortVersionString>
+      <title>0.10.2</title>
+      <pubDate>Mon, 28 Sep 2026 10:15:50 +0000</pubDate>
+      <sparkle:version>25</sparkle:version>
+      <sparkle:shortVersionString>0.10.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> A new app icon drawn for macOS Tahoe, and the popover footer finally speaks Slovak and German.</p>
-<h3>Changed</h3>
-<ul>
-<li><strong>New app icon.</strong> A monitor with the smaller mode it is about to switch to drawn inside it, the same picture the hover preview shows. It is an Icon Composer document compiled by Xcode, so macOS draws it with Liquid Glass and in the dark, tinted and clear icon styles. The old flat bitmap was shrunk into a grey tile at small sizes on Tahoe.</li>
-</ul>
+<p><strong>Highlights:</strong> A profile that matches any external monitor no longer pushes a TV to a refresh rate it cannot show.</p>
 <h3>Fixed</h3>
 <ul>
-<li><strong>The footer stayed English in every language.</strong> Refresh, Settings, About and Quit had translations in the catalog that were never looked up, because the rows rendered their labels verbatim. The Revert row is translated too, including the display it names.</li>
-<li><strong>A blank band sat under the list of sizes.</strong> The display detail reserved a fixed height for its list; since the smaller sizes started collapsed, the list was shorter than that. It is now as tall as its rows, up to the old maximum.</li>
-</ul>
-<h3>Internal</h3>
-<ul>
-<li>Debug builds use their own bundle identifier, <code>sk.moravcik.VibeRes.debug</code>. Sharing the shipped one mixed their preferences, login item and permission grants with the installed app, and let the UI tests activate the installed copy mid-test, which closed the popover under test and made the suite flap.</li>
-<li><code>scripts/screenshots.sh</code> renders the README screenshots, the icon and the portfolio banner from the app itself, in light and dark, with invented profiles. Debug builds only.</li>
+<li><strong>A TV went dark when a profile was applied.</strong> An &quot;any external&quot; entry forced the refresh rate it was saved with on some other monitor. A 4K TV behind a USB-C to HDMI adapter lists 60 Hz but only shows 30 Hz through that link, so applying the profile, by hand or automatically on connect, switched it to a rate it could not display. The saved rate is now a ceiling for such entries: a display already running slower keeps its own rate. Entries locked to one monitor or to the built-in display are unchanged, since their rate was saved on that very panel.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.1/VibeRes-0.10.1.zip"
-                 sparkle:edSignature="HHOtI2bCCvEdk9z/5YvSLKBiNWKdw4hGX8vXBYjFpELrfnH3VbjF2AdJTKyYIb99cwqoon3Nme+yjVg4FulmCQ=="
-                 length="4100852"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.2/VibeRes-0.10.2.zip"
+                 sparkle:edSignature="3+0aOuSd1G6ABsnQIiI383XSuM1JoNjB2h0NrGLXj89hJz8h5rO0ONTNJQlPIRIGjG01OYcOQPB1rJQgf2tbBw=="
+                 length="4101623"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: cxUJGVH2qpODRUHpb34AQsL4r7OdcNL53Mjo+wjwscFCvFJTez6TvlTXALr0WT65zzalwdlAECAlwjFpT1VXCg==
-length: 2644
+edSignature: CC20aff2TcbZAQEDC8ZxB1B8I8OFdDdndmIxzyfYpN1mXZJSZ56FqWHOkRuU/ksOOCd4PAYybzQGjEPVgmPhAQ==
+length: 1768
 -->
