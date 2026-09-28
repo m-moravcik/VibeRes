@@ -255,7 +255,10 @@ struct DisplayDetailView: View {
     @Environment(DisplayStore.self) private var store
     @Environment(Preferences.self) private var preferences
     @Environment(\.dismiss) private var dismiss
-    @State private var filter: ModeFilter = .hiDPIIfAvailable
+    /// The tab the user picked, or nil until they pick one. Until then the
+    /// detail follows the display's current mode, so an external running a
+    /// native mode opens on Native with its current mode in the list.
+    @State private var chosenFilter: ModeFilter?
     /// Single desktop snapshot, fetched once per detail-view appearance
     /// when the user has Live Preview enabled. Reused by every hover row.
     @State private var desktopSnapshot: NSImage?
@@ -278,6 +281,16 @@ struct DisplayDetailView: View {
     enum ModeFilter: Hashable {
         case hiDPIIfAvailable
         case allNative
+
+        /// The tab that shows a display's current mode. Scaled when the mode
+        /// is unknown, which was the only default before.
+        init(currentIsHiDPI: Bool?) {
+            self = currentIsHiDPI == false ? .allNative : .hiDPIIfAvailable
+        }
+    }
+
+    private func filter(for display: DisplayInfo) -> ModeFilter {
+        chosenFilter ?? ModeFilter(currentIsHiDPI: display.currentMode?.isHiDPI)
     }
 
     /// `hoveredGroupID` starts the view with that row under the cursor, so the
@@ -456,7 +469,10 @@ struct DisplayDetailView: View {
     private func filterToggle(for display: DisplayInfo) -> some View {
         if hasBothKinds(for: display) {
             HStack(spacing: 6) {
-                Picker("", selection: $filter) {
+                Picker("", selection: Binding(
+                    get: { filter(for: display) },
+                    set: { chosenFilter = $0 }
+                )) {
                     Text("Scaled").tag(ModeFilter.hiDPIIfAvailable)
                     Text("Native").tag(ModeFilter.allNative)
                 }
@@ -627,7 +643,7 @@ struct DisplayDetailView: View {
 
     private func visibleGroups(for display: DisplayInfo) -> [ResolutionGroup] {
         let all = allGroups(for: display)
-        switch filter {
+        switch filter(for: display) {
         case .hiDPIIfAvailable:
             let hidpi = all.filter(\.isHiDPI)
             return hidpi.isEmpty ? all : hidpi
