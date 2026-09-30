@@ -6,30 +6,26 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.10.4</title>
-      <pubDate>Wed, 30 Sep 2026 05:37:04 +0000</pubDate>
-      <sparkle:version>27</sparkle:version>
-      <sparkle:shortVersionString>0.10.4</sparkle:shortVersionString>
+      <title>0.10.5</title>
+      <pubDate>Wed, 30 Sep 2026 16:14:32 +0000</pubDate>
+      <sparkle:version>28</sparkle:version>
+      <sparkle:shortVersionString>0.10.5</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> The menu&#x27;s bottom rows are spaced like a native macOS menu, and section headings are easier to read in dark mode.</p>
+<p><strong>Highlights:</strong> The welcome tour opens on the app&#x27;s own icon.</p>
 <h3>Changed</h3>
 <ul>
-<li><strong>The footer rows are spaced like a system menu.</strong> Refresh, Settings, About and Quit are now as tall as the items of a native macOS menu, with the same space around the separator and at the bottom edge. The separator no longer sits flush on the last display card.</li>
-</ul>
-<h3>Fixed</h3>
-<ul>
-<li><strong>Section headings were hard to read in dark mode.</strong> PROFILES, INCLUDE, ENTRIES, MAIN DISPLAY, the welcome tour&#x27;s step counter and the &quot;Untouched&quot; line in a profile preview were drawn in a colour that falls short of the contrast WCAG asks for on the dark popover. They now use the secondary text colour, which clears it.</li>
+<li><strong>The welcome tour starts with the VibeRes icon.</strong> Its first step now shows the app&#x27;s own icon instead of a symbol, the way Eject Guard&#x27;s tour does, and every step of the tour keeps the same height.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.4/VibeRes-0.10.4.zip"
-                 sparkle:edSignature="t8pCR7vLRkgPWb8yzOrlNcRHxUdy1uYfaoBYQOckUU9x9I0DPuho5DPyqTtL0g+bjl0j5m5pC7kmNg7X8CL0Cw=="
-                 length="4105096"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.5/VibeRes-0.10.5.zip"
+                 sparkle:edSignature="bPq4kF4w9IvLPQnQNET+Hi1eYl5LNMxBer4iFqyxzv1WDWff7dzlKJEpacXKfg9UR9ebcthiL72DyNNHtaC1CQ=="
+                 length="4109401"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: zzxVoM7AHfEmpoXQVg2nhHc4Scl6vOw1alvI2LZ+PoVI63kVPV9AlPDJQMdxuB9WWJZcZoDn1yfybD0B1cm5Ag==
-length: 1872
+edSignature: DmJaE54SR3EumaZ9r4/avSp/o4n7r5k+MROaWdqomlsNAurHHI0f6QpmZvF2vgJ2n3+y24mxW1UbHwaTaptUCQ==
+length: 1365
 -->
