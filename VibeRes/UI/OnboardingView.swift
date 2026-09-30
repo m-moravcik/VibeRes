@@ -95,8 +95,9 @@ struct OnboardingView: View {
 
     @ViewBuilder
     private var stepWelcome: some View {
+        // The welcome step introduces the app, so it shows the app's icon.
         StepCard(
-            symbol: "sparkles.tv",
+            symbol: nil,
             title: String(localized: "onboarding.welcome.title"),
             bodyText: String(localized: "onboarding.welcome.body")
         )
@@ -126,16 +127,31 @@ struct OnboardingView: View {
 }
 
 private struct StepCard: View {
-    let symbol: String
+    /// Nil shows the app's own icon.
+    let symbol: String?
     let title: String
     let bodyText: String
 
     var body: some View {
         VStack(spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: 36, weight: .regular))
-                .foregroundStyle(.tint)
-                .padding(.top, 4)
+            Group {
+                if let symbol {
+                    Image(systemName: symbol)
+                        .font(.system(size: 36, weight: .regular))
+                        .foregroundStyle(.tint)
+                } else {
+                    // As Finder and the Dock draw it, glass included on macOS
+                    // 26. The icon art carries its own margin, so it is drawn
+                    // larger than the symbols to look the same size. The fixed
+                    // frame keeps every step the same height, as in Eject Guard.
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 56, height: 56)
+                }
+            }
+            .frame(height: 56)
+            .accessibilityHidden(true)
+            .padding(.top, 4)
 
             Text(title)
                 .font(.headline)
