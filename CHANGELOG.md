@@ -4,6 +4,26 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.4] - 2026-09-30
+
+**Highlights:** The menu's bottom rows are spaced like a native macOS menu, and
+section headings are easier to read in dark mode.
+
+### Changed
+
+- **The footer rows are spaced like a system menu.** Refresh, Settings, About
+  and Quit are now as tall as the items of a native macOS menu, with the same
+  space around the separator and at the bottom edge. The separator no longer
+  sits flush on the last display card.
+
+### Fixed
+
+- **Section headings were hard to read in dark mode.** PROFILES, INCLUDE,
+  ENTRIES, MAIN DISPLAY, the welcome tour's step counter and the "Untouched"
+  line in a profile preview were drawn in a colour that falls short of the
+  contrast WCAG asks for on the dark popover. They now use the secondary text
+  colour, which clears it.
+
 ## [0.10.3] - 2026-09-28
 
 **Highlights:** A display's detail opens on the tab its current mode is in.
