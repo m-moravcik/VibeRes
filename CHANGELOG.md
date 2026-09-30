@@ -4,6 +4,16 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.5] - 2026-09-30
+
+**Highlights:** The welcome tour opens on the app's own icon.
+
+### Changed
+
+- **The welcome tour starts with the VibeRes icon.** Its first step now shows
+  the app's own icon instead of a symbol, the way Eject Guard's tour does, and
+  every step of the tour keeps the same height.
+
 ## [0.10.4] - 2026-09-30
 
 **Highlights:** The menu's bottom rows are spaced like a native macOS menu, and
