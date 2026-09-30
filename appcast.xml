@@ -6,26 +6,30 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.10.3</title>
-      <pubDate>Mon, 28 Sep 2026 10:33:10 +0000</pubDate>
-      <sparkle:version>26</sparkle:version>
-      <sparkle:shortVersionString>0.10.3</sparkle:shortVersionString>
+      <title>0.10.4</title>
+      <pubDate>Wed, 30 Sep 2026 05:37:04 +0000</pubDate>
+      <sparkle:version>27</sparkle:version>
+      <sparkle:shortVersionString>0.10.4</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> A display&#x27;s detail opens on the tab its current mode is in.</p>
+<p><strong>Highlights:</strong> The menu&#x27;s bottom rows are spaced like a native macOS menu, and section headings are easier to read in dark mode.</p>
+<h3>Changed</h3>
+<ul>
+<li><strong>The footer rows are spaced like a system menu.</strong> Refresh, Settings, About and Quit are now as tall as the items of a native macOS menu, with the same space around the separator and at the bottom edge. The separator no longer sits flush on the last display card.</li>
+</ul>
 <h3>Fixed</h3>
 <ul>
-<li><strong>The detail opened on Scaled for a monitor running a native mode.</strong> The Scaled / Native tabs always started on Scaled, so an external monitor at its native resolution showed a list without its current mode in it. The detail now opens on the tab of the mode the display runs in; picking the other tab by hand still works as before.</li>
+<li><strong>Section headings were hard to read in dark mode.</strong> PROFILES, INCLUDE, ENTRIES, MAIN DISPLAY, the welcome tour&#x27;s step counter and the &quot;Untouched&quot; line in a profile preview were drawn in a colour that falls short of the contrast WCAG asks for on the dark popover. They now use the secondary text colour, which clears it.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.3/VibeRes-0.10.3.zip"
-                 sparkle:edSignature="JsLOxT9qgpc7QObljOO6igFK3AX1fr2xLnchDh2P7LclG7vU0e78VDCLG/Q5MSWCIMAG3F5f8JuUCJKI/0jyAQ=="
-                 length="4104378"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.4/VibeRes-0.10.4.zip"
+                 sparkle:edSignature="t8pCR7vLRkgPWb8yzOrlNcRHxUdy1uYfaoBYQOckUU9x9I0DPuho5DPyqTtL0g+bjl0j5m5pC7kmNg7X8CL0Cw=="
+                 length="4105096"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: i4Ba7mr5PP6o74EqO8Z0XyCGaQV3oQrxTxOWG+jMvc0lSdi+E5Sl52uMmQQ0vN8t6uoKU3rgGxQA0698DGsPBg==
-length: 1500
+edSignature: zzxVoM7AHfEmpoXQVg2nhHc4Scl6vOw1alvI2LZ+PoVI63kVPV9AlPDJQMdxuB9WWJZcZoDn1yfybD0B1cm5Ag==
+length: 1872
 -->
