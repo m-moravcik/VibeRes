@@ -384,9 +384,13 @@ struct DisplayDetailView: View {
             .padding(.top, 10)
             .padding(.bottom, 8)
 
+            // Native NSMenu metrics, measured on macOS 26: a separator item is
+            // 11pt (5 + 1 + 5) and the menu keeps 5pt at its bottom edge.
+            // Without the top inset the line sat flush on the last card.
             Rectangle()
                 .fill(Design.Palette.separator)
                 .frame(height: 1)
+                .padding(.top, Design.Layout.menuInset)
         }
     }
 
@@ -668,9 +672,13 @@ private struct FooterBar: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Native NSMenu metrics, measured on macOS 26: a separator item is
+            // 11pt (5 + 1 + 5) and the menu keeps 5pt at its bottom edge.
+            // Without the top inset the line sat flush on the last card.
             Rectangle()
                 .fill(Design.Palette.separator)
                 .frame(height: 1)
+                .padding(.top, Design.Layout.menuInset)
 
             VStack(spacing: 0) {
                 if store.revert.canRevert {
@@ -736,8 +744,7 @@ private struct FooterBar: View {
                 )
                 .keyboardShortcut("q")
             }
-            .padding(.top, 4)
-            .padding(.bottom, 2)
+            .padding(.vertical, Design.Layout.menuInset)
         }
     }
 

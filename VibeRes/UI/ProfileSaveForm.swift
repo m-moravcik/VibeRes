@@ -25,7 +25,7 @@ struct ProfileSaveForm: View {
 
             Text("INCLUDE")
                 .font(Design.Typography.sectionHeader)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .tracking(0.5)
 
             ForEach($state.perDisplay) { $choice in
@@ -34,7 +34,7 @@ struct ProfileSaveForm: View {
 
             Text("MAIN DISPLAY")
                 .font(Design.Typography.sectionHeader)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .tracking(0.5)
 
             Picker(selection: $state.mainDisplayID) {

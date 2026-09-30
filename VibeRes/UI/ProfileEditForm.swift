@@ -26,7 +26,7 @@ struct ProfileEditForm: View {
 
             Text("ENTRIES")
                 .font(Design.Typography.sectionHeader)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .tracking(0.5)
 
             ForEach($state.entries) { $entry in
@@ -35,7 +35,7 @@ struct ProfileEditForm: View {
 
             Text("MAIN DISPLAY")
                 .font(Design.Typography.sectionHeader)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .tracking(0.5)
 
             Picker(selection: $state.mainRowID) {

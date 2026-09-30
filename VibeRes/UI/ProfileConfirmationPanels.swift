@@ -46,7 +46,7 @@ struct ProfileApplyConfirmation: View {
                             .accessibilityHidden(true)
                         Text("Untouched: " + preview.untouched.joined(separator: ", "))
                             .font(Design.Typography.note)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                 }

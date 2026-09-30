@@ -29,7 +29,7 @@ struct OnboardingView: View {
                 Text(String(format: String(localized: "onboarding.step"),
                             step + 1, Self.totalSteps))
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 14)
             .padding(.top, 12)

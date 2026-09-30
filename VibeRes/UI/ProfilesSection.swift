@@ -139,7 +139,10 @@ struct ProfilesSection: View {
             HStack(spacing: 6) {
                 Text("PROFILES")
                     .font(Design.Typography.sectionHeader)
-                    .foregroundStyle(.tertiary)
+                    // Secondary, not tertiary: measured in Eject Guard, which
+                    // uses the same header, tertiary gives 2.74:1 on the dark
+                    // popover against the 4.5:1 WCAG asks for; secondary 5.6:1.
+                    .foregroundStyle(.secondary)
                     .tracking(0.5)
                     // Tooltip moved off the standalone info-circle icon (which read
                     // as "click me" but only reacted to hover) onto the label

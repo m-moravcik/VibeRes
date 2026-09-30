@@ -22,7 +22,11 @@ enum Design {
         static let popoverMaxHeight: CGFloat = 600
         static let rowVerticalPadding: CGFloat = 4
         static let chipMinWidth: CGFloat = 24
-        static let footerRowVerticalPadding: CGFloat = 3
+        /// A 13pt line plus 4 + 4 is 24pt, the height of a native menu item on
+        /// macOS 26 (measured with `NSMenu.size`), as Eject Guard uses too.
+        static let footerRowVerticalPadding: CGFloat = 4
+        /// Space a native menu keeps around a separator and at its edges.
+        static let menuInset: CGFloat = 5
     }
 
     enum Typography {
