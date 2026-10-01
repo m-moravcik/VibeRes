@@ -218,3 +218,5 @@ The current code targets macOS 26 because it leans on every modern API at once. 
 ## License
 
 MIT — see [LICENSE](./LICENSE). Inspired by EasyRes by Chris Miles.
+
+Built by [Michal Moravčík](https://github.com/m-moravcik). [More projects](https://web.pexelo.com/portfolio).
