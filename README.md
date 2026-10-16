@@ -16,6 +16,7 @@ A modern menubar resolution switcher for macOS. Native SwiftUI, live hover previ
 [![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
 ![Tests](https://img.shields.io/badge/tests-299%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+[![Buy me a coffee](https://img.shields.io/badge/buy%20me%20a%20coffee-pexelo-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pexelo)
 
 ---
 
@@ -214,6 +215,10 @@ VibeRes also stops nagging on its own: after two failed grant attempts it stops 
 The current code targets macOS 26 because it leans on every modern API at once. Lowering the deployment target is mostly a one-line change in `project.yml` for **macOS 15 Sequoia** — everything compiles. **macOS 14 Sonoma** should also work as-is. **macOS 13 Ventura** needs a small refactor (~30 lines): `@Observable` is macOS 14+, so `DisplayStore` and `ProfileStore` would have to fall back to `ObservableObject` + `@Published`. **macOS 12 Monterey** and older would be a rewrite — `MenuBarExtra(.window)`, `NavigationStack`, `SMAppService.mainApp`, and AppIntents all arrived in 13.
 
 ---
+
+## Support
+
+VibeRes is free and open source. If it saves you time, you can [buy me a coffee](https://buymeacoffee.com/pexelo). It helps cover the Apple Developer account that keeps releases signed and notarized.
 
 ## License
 
