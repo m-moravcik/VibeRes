@@ -529,46 +529,36 @@ private struct Pointer: View {
     }
 }
 
-/// The right end of the menu bar enlarged, so the 22 x 16 pt glyph reads in a
-/// README: the same strip, highlight and Wi-Fi symbol, with the icon drawn by
+/// The menu bar icon enlarged, so the 22 x 16 pt glyph reads in a README: a
+/// slice of the menu bar only, the icon centred in its highlight, drawn by
 /// `MenuBarIcon.draw` at the frame's phase on a canvas `zoom` times larger
-/// rather than scaled up from a small bitmap.
+/// rather than scaled up from a small bitmap. Framed like the popover.
 private struct Loupe: View {
     let phase: Double?
     let scheme: ColorScheme
 
     static let zoom: CGFloat = 3.5
-    static let size = CGSize(width: 214, height: 24 * zoom + 14)
+    /// The menu bar's height, and the highlight's width plus a margin of
+    /// 9 pt of menu bar either side, all at `zoom`.
+    static let size = CGSize(width: (30 + 18) * zoom, height: 24 * zoom)
 
     private var dark: Bool { scheme == .dark }
 
     var body: some View {
         let k = Self.zoom
-        ZStack(alignment: .topLeading) {
-            // The wallpaper under the right end of the menu bar.
-            (dark ? Color(red: 0.08, green: 0.15, blue: 0.26) : Color(red: 0.77, green: 0.85, blue: 0.94))
-            (dark ? Color.black.opacity(0.35) : Color.white.opacity(0.45))
-                .frame(height: 24 * k)
-            HStack(spacing: 16 * k) {
-                Image(nsImage: Self.glyph(phase: phase, zoom: k))
-                    .renderingMode(.template)
-                    .frame(width: 30 * k, height: 22 * k)
-                    .background(RoundedRectangle(cornerRadius: 5 * k, style: .continuous)
-                        .fill(Color.primary.opacity(0.14)))
-                Image(systemName: "wifi")
-                    .font(.system(size: 13 * k, weight: .medium))
-            }
-            .frame(height: 24 * k)
-            .padding(.leading, 20)
-            .fixedSize()
-        }
-        .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
-        .clipped()
-        .foregroundStyle(dark ? Color.white : Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .strokeBorder(dark ? Color.white.opacity(0.18) : Color.white.opacity(0.9), lineWidth: 1.5))
-        .shadow(color: .black.opacity(dark ? 0.45 : 0.16), radius: 18, y: 8)
+        Image(nsImage: Self.glyph(phase: phase, zoom: k))
+            .renderingMode(.template)
+            .frame(width: 30 * k, height: 22 * k)
+            .background(RoundedRectangle(cornerRadius: 5 * k, style: .continuous)
+                .fill(Color.primary.opacity(0.14)))
+            .frame(width: Self.size.width, height: Self.size.height)
+            .foregroundStyle(dark ? Color.white : Color.black)
+            // The menu bar strip over the wallpaper under it, as one fill.
+            .background(dark ? Color(red: 0.05, green: 0.10, blue: 0.17) : Color(red: 0.87, green: 0.92, blue: 0.97))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(dark ? Color.white.opacity(0.14) : Color.black.opacity(0.10), lineWidth: 0.5))
+            .shadow(color: .black.opacity(dark ? 0.5 : 0.22), radius: 24, y: 12)
     }
 
     static func glyph(phase: Double?, zoom k: CGFloat) -> NSImage {

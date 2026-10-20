@@ -9,6 +9,7 @@
 #   hero.mp4     the same take, H.264 yuv420p, faststart
 #   poster.png   the first frame
 #   _sheet.png   six key frames for review
+# The intermediate PNG frames go to the Trash afterwards.
 # The frames come from this Mac's built-in display's list of sizes; nothing is
 # switched (the harness rigs the apply path to abort), and live preview is
 # forced off, so no desktop is captured.
@@ -64,5 +65,12 @@ for scheme in light dark; do
         -vf "select='eq(n\,0)+eq(n\,30)+eq(n\,45)+eq(n\,70)+eq(n\,148)+eq(n\,200)',scale=480:-1:flags=lanczos,tile=3x2:padding=8:color=white" \
         -frames:v 1 -fps_mode vfr "$OUT/_sheet$suffix.png"
 done
+
+# The frames are ~350 MB per appearance; keep them with VIBERES_MOTION_KEEP_FRAMES=1.
+if [ "${VIBERES_MOTION_KEEP_FRAMES:-0}" != 1 ]; then
+    for scheme in light dark; do
+        osascript -e "tell application \"Finder\" to delete POSIX file \"$OUT/frames-$scheme\"" >/dev/null
+    done
+fi
 
 ls -l "$OUT"/hero* "$OUT"/poster* "$OUT"/_sheet*
