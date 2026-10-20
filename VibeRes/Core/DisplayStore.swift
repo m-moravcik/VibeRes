@@ -29,6 +29,14 @@ final class DisplayStore {
     /// changes (a captured `before` mode would reference a phantom display).
     let revert = RevertHistory()
 
+    /// Called after a resolution switch went through: a mode applied from the
+    /// menu, or a revert that restored at least one display's mode. Never on
+    /// a refresh, a failed apply, a click on the mode already in use, a revert
+    /// that only moved the menu bar back or a hover preview. The menu bar icon
+    /// plays its switch animation from here.
+    @ObservationIgnored
+    var onModeSwitch: (() -> Void)?
+
     /// Bumps once each time the active display *set* (not just modes) changes —
     /// i.e. a monitor was added or removed. `autoApplyToken` is the UI-facing
     /// signal for profile re-evaluation.
@@ -411,9 +419,9 @@ final class DisplayStore {
         do {
             // Capture the pre-change mode so a follow-up Revert click can
             // restore it. Skip when the click is a no-op (mode === current).
-            if let info = displays.first(where: { $0.id == display }),
-               let current = info.currentMode,
-               current.ioDisplayModeID != mode.ioDisplayModeID {
+            let info = displays.first(where: { $0.id == display })
+            let changed = info?.currentMode?.ioDisplayModeID != mode.ioDisplayModeID
+            if changed, let info, let current = info.currentMode {
                 revert.record(displayID: display, displayName: info.name, before: current)
             }
             // `.forSession` while awaiting confirmation: if the screen turns out
@@ -422,6 +430,9 @@ final class DisplayStore {
             try applyMode(mode, display, confirmFirst ? .forSession : .permanently)
             lastError = nil
             refresh()
+            if changed {
+                onModeSwitch?()
+            }
             if confirmFirst {
                 armConfirmation(mode: mode, display: display)
             }
@@ -545,12 +556,12 @@ final class DisplayStore {
     func performRevert() -> Int {
         let snapshot = revert.consume()
         var failed: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
-        var restored = 0
+        var restoredModes = 0
 
         for entry in snapshot.entries {
             do {
                 try applyMode(entry.before, entry.displayID, .permanently)
-                restored += 1
+                restoredModes += 1
             } catch {
                 // Keep the entry: this display is still in the mode the user
                 // wanted undone, so the way back must survive the attempt.
@@ -562,6 +573,7 @@ final class DisplayStore {
         // Origins go after modes for the same reason profile apply orders
         // them this way: only the post-mode live arrangement is guaranteed to
         // be a consistent layout to translate (F2), never a stale one (F1).
+        var restored = restoredModes
         var failedMain: CGDirectDisplayID?
         if let beforeMain = snapshot.beforeMain {
             let live = liveArrangement()
@@ -593,7 +605,12 @@ final class DisplayStore {
         if !failed.isEmpty || failedMain != nil {
             revert.recordBatch(failed, beforeMain: failedMain)
         }
-        if restored > 0 { refresh() }
+        if restored > 0 {
+            refresh()
+        }
+        if restoredModes > 0 {
+            onModeSwitch?()
+        }
         // Only what actually came back, so a caller cannot report a success
         // that did not happen.
         return restored

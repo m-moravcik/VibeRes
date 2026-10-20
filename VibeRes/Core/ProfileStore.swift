@@ -600,6 +600,11 @@ final class ProfileStore {
         let isExact: Bool
     }
 
+    /// Called after a profile apply switched at least one display's mode.
+    /// Same contract as `DisplayStore.onModeSwitch`.
+    @ObservationIgnored
+    var onModeSwitch: (() -> Void)?
+
     /// Test seam. Reconfiguring displays is the one thing a unit test must not
     /// really do; injecting the transaction lets a test assert that a
     /// three-monitor profile is one commit rather than three, and that partial
@@ -773,6 +778,10 @@ final class ProfileStore {
                     outcomes[change.outcomeIndex].appliedHz = nil
                 }
             }
+        }
+
+        if outcomes.contains(where: { $0.status == .applied || $0.status == .appliedWithFallback }) {
+            onModeSwitch?()
         }
 
         // Phase 2 — main display. Ordered after the mode transaction: modes

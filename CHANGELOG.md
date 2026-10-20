@@ -4,6 +4,23 @@ All notable changes to VibeRes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.6] - 2026-10-20
+
+**Highlights:** VibeRes has its own menu bar icon, and it reacts when you
+switch resolution.
+
+### Changed
+
+- **A menu bar icon of its own.** The generic pair of rectangles is replaced
+  by the VibeRes app icon in miniature: a display with a smaller window in its
+  corner. It is drawn at the size and line weight of the system icons next to
+  it, and like them it follows light, dark and tinted menu bars and the
+  highlight when the menu is open.
+- **The icon reacts when you switch resolution.** When a change goes through,
+  from the menu, a profile or Revert, the small window springs out to fill the
+  screen and settles back into its corner. With Reduce Motion on, the icon
+  stays still.
+
 ## [0.10.5] - 2026-09-30
 
 **Highlights:** The welcome tour opens on the app's own icon.
