@@ -29,6 +29,13 @@ final class DisplayStore {
     /// changes (a captured `before` mode would reference a phantom display).
     let revert = RevertHistory()
 
+    /// Called after a resolution switch went through: a mode applied from the
+    /// menu, or a revert that restored at least one display. Never on a
+    /// refresh, a failed apply or a hover preview, which changes nothing. The
+    /// menu bar icon plays its switch animation from here.
+    @ObservationIgnored
+    var onModeSwitch: (() -> Void)?
+
     /// Bumps once each time the active display *set* (not just modes) changes —
     /// i.e. a monitor was added or removed. `autoApplyToken` is the UI-facing
     /// signal for profile re-evaluation.
@@ -422,6 +429,7 @@ final class DisplayStore {
             try applyMode(mode, display, confirmFirst ? .forSession : .permanently)
             lastError = nil
             refresh()
+            onModeSwitch?()
             if confirmFirst {
                 armConfirmation(mode: mode, display: display)
             }
@@ -593,7 +601,10 @@ final class DisplayStore {
         if !failed.isEmpty || failedMain != nil {
             revert.recordBatch(failed, beforeMain: failedMain)
         }
-        if restored > 0 { refresh() }
+        if restored > 0 {
+            refresh()
+            onModeSwitch?()
+        }
         // Only what actually came back, so a caller cannot report a success
         // that did not happen.
         return restored

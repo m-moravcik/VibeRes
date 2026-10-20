@@ -7,6 +7,7 @@ struct VibeResApp: App {
     @State private var profileStore: ProfileStore
     @State private var updater: UpdaterProviding
     @State private var preferences: Preferences
+    @State private var iconAnimator: MenuBarIconAnimator
 
     init() {
         #if DEBUG
@@ -17,8 +18,16 @@ struct VibeResApp: App {
         }
         #endif
         Self.installDisplayNamer()
-        _displayStore = State(initialValue: DisplayStore())
-        _profileStore = State(initialValue: ProfileStore())
+        // The menu bar icon reacts to every resolution switch that went
+        // through, from the menu or from a profile, manual or automatic.
+        let iconAnimator = MenuBarIconAnimator()
+        let displays = DisplayStore()
+        let profiles = ProfileStore()
+        displays.onModeSwitch = { [weak iconAnimator] in iconAnimator?.play() }
+        profiles.onModeSwitch = { [weak iconAnimator] in iconAnimator?.play() }
+        _iconAnimator = State(initialValue: iconAnimator)
+        _displayStore = State(initialValue: displays)
+        _profileStore = State(initialValue: profiles)
         // Sparkle schedules its own checks; there is nothing to kick off here.
         _updater = State(initialValue: makeUpdaterController())
         let prefs = Preferences()
@@ -55,8 +64,7 @@ struct VibeResApp: App {
                 .environment(preferences)
                 .frame(minWidth: 280)
         } label: {
-            Image(systemName: "rectangle.on.rectangle.angled")
-                .accessibilityLabel("VibeRes")
+            MenuBarLabel(animator: iconAnimator)
         }
         .menuBarExtraStyle(.window)
 
@@ -72,5 +80,16 @@ struct VibeResApp: App {
                 .environment(updater.updateStatus)
                 .environment(preferences)
         }
+    }
+}
+
+/// The menu bar icon, redrawn for the animator's phase while a switch
+/// animation plays.
+private struct MenuBarLabel: View {
+    let animator: MenuBarIconAnimator
+
+    var body: some View {
+        Image(nsImage: MenuBarIcon.image(at: animator.phase))
+            .accessibilityLabel("VibeRes")
     }
 }

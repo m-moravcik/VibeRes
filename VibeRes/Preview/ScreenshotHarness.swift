@@ -250,8 +250,8 @@ private struct HeroScene: View {
                 Spacer()
                 // What the app's MenuBarExtra label draws, highlighted the way
                 // the menu bar marks the item whose window is open.
-                Image(systemName: "rectangle.on.rectangle.angled")
-                    .font(.system(size: 14))
+                Image(nsImage: MenuBarIcon.image)
+                    .renderingMode(.template)
                     .frame(width: 30, height: 22)
                     .background(RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(Color.primary.opacity(0.14)))
