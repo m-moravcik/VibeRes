@@ -36,9 +36,10 @@ enum MenuBarIcon {
     /// re-runs for each backing scale it is asked for.
     @MainActor static let image: NSImage = make(phase: nil)
 
-    /// The icon at `phase` seconds into the switch animation; nil is idle.
+    /// The icon at `phase` seconds into the switch animation; nil is idle, and
+    /// so is every frame with the window in its corner.
     @MainActor static func image(at phase: Double?) -> NSImage {
-        guard let phase else { return image }
+        guard let phase, growth(at: phase) != 0 else { return image }
         return make(phase: phase)
     }
 

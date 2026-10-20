@@ -55,7 +55,8 @@ struct MenuBarIconAnimatorTests {
         let rig = Rig()
         let animator = rig.animator()
         animator.play()
-        for _ in 0..<40 { rig.fire(after: MenuBarIconAnimator.frameInterval) }
+        let frames = Int((MenuBarIcon.duration / MenuBarIconAnimator.frameInterval).rounded(.up)) + 1
+        for _ in 0..<frames { rig.fire(after: MenuBarIconAnimator.frameInterval) }
 
         #expect(animator.phase == nil)
         #expect(!animator.isTicking)
@@ -77,7 +78,7 @@ struct MenuBarIconAnimatorTests {
 
         #expect(rig.started == 1, "one ticker, however many switches")
         #expect(animator.phase == 0.5)
-        rig.fire(after: 0.6)
+        rig.fire(after: MenuBarIcon.duration)
         #expect(animator.phase == nil)
         #expect(rig.cancelled == 1)
     }
