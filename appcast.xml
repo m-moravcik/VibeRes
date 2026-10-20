@@ -6,26 +6,27 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.10.5</title>
-      <pubDate>Wed, 30 Sep 2026 16:14:32 +0000</pubDate>
-      <sparkle:version>28</sparkle:version>
-      <sparkle:shortVersionString>0.10.5</sparkle:shortVersionString>
+      <title>0.10.6</title>
+      <pubDate>Tue, 20 Oct 2026 05:57:02 +0000</pubDate>
+      <sparkle:version>29</sparkle:version>
+      <sparkle:shortVersionString>0.10.6</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> The welcome tour opens on the app&#x27;s own icon.</p>
+<p><strong>Highlights:</strong> VibeRes has its own menu bar icon, and it reacts when you switch resolution.</p>
 <h3>Changed</h3>
 <ul>
-<li><strong>The welcome tour starts with the VibeRes icon.</strong> Its first step now shows the app&#x27;s own icon instead of a symbol, the way Eject Guard&#x27;s tour does, and every step of the tour keeps the same height.</li>
+<li><strong>A menu bar icon of its own.</strong> The generic pair of rectangles is replaced by the VibeRes app icon in miniature: a display with a smaller window in its corner. It is drawn at the size and line weight of the system icons next to it, and like them it follows light, dark and tinted menu bars and the highlight when the menu is open.</li>
+<li><strong>The icon reacts when you switch resolution.</strong> When a change goes through, from the menu, a profile or Revert, the small window springs out to fill the screen and settles back into its corner. With Reduce Motion on, the icon stays still.</li>
 </ul>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.5/VibeRes-0.10.5.zip"
-                 sparkle:edSignature="bPq4kF4w9IvLPQnQNET+Hi1eYl5LNMxBer4iFqyxzv1WDWff7dzlKJEpacXKfg9UR9ebcthiL72DyNNHtaC1CQ=="
-                 length="4109401"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.6/VibeRes-0.10.6.zip"
+                 sparkle:edSignature="cpVW5dzAoPQtEA5tCszj84Lmiqhylt0O5eqnQ4oDznrDrKBzBEIOm+f+3NcFD9Z+TpxD9uZ2v1Tj/PjPT5b+BA=="
+                 length="4128505"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: DmJaE54SR3EumaZ9r4/avSp/o4n7r5k+MROaWdqomlsNAurHHI0f6QpmZvF2vgJ2n3+y24mxW1UbHwaTaptUCQ==
-length: 1365
+edSignature: C+WCSMiDCLdSh/p3rYy8B23YdLQq5FHd4QsccLZndPEBfXHFDKpnXzgZCSVZtavDNAlTzsfg6MPzNopvSLTVAg==
+length: 1774
 -->
