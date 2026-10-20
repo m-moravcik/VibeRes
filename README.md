@@ -4,7 +4,7 @@
 
 A modern menubar resolution switcher for macOS. Native SwiftUI, live hover preview, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
 
-> Requires **macOS 26 Tahoe**. Universal binary — developed and tested on Apple silicon, and the Intel slice ships for the Macs Tahoe still supports. See [Older macOS](#older-macos) for backporting notes.
+> Requires **macOS 26 Tahoe** or later. Universal binary — developed and tested on Apple silicon, and the Intel slice ships for the Macs Tahoe still supports. See [Older macOS](#older-macos) for backporting notes.
 
 <p align="center">
   <picture>
@@ -47,7 +47,7 @@ Or use Xcode (`make app`) — see [Build](#build) below.
 
 ## Switching resolution
 
-Click the menu-bar icon. The popover shows every connected display with its current mode.
+Click the menu-bar icon, a small display with a window in its corner. The popover shows every connected display with its current mode. When a switch goes through, from the popover, a profile or Revert, the window in the icon springs out to fill the screen and settles back, so you can tell it worked without opening anything. Reduce Motion turns the animation off.
 
 <p align="center">
   <picture>
