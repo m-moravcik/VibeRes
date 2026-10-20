@@ -50,7 +50,7 @@ MIN_OS="$(awk -F'"' '/MACOSX_DEPLOYMENT_TARGET:/ {print $2; exit}' project.yml)"
 # not the marketing version. Getting this wrong makes every client see "no
 # update" with nothing logged anywhere.
 LENGTH="$(stat -f%z "$ZIP")"
-SIGNATURE="$("$SIGN_UPDATE" "${SIGN_ARGS[@]}" -p "$ZIP")" || die "sign_update failed"
+SIGNATURE="$("$SIGN_UPDATE" ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} -p "$ZIP")" || die "sign_update failed"
 [ -n "$SIGNATURE" ] || die "sign_update produced no signature"
 
 # Release notes: the matching CHANGELOG section, as HTML so Sparkle renders
@@ -135,7 +135,7 @@ XML
 # Sign the feed itself. Without this, someone able to substitute the feed cannot
 # ship a malicious build — the enclosure signature stops that — but can pin every
 # client to an older, validly signed release.
-"$SIGN_UPDATE" "${SIGN_ARGS[@]}" --disable-signing-warning "$OUT" >/dev/null \
+"$SIGN_UPDATE" ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} --disable-signing-warning "$OUT" >/dev/null \
   || die "failed to sign the appcast feed"
 
 grep -q 'sparkle:edSignature' "$OUT" || die "appcast has no enclosure signature"
