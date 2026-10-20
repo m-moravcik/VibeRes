@@ -19,10 +19,18 @@ import SwiftUI
 enum MenuBarIcon {
     static let size = NSSize(width: 22, height: 16)
 
-    /// Length of the switch animation, in seconds. The window is back in its
-    /// corner by 0.85 s, so the last frames are the idle icon and stopping is
-    /// invisible.
-    static let duration: Double = 0.9
+    /// Length of the switch animation, in seconds. It waits out the moment the
+    /// displays go dark while the new mode is applied, grows slowly enough to
+    /// catch the eye, holds, and is back in its corner by 2.3 s, so the last
+    /// frames are the idle icon and stopping is invisible.
+    static let duration: Double = 2.4
+
+    /// The beats of the animation, in seconds.
+    private enum Beat {
+        /// The displays usually flicker while a mode is applied; start after.
+        static let growOut = 0.6...1.35
+        static let settleBack = 1.75...2.3
+    }
 
     /// The idle icon. One instance for the app's lifetime; the drawing handler
     /// re-runs for each backing scale it is asked for.
@@ -50,8 +58,8 @@ enum MenuBarIcon {
     /// overshoot.
     static func growth(at phase: Double?) -> Double {
         guard let t = phase else { return 0 }
-        let out = Motion.spring(Motion.progress(t, 0, 0.45), cycles: 1.0)
-        let back = Motion.easeInOut(Motion.progress(t, 0.5, 0.85))
+        let out = Motion.spring(Motion.progress(t, Beat.growOut.lowerBound, Beat.growOut.upperBound), cycles: 1.0)
+        let back = Motion.easeInOut(Motion.progress(t, Beat.settleBack.lowerBound, Beat.settleBack.upperBound))
         return out * (1 - back)
     }
 

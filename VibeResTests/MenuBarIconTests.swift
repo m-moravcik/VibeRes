@@ -27,7 +27,7 @@ struct MenuBarIconTests {
         #expect((samples.max() ?? 0) > 1, "a small overshoot")
         #expect(MenuBarIcon.growth(at: MenuBarIcon.duration) == 0)
         #expect(MenuBarIcon.growth(at: nil) == 0)
-        #expect(MenuBarIcon.duration <= 1)
+        #expect(MenuBarIcon.duration <= 2.5)
     }
 
     @Test func fitsTheMenuBar() {
