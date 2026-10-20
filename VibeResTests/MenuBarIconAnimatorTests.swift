@@ -133,6 +133,42 @@ struct MenuBarIconAnimatorTests {
         #expect(rig.started == 0)
     }
 
+    @Test("Clicking the mode already in use does not play it")
+    func currentModeClickDoesNotPlay() throws {
+        let rig = Rig()
+        let animator = rig.animator()
+        let store = DisplayStore()
+        store.onModeSwitch = { animator.play() }
+        store.applyMode = { _, _, _ in }
+        let display = try #require(store.displays.first, "no active display on this machine")
+        let current = try #require(display.currentMode)
+
+        store.apply(current, to: display.id)
+
+        #expect(!animator.isTicking)
+        #expect(rig.started == 0)
+    }
+
+    @Test("A revert that only moves the menu bar back does not play it")
+    func mainOnlyRevertDoesNotPlay() {
+        let rig = Rig()
+        let animator = rig.animator()
+        let store = DisplayStore()
+        store.onModeSwitch = { animator.play() }
+        var currentMain: CGDirectDisplayID = 7
+        store.liveArrangement = {
+            (main: currentMain, bounds: [
+                5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+                7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        store.applyOrigins = { _, _ in currentMain = 5 }
+        store.revert.recordBatch([], beforeMain: 5)
+
+        #expect(store.performRevert() == 1, "the menu bar did come back")
+        #expect(!animator.isTicking)
+    }
+
     @Test("A successful revert plays it")
     func revertPlays() throws {
         let rig = Rig()

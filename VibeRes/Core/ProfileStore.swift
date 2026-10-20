@@ -600,15 +600,15 @@ final class ProfileStore {
         let isExact: Bool
     }
 
-    /// Test seam. Reconfiguring displays is the one thing a unit test must not
-    /// really do; injecting the transaction lets a test assert that a
-    /// three-monitor profile is one commit rather than three, and that partial
-    /// failure is reported per display.
     /// Called after a profile apply switched at least one display's mode.
     /// Same contract as `DisplayStore.onModeSwitch`.
     @ObservationIgnored
     var onModeSwitch: (() -> Void)?
 
+    /// Test seam. Reconfiguring displays is the one thing a unit test must not
+    /// really do; injecting the transaction lets a test assert that a
+    /// three-monitor profile is one commit rather than three, and that partial
+    /// failure is reported per display.
     @ObservationIgnored
     var applyBatch: ([ResolutionSwitcher.BatchChange], CGConfigureOption) throws
         -> ResolutionSwitcher.BatchOutcome = { try ResolutionSwitcher.applyBatch($0, scope: $1) }
