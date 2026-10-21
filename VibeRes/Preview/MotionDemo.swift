@@ -75,15 +75,10 @@ enum MotionDemo {
             fail("pass -VibeRes.LivePreviewEnabled NO: live preview would capture the real desktop")
         }
 
-        // An asleep display drops out of the active list. Its modes are still
-        // readable from the online list, so the demo does not need to wake it.
-        var known = displays.displays
-        if known.isEmpty {
-            known = onlineSnapshot()
+        let known = displays.displays
+        guard let display = known.first(where: { CGDisplayIsBuiltin($0.id) != 0 }) else {
+            fail("no active built-in display: open the lid and wake the screen")
         }
-        guard let display = known.first(where: { CGDisplayIsBuiltin($0.id) != 0 })
-            ?? known.first(where: \.isMain) ?? known.first
-        else { fail("no display to render") }
         let scaled = display.groups.filter(\.isHiDPI)
         let list = scaled.isEmpty ? display.groups : scaled
         guard list.count >= 3,
@@ -103,13 +98,7 @@ enum MotionDemo {
             }
         }
 
-        let schemes: [ColorScheme] = (ProcessInfo.processInfo.environment["VIBERES_MOTION_SCHEMES"] ?? "light,dark")
-            .split(separator: ",").compactMap { $0 == "dark" ? .dark : ($0 == "light" ? .light : nil) }
-        // A comma-separated list of frame numbers renders only those, for review.
-        let onlyFrames = ProcessInfo.processInfo.environment["VIBERES_MOTION_FRAMES"]
-            .map { Set($0.split(separator: ",").compactMap { Int($0) }) }
-
-        for scheme in schemes {
+        for scheme in [ColorScheme.light, .dark] {
             // The popover in every state the loop passes through: each current
             // size, with nothing or one row under the pointer.
             var states: [PopoverState] = []
@@ -147,7 +136,6 @@ enum MotionDemo {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
                 let count = Int((loop * fps).rounded())
                 for frame in 0..<count {
-                    if let onlyFrames, !onlyFrames.contains(frame) { continue }
                     let t = Double(frame) / fps
                     let f = script.frame(at: t, states: states)
                     let image = render(Stage(frame: f, scheme: scheme))
@@ -159,28 +147,6 @@ enum MotionDemo {
             print("wrote \(dir.path)")
         }
         exit(0)
-    }
-
-    /// `DisplayManager.snapshot` over the online rather than the active list,
-    /// read only. The name falls back to what macOS calls a Retina built-in
-    /// when the screen is asleep and `NSScreen` does not list it.
-    private static func onlineSnapshot() -> [DisplayInfo] {
-        var count: UInt32 = 0
-        guard CGGetOnlineDisplayList(0, nil, &count) == .success, count > 0, count <= 32 else { return [] }
-        var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        guard CGGetOnlineDisplayList(count, &ids, &count) == .success else { return [] }
-        let options = [kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue] as CFDictionary
-        return ids.compactMap { id in
-            guard let all = CGDisplayCopyAllDisplayModes(id, options) as? [CGDisplayMode] else { return nil }
-            let modes = all.filter { $0.isUsableForDesktopGUI() }
-            guard !modes.isEmpty else { return nil }
-            var name = DisplayNamer.resolve(id)
-            if CGDisplayIsBuiltin(id) != 0, name == DisplayNamer.fallback(for: id) {
-                name = "Built-in Retina Display"
-            }
-            return DisplayInfo(id: id, name: name, isMain: CGDisplayIsMain(id) != 0, modes: modes,
-                               currentMode: CGDisplayCopyDisplayMode(id), groups: ResolutionGroup.build(from: modes))
-        }
     }
 
     private static func mid(_ band: ClosedRange<CGFloat>) -> CGFloat {

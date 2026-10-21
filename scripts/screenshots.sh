@@ -5,7 +5,7 @@
 #   scripts/screenshots.sh        # English, into build/screenshots/en
 #   scripts/screenshots.sh sk     # Slovak, for the web.pexelo portfolio
 #
-# Writes root, detail, save, revert, hero (popover under the menu bar, README) and
+# Writes root, detail, save, revert, hero (popover under the menu bar) and
 # banner (1920x1080) in -light and -dark, plus icon.png. The displays are this
 # Mac's; the profiles are invented. Copy what you need into docs/screenshots.
 #

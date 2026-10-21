@@ -6,13 +6,11 @@
 #
 # Writes, per appearance (light, then dark with a -dark suffix):
 #   hero.gif     8 s seamless loop, 960 px wide, 30 fps
-#   hero.mp4     the same take, H.264 yuv420p, faststart
-#   poster.png   the first frame
-#   _sheet.png   six key frames for review
 # The intermediate PNG frames go to the Trash afterwards.
-# The frames come from this Mac's built-in display's list of sizes; nothing is
-# switched (the harness rigs the apply path to abort), and live preview is
-# forced off, so no desktop is captured.
+# The frames come from this Mac's built-in display's list of sizes, so the lid
+# must be open and the screen awake. Nothing is switched (the harness rigs the
+# apply path to abort), and live preview is forced off, so no desktop is
+# captured.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -55,15 +53,6 @@ for scheme in light dark; do
     ffmpeg -v error -y -framerate $FPS -i "$frames" -i "$palette" \
         -lavfi "scale=$WIDTH:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=sierra2_4a:diff_mode=rectangle" \
         -loop 0 "$OUT/hero$suffix.gif"
-    ffmpeg -v error -y -framerate $FPS -i "$frames" \
-        -vf "scale=$WIDTH:-2:flags=lanczos" -c:v libx264 -preset slow -crf 20 \
-        -pix_fmt yuv420p -movflags +faststart "$OUT/hero$suffix.mp4"
-    ffmpeg -v error -y -i "$OUT/frames-$scheme/frame_0000.png" \
-        -vf "scale=$WIDTH:-1:flags=lanczos" "$OUT/poster$suffix.png"
-    # Rest, hover with preview, dark, icon fully grown, the way back, settled.
-    ffmpeg -v error -y -framerate $FPS -i "$frames" \
-        -vf "select='eq(n\,0)+eq(n\,30)+eq(n\,45)+eq(n\,70)+eq(n\,148)+eq(n\,200)',scale=480:-1:flags=lanczos,tile=3x2:padding=8:color=white" \
-        -frames:v 1 -fps_mode vfr "$OUT/_sheet$suffix.png"
 done
 
 # The frames are ~350 MB per appearance; keep them with VIBERES_MOTION_KEEP_FRAMES=1.
@@ -73,4 +62,4 @@ if [ "${VIBERES_MOTION_KEEP_FRAMES:-0}" != 1 ]; then
     done
 fi
 
-ls -l "$OUT"/hero* "$OUT"/poster* "$OUT"/_sheet*
+ls -l "$OUT"/hero*.gif
