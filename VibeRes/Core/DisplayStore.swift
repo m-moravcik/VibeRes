@@ -274,6 +274,15 @@ final class DisplayStore {
         applyRefresh(triggeredByCallback: false)
     }
 
+    #if DEBUG
+    /// Demo seam for the README motion harness (`MotionDemo`): shows `snapshot`
+    /// as if macOS had reported it, so the popover can be drawn in the state a
+    /// switch would leave it in without switching anything. Debug builds only.
+    func showForDemo(_ snapshot: [DisplayInfo]) {
+        displays = snapshot
+    }
+    #endif
+
     /// Coalesces bursts of reconfiguration callbacks (macOS often fires several in rapid
     /// succession during a single mode change) into one refresh ~200ms after the last event.
     /// This also avoids briefly seeing transient/ghost displays during the change.

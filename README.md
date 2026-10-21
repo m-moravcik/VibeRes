@@ -8,8 +8,8 @@ A modern menubar resolution switcher for macOS. Native SwiftUI, live hover previ
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/hero-dark.png">
-    <img src="docs/screenshots/hero-light.png" width="440" alt="VibeRes open under its menu bar icon: saved profiles on top, the built-in display and an external monitor with their current modes below">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.gif">
+    <img src="docs/hero.gif" alt="A demo desktop with VibeRes open on the built-in display's sizes. The pointer moves up the list with the hover preview of each size, clicks 1800 × 1169, the screen goes dark for a moment and comes back with more room, while the menu bar icon plays its switch animation, shown enlarged in a loupe at the top left. Then it switches back to 1512 × 982.">
   </picture>
 </p>
 

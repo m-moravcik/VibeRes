@@ -16,6 +16,9 @@ struct VibeResApp: App {
         if let output = ScreenshotHarness.requestedOutput {
             ScreenshotHarness.run(into: output)
         }
+        if let output = MotionDemo.requestedOutput {
+            MotionDemo.run(into: output)
+        }
         #endif
         Self.installDisplayNamer()
         // The menu bar icon reacts to every resolution switch that went
