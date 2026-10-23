@@ -65,4 +65,63 @@ enum Design {
         static let warningFill = Color.orange.opacity(0.12)
         static let problemFill = Color.red.opacity(0.10)
     }
+
+    /// Motion in the popover. Every animation here has one job, said next to
+    /// it, and a Reduce Motion behaviour: movement becomes a `quick` crossfade
+    /// or the end state, while a fade of colour (which moves nothing) stays.
+    /// Calm rather than playful: springs settle without a visible bounce
+    /// except where something lands, and everything is interruptible, so a
+    /// second click never waits for the first animation.
+    ///
+    /// The vocabulary is ClipShot's (`Design.Motion` there), so the sibling
+    /// apps move alike.
+    enum Motion {
+        /// Hover tints and small state changes: a crossfade, not a pop. Also
+        /// what every movement below becomes under Reduce Motion.
+        static let quick: Animation = .easeInOut(duration: 0.18)
+        /// Rows that make room for something new, or close up after it.
+        static let layout: Animation = .smooth(duration: 0.25)
+        /// A size or rate that changed rolls its digits to the new value, so
+        /// the eye sees what changed and to what.
+        static let number: Animation = .smooth(duration: 0.35)
+
+        /// A press: the control gives under the pointer, confirming the click
+        /// before the displays blank for the mode change.
+        static let press: Animation = .snappy(duration: 0.14)
+        static let pillPressScale: CGFloat = 0.95
+        static let cardPressScale: CGFloat = 0.985
+
+        /// The chevron of a display card leans towards where a click takes
+        /// you.
+        static let chevronLean: CGFloat = 2
+
+        /// The note under the pills drops in from just above, a beat after
+        /// the rows under it start making room, so it never lands on a card
+        /// still moving out of its way. It leaves by fading, faster, as exits
+        /// should.
+        static let noteIn: Animation = .spring(duration: 0.3, bounce: 0.2).delay(0.08)
+        static let noteDrop: CGFloat = 6
+        static let leave: Animation = .smooth(duration: 0.2)
+
+        /// The highlighted refresh rate slides to the one just picked, so the
+        /// row reads as one control that changed its value.
+        static let chip: Animation = .snappy(duration: 0.28)
+        /// The MAIN badge travels to the display that became main.
+        static let badge: Animation = .spring(duration: 0.45, bounce: 0.15)
+
+        /// A display card whose mode just changed lights up and fades back,
+        /// pointing at the one of several displays a profile actually
+        /// changed. A fade of colour, so it stays under Reduce Motion.
+        static let changedGlowOpacity: Double = 0.16
+        static let changedGlowIn: TimeInterval = 0.15
+        static let changedGlowHold: TimeInterval = 0.35
+        static let changedGlowOut: TimeInterval = 0.9
+
+        // A profile pill that becomes active swaps its symbol for a checkmark
+        // and bounces it once, with the system's own symbol bounce. It needs
+        // no delay of its own: the pill turns active on the refresh after the
+        // displays come back, around 0.4 to 0.8 s after the click, which is
+        // when the menu bar icon's window springs out (`MenuBarIcon`, from
+        // 0.6 s). Reduce Motion: the swap crossfades, no bounce.
+    }
 }

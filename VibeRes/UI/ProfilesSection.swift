@@ -11,6 +11,7 @@ struct ProfilesSection: View {
     @Environment(DisplayStore.self) private var displays
     @Environment(Preferences.self) private var preferences
     @Environment(\.popoverSession) private var popoverSession
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var mode: Mode = .idle
     @State private var note = PopoverNote<NoteBody>()
     /// Tracks the last auto-apply signal we acted on so we don't re-apply the
@@ -65,6 +66,19 @@ struct ProfilesSection: View {
         /// profile store. Inline for the same reason as `confirmingApply`: an
         /// NSAlert dismisses the popover out from under the question.
         case confirmingDelete(profileID: UUID, name: String)
+
+        /// Which panel is up, without what is typed into it, so switching
+        /// panels animates and typing a name does not.
+        var kind: Int {
+            switch self {
+            case .idle: return 0
+            case .saving: return 1
+            case .renaming: return 2
+            case .editing: return 3
+            case .confirmingApply: return 4
+            case .confirmingDelete: return 5
+            }
+        }
     }
 
     struct ConfirmApplyState: Equatable {
@@ -163,20 +177,25 @@ struct ProfilesSection: View {
             .padding(.horizontal, Design.Spacing.l)
             .padding(.top, Design.Spacing.s)
 
-            switch mode {
-            case .idle:
-                idlePillBar
-            case .saving:
-                saveForm
-            case .renaming:
-                renameForm
-            case .editing:
-                editForm
-            case .confirmingApply:
-                confirmApplyPanel
-            case .confirmingDelete:
-                confirmDeletePanel
+            // Each panel takes the pills' place by crossfading while the rows
+            // under it make room (`layout`), rather than cutting in.
+            Group {
+                switch mode {
+                case .idle:
+                    idlePillBar
+                case .saving:
+                    saveForm
+                case .renaming:
+                    renameForm
+                case .editing:
+                    editForm
+                case .confirmingApply:
+                    confirmApplyPanel
+                case .confirmingDelete:
+                    confirmDeletePanel
+                }
             }
+            .transition(.opacity)
 
             // Watch for display add/remove events and settled wake refreshes;
             // mode-only changes (user manually picks a different resolution)
@@ -199,8 +218,13 @@ struct ProfilesSection: View {
                     note.dismiss()
                 }
                 .padding(.top, 2)
+                // A new note, even with the same words, arrives as a new one.
+                .id(current.generation)
+                .transition(.note(reduceMotion: reduceMotion))
             }
         }
+        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: note.current?.generation)
+        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: mode.kind)
         .padding(.bottom, Design.Spacing.xs)
         .onAppear {
             if opensSaveForm, mode == .idle {
