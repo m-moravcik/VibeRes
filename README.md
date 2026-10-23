@@ -16,7 +16,7 @@ Available in six languages: English, Slovak, Czech, German, Spanish and French.
 </p>
 
 [![CI](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml/badge.svg)](https://github.com/m-moravcik/VibeRes/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-299%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 [![Buy me a coffee](https://img.shields.io/badge/buy%20me%20a%20coffee-pexelo-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pexelo)
 
@@ -183,7 +183,7 @@ Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.a
 brew install xcodegen
 make app          # GUI
 make cli          # viberes binary
-make test         # 299 tests, 47 suites, Swift Testing
+make test         # the Swift Testing suite
 ```
 
 `project.yml` is the source of truth. `*.xcodeproj` is regenerated and not committed.

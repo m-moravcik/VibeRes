@@ -6,7 +6,7 @@ name: Release
 #   3. Import the Developer ID certificate into a throwaway keychain
 #   4. Build, sign, notarize and staple VibeRes.app, then package it as
 #      VibeRes-X.Y.Z.zip (scripts/release-signed.sh does all of this)
-#   5. Extract the matching CHANGELOG section as release notes
+#   5. Take release-notes/X.Y.Z.md as the release notes
 #   6. Create the GitHub Release with the ZIP attached
 #   7. Sync Formula/viberes.rb and Casks/viberes-app.rb to the tap repo
 #
@@ -107,6 +107,24 @@ jobs:
             exit 1
           fi
           echo "Version match: $PROJECT_VERSION"
+
+      - name: Verify the release notes exist
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Checked before anything is built: the notes are the GitHub release
+          # body and Sparkle's update window, so a release without them, or
+          # with an em dash the owner's rules forbid, stops here.
+          NOTES="release-notes/$VERSION.md"
+          if [ ! -s "$NOTES" ] || ! grep -q '[^[:space:]]' "$NOTES"; then
+            echo "::error::$NOTES is missing or empty; write it before tagging"
+            exit 1
+          fi
+          if grep -q $'\xe2\x80\x94' "$NOTES"; then
+            echo "::error::$NOTES contains an em dash"
+            exit 1
+          fi
+          echo "Release notes: $NOTES"
 
       - name: Verify the build number increased
         run: |
@@ -223,22 +241,14 @@ jobs:
           # The script writes zip / sha256 / version to $GITHUB_OUTPUT itself.
           ./scripts/release-signed.sh
 
-      - name: Extract release notes from CHANGELOG
+      - name: Take the release notes
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Pull the section between "## [VERSION]" and the next "## [" header.
-          # If the section isn't found, fall back to a generic notes string.
-          awk -v ver="## [$VERSION]" '
-            index($0, ver) == 1 { found=1; next }
-            found && /^## \[/ { exit }
-            found { print }
-          ' CHANGELOG.md > release-notes.md
-          if [ ! -s release-notes.md ] || ! grep -q '[^[:space:]]' release-notes.md; then
-            echo "::warning::No '## [$VERSION]' section in CHANGELOG.md — using generic notes."
-            printf 'See [CHANGELOG.md](https://github.com/%s/blob/main/CHANGELOG.md) for full notes.\n' \
-              "$GITHUB_REPOSITORY" > release-notes.md
-          fi
+          # release-notes/X.Y.Z.md, checked to exist before the build. Since
+          # 0.11.0 the notes live there, as in the sibling apps; CHANGELOG.md
+          # is history up to 0.10.6 and is never edited by hand.
+          cp "release-notes/$VERSION.md" release-notes.md
           cat release-notes.md
 
       - name: Create GitHub Release
@@ -392,8 +402,8 @@ jobs:
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
 
       # Notes go to a file, never through $GITHUB_OUTPUT into a shell argument.
-      # CHANGELOG text is arbitrary markdown: a backtick or a `$(` in a release
-      # entry would be evaluated by the shell in the step that consumes it.
+      # Release notes are arbitrary markdown: a backtick or a `$(` in them
+      # would be evaluated by the shell in the step that consumes it.
 
   sync-tap:
     name: Sync formula and cask to tap

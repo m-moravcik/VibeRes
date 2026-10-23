@@ -241,8 +241,12 @@ pre-built binary, it needs its own Developer ID signature — and
 
 1. Bump `MARKETING_VERSION` (and `CURRENT_PROJECT_VERSION`) in `project.yml`.
 2. Bump `version` and `tag:` in `Formula/viberes.rb`.
-3. Add a new section in `CHANGELOG.md` titled `## [X.Y.Z] — YYYY-MM-DD` with
-   the user-visible changes.
+3. Write `release-notes/X.Y.Z.md`: short bullets of what changed for the user,
+   ending with "Signed with Developer ID, notarized and stapled. Requires
+   macOS 26." No em dash (the workflow refuses one). It becomes the GitHub
+   release body and Sparkle's update window. Since 0.11.0 the notes live
+   there, as in ClipShot and Eject Guard; `CHANGELOG.md` is history up to
+   0.10.6 and is never edited by hand.
 4. Commit and push to `main`.
 5. Tag and push:
    ```bash
@@ -257,8 +261,8 @@ pre-built binary, it needs its own Developer ID signature — and
    - Build, sign, **notarize** and **staple** VibeRes.app, then package the
      stapled bundle as `VibeRes-X.Y.Z.zip` and compute its SHA256
      (`scripts/release-signed.sh`).
-   - Extract the matching `## [X.Y.Z]` section from `CHANGELOG.md` as release
-     notes.
+   - Take `release-notes/X.Y.Z.md` as the release notes (checked to exist
+     before anything is built).
    - Create the GitHub Release with the ZIP attached.
    - Update `Formula/viberes.rb` and `Casks/viberes-app.rb` in the tap, then
      commit and push.
@@ -277,7 +281,7 @@ make signed-app
 # 2. Tag + GitHub Release
 git tag "v${VERSION}" && git push --tags
 gh release create "v${VERSION}" "artifacts/VibeRes-${VERSION}.zip" \
-  --title "VibeRes ${VERSION}" --notes-file CHANGELOG.md
+  --title "VibeRes ${VERSION}" --notes-file "release-notes/${VERSION}.md"
 
 # 3. Sync tap
 git clone https://github.com/m-moravcik/homebrew-viberes /tmp/tap
