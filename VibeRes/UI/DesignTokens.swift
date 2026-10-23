@@ -30,6 +30,10 @@ enum Design {
         /// The height of a small segmented control on macOS 26, which a pill
         /// on the same line matches so the two sit level.
         static let inlineControlHeight: CGFloat = 20
+        /// How far a display card's title may shrink to fit beside its MAIN
+        /// badge before it truncates; enough for the longest built-in display
+        /// name in the six languages.
+        static let cardTitleMinimumScale: CGFloat = 0.85
     }
 
     enum Typography {
