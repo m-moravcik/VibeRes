@@ -169,6 +169,8 @@ Two AppIntents auto-register with Shortcuts, Spotlight, and Siri:
 - **Set Display Resolution** — pick a display + width + height (+ optional refresh, HiDPI and variable refresh preference). Closest-match scoring.
 - **Get Current Resolution** — for conditional workflows ("if my MacBook is at 1800×1169, switch to 1280×800").
 
+Both actions return the resolution as text like `2560 × 1440 @ 160 Hz`. When a display that offers both a variable and a fixed mode at that rate runs the variable one, the text reads `2560 × 1440 @ 160 Hz VRR`, so a Shortcut comparing the text can tell Variable from fixed. A variable mode without a fixed twin, such as ProMotion's 120 Hz, keeps the plain `@ 120 Hz`.
+
 Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings — pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
 
 ---
