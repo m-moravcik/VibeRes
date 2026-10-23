@@ -180,7 +180,9 @@ private struct DisplayCard: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Design.Spacing.m) {
-                Image(systemName: display.isMain ? "laptopcomputer" : "display")
+                // The kind of display, not whether it is main: the laptop used
+                // to move to whichever display had the menu bar.
+                Image(systemName: CGDisplayIsBuiltin(display.id) != 0 ? "laptopcomputer" : "display")
                     .font(.system(size: 18))
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
