@@ -1,16 +1,15 @@
-import CoreGraphics
 import Foundation
 
 /// The plain-text report behind Settings → Debug → Copy diagnostics. Untranslated
 /// on purpose: it is read by the maintainer, not shown in the app. Redacted by
-/// construction (no serial numbers are ever read, displays are summarised by name
-/// and mode) and scrubbed again at the end for home and volume paths.
+/// construction (no serial numbers are ever read, display names are never written:
+/// displays are summarised by `DisplayLabel` and mode) and scrubbed again at the
+/// end for home and volume paths.
 enum Diagnostics {
     static let logLineCount = 50
 
     struct DisplaySummary: Equatable {
-        let name: String
-        let isBuiltIn: Bool
+        let label: String
         let isMain: Bool
         let width: Int
         let height: Int
@@ -33,12 +32,9 @@ enum Diagnostics {
         var logEnabled: Bool
     }
 
-    /// Display names are model names ("LG UltraFine"), not personal; a name that
-    /// embeds a path-like user string is caught by `scrub`.
     static func summarise(_ info: DisplayInfo) -> DisplaySummary {
         DisplaySummary(
-            name: info.name,
-            isBuiltIn: CGDisplayIsBuiltin(info.id) != 0,
+            label: DisplayLabel.label(for: info.id),
             isMain: info.isMain,
             width: info.currentMode?.width ?? 0,
             height: info.currentMode?.height ?? 0,
@@ -112,11 +108,10 @@ extension Diagnostics.Report {
         out.append("")
         out.append("Displays (\(displays.count))")
         for d in displays {
-            let kind = d.isBuiltIn ? "built-in" : "external"
             let hz = d.refreshHz.map { " @ \($0) Hz" } ?? ""
             let hidpi = d.isHiDPI ? ", HiDPI" : ""
             let main = d.isMain ? ", main" : ""
-            out.append("- \(d.name) (\(kind)\(main)): \(d.width) x \(d.height)\(hz)\(hidpi)")
+            out.append("- \(d.label)\(main): \(d.width) x \(d.height)\(hz)\(hidpi)")
         }
         out.append("")
         out.append("Profiles: \(profileCount)")

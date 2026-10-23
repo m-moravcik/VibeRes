@@ -25,8 +25,9 @@ enum LogLevel: Int, CaseIterable, Comparable, Sendable {
 ///
 /// Call sites read `Log.display.info("...")`. The message is public by contract:
 /// it ends up in a file the user may attach to a GitHub issue, so it carries
-/// counts, ids, display names and outcomes, never serial numbers or paths. Text
-/// that is personal (profile names, anything user-typed) goes in `detail`, which
+/// counts, ids, `DisplayLabel`s and outcomes, never display names, serial numbers
+/// or paths. Text that is personal (profile and display names, anything
+/// user-typed) goes in `detail`, which
 /// reaches `os.Logger` as `.private` and never reaches the file or the diagnostics.
 struct AppLog: Sendable {
     static let subsystem = "sk.moravcik.VibeRes"

@@ -228,7 +228,7 @@ The current code targets macOS 26 because it leans on every modern API at once. 
 
 VibeRes sends no telemetry: no analytics, no crash reporter, no account. The one network request it makes by itself is the update check, which downloads the signed appcast from this repository on GitHub and sends no system profile; turn it off in Settings, Updates (Homebrew installs leave updates to `brew`).
 
-Diagnostics stay on your Mac until you decide otherwise. Everything is logged locally through `os.Logger` (subsystem `sk.moravcik.VibeRes`, readable in Console.app). **Settings, Debug** can additionally write a log file to `~/Library/Logs/VibeRes/` (off by default, capped at about 1 MB), and **Copy diagnostics** puts a redacted summary on the clipboard to paste into a [bug report](https://github.com/m-moravcik/VibeRes/issues/new?template=bug_report.yml): app and macOS version, Mac model, a few settings, your displays by name and mode, and the latest log lines. It never contains serial numbers or file paths.
+Diagnostics stay on your Mac until you decide otherwise. Everything is logged locally through `os.Logger` (subsystem `sk.moravcik.VibeRes`, readable in Console.app). **Settings, Debug** can additionally write a log file to `~/Library/Logs/VibeRes/` (off by default, capped at about 1 MB), and **Copy diagnostics** puts a redacted summary on the clipboard to paste into a [bug report](https://github.com/m-moravcik/VibeRes/issues/new?template=bug_report.yml): app and macOS version, Mac model, a few settings, your displays by type, manufacturer code and mode, and the latest log lines. It never contains display names, serial numbers or file paths; display names are not written to the log file either.
 
 ## Support
 

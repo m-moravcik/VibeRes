@@ -345,7 +345,7 @@ final class DisplayStore {
         )
 
         if triggeredByCallback {
-            Log.display.debug("reconfiguration: \(Self.describe(displays))")
+            Log.display.debug("reconfiguration: \(Self.describe(displays))", detail: displays.map(\.name).joined(separator: "; "))
             if transition.shouldBumpSetChangeToken {
                 setChangeToken &+= 1
                 autoApplyToken &+= 1
@@ -369,7 +369,7 @@ final class DisplayStore {
     nonisolated static func describe(_ displays: [DisplayInfo]) -> String {
         displays.map { d in
             let mode = d.currentMode.map { "\($0.width)x\($0.height)@\($0.refreshHz ?? 0)Hz" } ?? "no mode"
-            return "\(d.name) \(mode)\(d.isMain ? " main" : "")"
+            return "\(DisplayLabel.label(for: d.id)) \(mode)\(d.isMain ? " main" : "")"
         }.joined(separator: "; ")
     }
 
@@ -445,7 +445,7 @@ final class DisplayStore {
             // to be unreadable *and* the app is somehow unable to revert, a
             // reboot still recovers. Made permanent by `confirmDisplayChange()`.
             try applyMode(mode, display, confirmFirst ? .forSession : .permanently)
-            Log.apply.info("apply: \(info?.name ?? "display \(display)") -> \(mode.width)x\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) changed=\(changed) confirmFirst=\(confirmFirst)")
+            Log.apply.info("apply: \(DisplayLabel.label(for: display)) -> \(mode.width)x\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) changed=\(changed) confirmFirst=\(confirmFirst)", detail: info?.name)
             lastError = nil
             refresh()
             if changed {

@@ -216,9 +216,9 @@ struct DiagnosticsTests {
             hardwareModel: "Mac15,6", architecture: "Apple Silicon (arm64)",
             settings: [("Simple mode", "on"), ("Debug log", "off")],
             displays: [
-                .init(name: "Built-in Retina Display", isBuiltIn: true, isMain: true,
+                .init(label: "Built-in display (APP A0A1)", isMain: true,
                       width: 1512, height: 982, refreshHz: 120, isHiDPI: true),
-                .init(name: "LG UltraFine", isBuiltIn: false, isMain: false,
+                .init(label: "External display 2 (GSM 5B71)", isMain: false,
                       width: 2560, height: 1440, refreshHz: nil, isHiDPI: false),
             ],
             profileCount: 3, logLines: logLines, logEnabled: logEnabled)
@@ -231,8 +231,8 @@ struct DiagnosticsTests {
         #expect(text.contains("macOS: Version 26.0 (Build 25A1)"))
         #expect(text.contains("Hardware: Mac15,6, Apple Silicon (arm64)"))
         #expect(text.contains("- Simple mode: on"))
-        #expect(text.contains("- Built-in Retina Display (built-in, main): 1512 x 982 @ 120 Hz, HiDPI"))
-        #expect(text.contains("- LG UltraFine (external): 2560 x 1440"))
+        #expect(text.contains("- Built-in display (APP A0A1), main: 1512 x 982 @ 120 Hz, HiDPI"))
+        #expect(text.contains("- External display 2 (GSM 5B71): 2560 x 1440"))
         #expect(text.contains("Profiles: 3"))
         #expect(text.contains("INFO display x"))
     }
@@ -249,6 +249,18 @@ struct DiagnosticsTests {
         #expect(!text.contains("Drive"))
         #expect(text.contains("~/Library/x"))
         #expect(text.contains("INFO capture /Volumes/-/shot.png"))
+    }
+
+    @Test("A display's own name never reaches the report")
+    func noDisplayName() {
+        let info = DisplayInfo(id: 0xFFFF_FF01, name: "Jane's iPad", isMain: true,
+                               modes: [], currentMode: nil, groups: [])
+        var r = report(logLines: [])
+        r.displays = [Diagnostics.summarise(info)]
+        let text = r.render()
+        #expect(!text.contains("Jane"))
+        #expect(!text.contains("iPad"))
+        #expect(text.contains("- \(DisplayLabel.label(for: info.id)), main: 0 x 0"))
     }
 
     @Test("Scrub leaves ordinary text alone")
@@ -268,5 +280,37 @@ struct DiagnosticsTests {
     func hardwareModel() {
         let model = Diagnostics.hardwareModel()
         #expect(!model.isEmpty && model != "unknown")
+    }
+}
+
+@Suite("Display label")
+struct DisplayLabelTests {
+    @Test("EDID manufacturer IDs decode to their 3-letter PNP code")
+    func pnp() {
+        #expect(DisplayLabel.pnpID(0x1E6D) == "GSM")
+        #expect(DisplayLabel.pnpID(0x0610) == "APP")
+        #expect(DisplayLabel.pnpID(0x4C2D) == "SAM")
+    }
+
+    @Test("Values that are not a manufacturer ID decode to nil")
+    func invalidPNP() {
+        #expect(DisplayLabel.pnpID(0) == nil)
+        #expect(DisplayLabel.pnpID(0x8610) == nil)
+        #expect(DisplayLabel.pnpID(0x756E_6B6E) == nil)
+        #expect(DisplayLabel.pnpID(0xFFFF_FFFF) == nil)
+        #expect(DisplayLabel.pnpID(0x0400) == nil)
+        #expect(DisplayLabel.pnpID(0x1B << 10 | 1 << 5 | 1) == nil)
+    }
+
+    @Test("Built-in and external labels carry the EDID codes, or stand alone without them")
+    func labels() {
+        #expect(DisplayLabel.label(id: 1, isBuiltIn: true, vendor: 0x0610, model: 0xA0A1)
+                == "Built-in display (APP A0A1)")
+        #expect(DisplayLabel.label(id: 2, isBuiltIn: false, vendor: 0x1E6D, model: 0x5B71)
+                == "External display 2 (GSM 5B71)")
+        #expect(DisplayLabel.label(id: 3, isBuiltIn: false, vendor: 0x1E6D, model: 0x12)
+                == "External display 3 (GSM 0012)")
+        #expect(DisplayLabel.label(id: 4, isBuiltIn: false, vendor: 0x756E_6B6E, model: 0x717)
+                == "External display 4")
     }
 }

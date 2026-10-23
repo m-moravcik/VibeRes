@@ -765,7 +765,7 @@ final class ProfileStore {
                 // Diagnostic logging — when apply silently fails the user has
                 // zero visibility into why. Goes to Console.app under
                 // sk.moravcik.VibeRes.
-                Log.apply.info("apply \(change.name): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) vrr=\(change.isVariable) modeID=\(change.mode.ioDisplayModeID)")
+                Log.apply.info("apply \(DisplayLabel.label(for: change.display)): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) vrr=\(change.isVariable) modeID=\(change.mode.ioDisplayModeID)", detail: change.name)
             }
 
             do {
@@ -782,7 +782,7 @@ final class ProfileStore {
                         if let previous = change.previous, seenForRevert.insert(change.display).inserted {
                             batchSnapshot.append((change.display, change.name, previous))
                         }
-                        Log.apply.info("apply \(change.name): SUCCESS")
+                        Log.apply.info("apply \(DisplayLabel.label(for: change.display)): SUCCESS", detail: change.name)
                     } else {
                         let failure = result.rejected[change.display] ?? .applyMode(.failure)
                         outcomes[change.outcomeIndex].status = .failed(.switchFailed(failure))
@@ -790,7 +790,7 @@ final class ProfileStore {
                         outcomes[change.outcomeIndex].appliedSize = nil
                         outcomes[change.outcomeIndex].appliedHz = nil
                         outcomes[change.outcomeIndex].appliedVRR = false
-                        Log.apply.error("apply \(change.name): REJECTED — \(reason)")
+                        Log.apply.error("apply \(DisplayLabel.label(for: change.display)): REJECTED — \(reason)", detail: change.name)
                     }
                 }
             } catch {
@@ -859,7 +859,7 @@ final class ProfileStore {
             }
 
             let name = displays.first(where: { $0.id == target })?.name ?? "display \(target)"
-            Log.apply.info("main display: \(live.main) → \(target) (\(name)), \(plan.count) origins")
+            Log.apply.info("main display: \(live.main) → \(target) (\(DisplayLabel.label(for: target))), \(plan.count) origins", detail: name)
             do {
                 try applyOrigins(plan, .permanently)
             } catch {
