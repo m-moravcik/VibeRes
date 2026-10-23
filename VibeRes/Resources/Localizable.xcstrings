@@ -646,6 +646,75 @@
         }
       }
     },
+    "Copied": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skopírované"
+          }
+        }
+      }
+    },
+    "Copies the app and macOS versions, your Mac model, these settings, your displays and the latest log lines, ready to paste into a bug report. No serial numbers or file paths.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiert App- und macOS-Version, Mac-Modell, diese Einstellungen, Bildschirme und die letzten Protokollzeilen, bereit zum Einfügen in einen Fehlerbericht. Ohne Seriennummern und Dateipfade."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copies the app and macOS versions, your Mac model, these settings, your displays and the latest log lines, ready to paste into a bug report. No serial numbers or file paths."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skopíruje verziu aplikácie a macOS, model Macu, tieto nastavenia, displeje a posledné riadky záznamu, pripravené na vloženie do hlásenia chyby. Bez sériových čísel a ciest k súborom."
+          }
+        }
+      }
+    },
+    "Copy diagnostics": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnose kopieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy diagnostics"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopírovať diagnostiku"
+          }
+        }
+      }
+    },
     "Could not rename the profile.": {
       "comment": "A rename was refused for a reason the form cannot fix",
       "extractionState": "manual",
@@ -741,6 +810,52 @@
         }
       }
     },
+    "Debug": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladenie"
+          }
+        }
+      }
+    },
+    "Debug log": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug-Protokoll"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug log"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladiaci záznam"
+          }
+        }
+      }
+    },
     "Delete": {
       "extractionState": "manual",
       "localizations": {
@@ -808,6 +923,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zmazané „%@“"
+          }
+        }
+      }
+    },
+    "Detail level": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detailgrad"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detail level"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Úroveň detailu"
+          }
+        }
+      }
+    },
+    "Diagnostics": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnose"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostics"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostika"
           }
         }
       }
@@ -1018,6 +1179,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Položky sú uložené, ale názov sa nepodarilo zmeniť."
+          }
+        }
+      }
+    },
+    "Errors only": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Fehler"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Errors only"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iba chyby"
+          }
+        }
+      }
+    },
+    "Everything": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Všetko"
           }
         }
       }
@@ -1809,6 +2016,29 @@
         }
       }
     },
+    "Off by default. Records display changes and the results of resolution changes in ~/Library/Logs/VibeRes, capped at about 1 MB. Nothing is sent anywhere.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardmäßig aus. Protokolliert Bildschirmänderungen und die Ergebnisse von Auflösungswechseln in ~/Library/Logs/VibeRes, begrenzt auf etwa 1 MB. Es wird nichts gesendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default. Records display changes and the results of resolution changes in ~/Library/Logs/VibeRes, capped at about 1 MB. Nothing is sent anywhere."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predvolene vypnuté. Zaznamenáva zmeny displejov a výsledky zmien rozlíšenia do ~/Library/Logs/VibeRes, najviac okolo 1 MB. Nič sa nikam neodosiela."
+          }
+        }
+      }
+    },
     "Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.": {
       "extractionState": "manual",
       "localizations": {
@@ -1897,6 +2127,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "V jednom profile môže „ľubovoľnému externému monitoru“ zodpovedať len jedna položka."
+          }
+        }
+      }
+    },
+    "Open log file": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokolldatei öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open log file"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otvoriť súbor so záznamom"
           }
         }
       }
@@ -2868,6 +3121,29 @@
         }
       }
     },
+    "Standard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Štandardná"
+          }
+        }
+      }
+    },
     "Startup": {
       "extractionState": "manual",
       "localizations": {
@@ -3442,6 +3718,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Šírka musí byť medzi 1 a 16384 bodmi."
+          }
+        }
+      }
+    },
+    "Write debug log to file": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug-Protokoll in Datei schreiben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write debug log to file"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisovať ladiaci záznam do súboru"
           }
         }
       }
