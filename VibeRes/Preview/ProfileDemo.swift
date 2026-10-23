@@ -373,15 +373,18 @@ enum ProfileDemo {
             displays.applyMode = { _, _, _ in ProfileDemo.fail("the demo tried to apply a display mode") }
             displays.applyOrigins = { _, _ in ProfileDemo.fail("the demo tried to rearrange the displays") }
             displays.dismissStalePopoverOverride = {
-                ProfileDemo.fail("the app would close the popover here: a refresh after the profile saw the main display move (DisplayStore.RefreshTransition.mainSwapped), so the badge's travel is not a state the popover reaches. Rerun with \(ProfileDemo.keepMainKey)=1, or keep the popover open on a profile's main change first")
+                ProfileDemo.fail("the app would close the popover here: a refresh after the profile decided to dismiss it (DisplayStore.RefreshTransition.popoverAction), so what follows is not a state the open popover reaches")
             }
+            // The harness's window is the open popover the store asks about.
+            let window = window
+            displays.popoverIsOpenOverride = { window.isVisible }
             displays.refresh()
 
             profiles.applyBatch = { [weak self] changes, _ in
-                // The transaction blanks the displays and holds the main
-                // thread until they are back; the run loop turns meanwhile so
-                // the samples keep coming (the frames are dark).
-                self?.holdUntilDisplaysReturn()
+                // The transaction blanks the displays and blocks the main
+                // thread until they are back, so nothing else on it runs in
+                // between: not the store's debounced refresh, not SwiftUI.
+                self?.blockUntilDisplaysReturn()
                 world.apply(changes)
                 // What the reconfiguration callback does after a change.
                 Task { @MainActor in displays.scheduleRefresh() }
@@ -400,15 +403,32 @@ enum ProfileDemo {
 
         private var releaseTime: Double = 0
 
-        private func holdUntilDisplaysReturn() {
+        /// A stretch of the take with the main thread blocked, and the
+        /// popover as it froze, which is all a screen can show meanwhile.
+        private struct Blocked {
+            let from: Double
+            let until: Double
+            let url: URL
+            let iconPhase: Double?
+        }
+
+        private var blocked: [Blocked] = []
+
+        /// What `CGCompleteDisplayConfiguration` does to the app: the main
+        /// thread sleeps until the displays are back. The run loop is not
+        /// turned, so no timer, task or view update runs before the
+        /// transaction returns, exactly as in the real app.
+        private func blockUntilDisplaysReturn() {
+            let from = now
             let until = releaseTime + Script.Beat.blank
-            while now < until {
-                RunLoop.main.run(until: Date().addingTimeInterval(min(0.005, max(0, until - now))))
-            }
+            let frozen = capture(to: samplesDir.appendingPathComponent(String(format: "frozen_%.3f.png", from)))
+            blocked.append(Blocked(from: from, until: until, url: frozen.url, iconPhase: frozen.iconPhase))
+            Thread.sleep(forTimeInterval: max(0, until - now))
         }
 
         /// Plays the take and returns its samples, or nil when one came so
-        /// late that the loop would stutter.
+        /// late that the loop would stutter. Frames due while the main thread
+        /// is blocked for the blank do not count: they show the frozen popover.
         func record() -> Recording? {
             try? FileManager.default.createDirectory(at: samplesDir, withIntermediateDirectories: true)
             window.orderFrontRegardless()
@@ -450,8 +470,16 @@ enum ProfileDemo {
                     let due = loop + Double(nextFrame) / ProfileDemo.fps
                     let t = self.now
                     guard t >= due else { return }
-                    lateness.append(t - due)
-                    samples.append(self.sample(index: nextFrame, time: due))
+                    let time = due - loop
+                    if let frozen = self.blocked.first(where: { ($0.from..<$0.until).contains(due) }) {
+                        // Due while the main thread was blocked: the frozen
+                        // popover, under the scenery's blank.
+                        samples.append(Sample(time: time, url: frozen.url, iconPhase: frozen.iconPhase))
+                    } else {
+                        lateness.append(t - due)
+                        let shot = self.capture(to: self.samplesDir.appendingPathComponent(String(format: "sample_%04d.png", nextFrame)))
+                        samples.append(Sample(time: time, url: shot.url, iconPhase: shot.iconPhase))
+                    }
                     nextFrame += 1
                     if nextFrame > frameCount { done = true }
                 }
@@ -479,7 +507,7 @@ enum ProfileDemo {
         }
 
         /// Draws the popover as it is right now and queues the PNG.
-        private func sample(index: Int, time: Double) -> Sample {
+        private func capture(to url: URL) -> (url: URL, iconPhase: Double?) {
             animator.tick()
             let size = hosting.bounds.size
             guard let rep = NSBitmapImageRep(
@@ -490,10 +518,9 @@ enum ProfileDemo {
             ) else { ProfileDemo.fail("could not allocate a bitmap") }
             rep.size = size
             hosting.cacheDisplay(in: hosting.bounds, to: rep)
-            let url = samplesDir.appendingPathComponent(String(format: "sample_%04d.png", index))
             guard let image = rep.cgImage else { ProfileDemo.fail("could not read a sample") }
             encoder.async(group: encoding) { writePNG(image, to: url) }
-            return Sample(time: time - Script.loop, url: url, iconPhase: animator.phase)
+            return (url, animator.phase)
         }
 
         private func send(_ event: Script.Event, a: CGPoint, b: CGPoint) {
