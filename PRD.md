@@ -279,7 +279,8 @@ room to negotiate.
 
 ### 4.11 Language
 
-- The interface ships in English, Slovak and German, from a String Catalog.
+- The interface ships in English, Slovak, Czech, German, Spanish and French, from a String Catalog.
+  Every key must carry all six languages; the coverage gate enforces it.
 - User-facing copy produced in `VibeRes/Core` stays English, because Core is
   compiled into the bundle-less CLI. Anything the *app* shows is rendered in
   `VibeRes/UI` from structured values, never from a pre-formatted English

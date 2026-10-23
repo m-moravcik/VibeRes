@@ -4,6 +4,8 @@
 
 A modern menubar resolution switcher for macOS. Native SwiftUI, live hover preview, multi-display profiles, Shortcuts.app integration, and a sibling CLI. Spiritual successor to the abandoned [EasyRes](http://easyres.softwar.io/).
 
+Available in six languages: English, Slovak, Czech, German, Spanish and French.
+
 > Requires **macOS 26 Tahoe** or later. Universal binary — developed and tested on Apple silicon, and the Intel slice ships for the Macs Tahoe still supports. See [Older macOS](#older-macos) for backporting notes.
 
 <p align="center">
