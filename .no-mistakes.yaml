@@ -1,0 +1,43 @@
+# no-mistakes gate for VibeRes - https://github.com/kunchenguid/no-mistakes
+#
+# TRUST: no-mistakes reads `commands` and `test.instructions` only from this
+# file on origin/main, so a branch cannot change which checks run on it or
+# how its Test step may drive the product.
+#
+# CI (.github/workflows/ci.yml) runs the unit tests, the accessibility UI
+# tests and the Release builds on every pull request. The local Test step
+# validates the change itself.
+
+commands:
+  # The unit suite and the String Catalog coverage check. Not `make ui-test`:
+  # it drives the real app with the pointer, and CI runs it anyway.
+  test: "make test && scripts/check-localisation.sh"
+
+test:
+  instructions: |
+    VibeRes is a menu bar app, and this gate runs on the owner's own Mac while
+    he is working on it. Hard rules for live validation:
+    - Never post synthetic mouse or keyboard events (CGEvent, cliclick,
+      AppleScript System Events clicks), never click the menu bar, and never
+      drive the real popover or the installed app in /Applications.
+    - Never record or capture the screen (screencapture, ScreenCaptureKit on a
+      display): it shows the owner's private windows. Capture only offscreen,
+      from a view the harness owns, through NSHostingView.cacheDisplay as
+      VibeRes/Preview/ScreenshotHarness.swift does.
+    - Never change real display modes, the arrangement or the main display,
+      never touch the owner's profiles in ~/Library/Application Support/VibeRes
+      or the app's real preferences, and never change system settings such as
+      Reduce Motion or the appearance.
+    Ways to exercise the product instead:
+    - `make test` and focused Swift Testing suites.
+    - The viberes CLI built from the branch, with VIBERES_PROFILE_DIR set to a
+      temporary directory. Read-only commands (list, modes, current, profile
+      list/show) are safe; `set` and `profile apply` change real displays.
+    - The debug-only offscreen harnesses: `scripts/screenshots.sh <lang>`
+      (popover, detail, save form, notes and the README shots as PNG) and
+      `scripts/motion-demo.sh`. They rig every apply path to abort.
+    - DisplayStore.showForDemo, to stage a display state without touching a
+      display.
+    When a scenario can only be checked by driving the real GUI, report it as
+    not live-validated and say what the owner should check by hand, rather
+    than driving it.
