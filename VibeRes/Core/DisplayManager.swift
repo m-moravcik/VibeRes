@@ -27,19 +27,27 @@ struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
         variableModeIDs.contains(mode.ioDisplayModeID)
     }
 
+    /// This display also lists a mode of the other kind at the same size,
+    /// scale and rate as `mode`.
+    func hasTwin(_ mode: CGDisplayMode) -> Bool {
+        VariableRefresh.hasTwin(mode, in: modes, isVariable: isVariable)
+    }
+
     /// Variable, and this display also lists a fixed mode at the same size,
     /// scale and rate: the case where "VRR" has to be said out loud.
     func isVRRTwin(_ mode: CGDisplayMode) -> Bool {
-        isVariable(mode) && VariableRefresh.hasFixedTwin(mode, in: modes, isVariable: isVariable)
+        isVariable(mode) && hasTwin(mode)
     }
 
-    /// Whether this display lists a fixed mode at the given size, scale and
-    /// rate. Used to decide whether a saved "VRR" is worth saying.
-    func offersFixed(width: Int, height: Int, isHiDPI: Bool, refreshHz: Int?) -> Bool {
-        modes.contains {
-            !isVariable($0) && $0.width == width && $0.height == height
+    /// Whether this display lists both a variable and a fixed mode at the
+    /// given size, scale and rate. Used to decide whether a saved "VRR" is
+    /// worth saying.
+    func offersBothKinds(width: Int, height: Int, isHiDPI: Bool, refreshHz: Int?) -> Bool {
+        let atRate = modes.filter {
+            $0.width == width && $0.height == height
                 && $0.isHiDPI == isHiDPI && $0.refreshHz == refreshHz
         }
+        return atRate.contains(where: isVariable) && atRate.contains { !isVariable($0) }
     }
 
     func hash(into hasher: inout Hasher) {

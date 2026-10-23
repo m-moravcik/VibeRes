@@ -171,30 +171,34 @@ struct VariableRefreshBucketingTests {
 
 @Suite("Variable refresh: kind rules and scoring")
 struct VariableRefreshRuleTests {
-    @Test("A variable entry is honoured only by a variable mode")
+    @Test("A variable entry accepts a fixed mode only when no variable twin exists")
     func variableEntry() {
-        #expect(VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: true, modeHasFixedTwin: true))
-        #expect(VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: true, modeHasFixedTwin: false))
-        #expect(!VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: false, modeHasFixedTwin: false))
+        #expect(VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: true, modeHasTwin: true))
+        #expect(VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: true, modeHasTwin: false))
+        #expect(VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: false, modeHasTwin: false))
+        #expect(!VariableRefresh.honoursKind(wantsVariable: true, modeIsVariable: false, modeHasTwin: true))
     }
 
     @Test("A fixed (or legacy) entry accepts a variable mode only when no fixed twin exists")
     func fixedEntry() {
-        #expect(VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: false, modeHasFixedTwin: false))
-        #expect(VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: true, modeHasFixedTwin: false))
-        #expect(!VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: true, modeHasFixedTwin: true))
+        #expect(VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: false, modeHasTwin: true))
+        #expect(VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: false, modeHasTwin: false))
+        #expect(VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: true, modeHasTwin: false))
+        #expect(!VariableRefresh.honoursKind(wantsVariable: false, modeIsVariable: true, modeHasTwin: true))
     }
 
-    @Test("A fixed twin must match size, scale and rounded rate")
-    func fixedTwin() {
+    @Test("A twin is the other kind at the same size, scale and rounded rate")
+    func twin() {
         let vrr = StubDisplayMode.native(width: 2560, height: 1440, hz: 160, id: 9)
         let isVariable: (StubDisplayMode) -> Bool = { $0.ioDisplayModeID == 9 }
-        let twin = StubDisplayMode.native(width: 2560, height: 1440, hz: 159.97, id: 1)
-        #expect(VariableRefresh.hasFixedTwin(vrr, in: [vrr, twin], isVariable: isVariable))
-        #expect(!VariableRefresh.hasFixedTwin(vrr, in: [vrr], isVariable: isVariable))
+        let fixed = StubDisplayMode.native(width: 2560, height: 1440, hz: 159.97, id: 1)
+        #expect(VariableRefresh.hasTwin(vrr, in: [vrr, fixed], isVariable: isVariable))
+        #expect(VariableRefresh.hasTwin(fixed, in: [vrr, fixed], isVariable: isVariable))
+        #expect(!VariableRefresh.hasTwin(vrr, in: [vrr], isVariable: isVariable))
+        #expect(!VariableRefresh.hasTwin(fixed, in: [fixed], isVariable: isVariable))
         let otherRate = StubDisplayMode.native(width: 2560, height: 1440, hz: 144, id: 2)
         let otherScale = StubDisplayMode.hiDPI(width: 2560, height: 1440, hz: 160, id: 3)
-        #expect(!VariableRefresh.hasFixedTwin(vrr, in: [vrr, otherRate, otherScale], isVariable: isVariable))
+        #expect(!VariableRefresh.hasTwin(vrr, in: [vrr, otherRate, otherScale], isVariable: isVariable))
     }
 
     private func best(
@@ -394,20 +398,48 @@ struct VariableRefreshProfileApplyTests {
         }
     }
 
-    @Test("A variable entry with no VRR mode on offer falls back to the fixed one, and says so")
-    func variableFallsBackToFixed() throws {
+    @Test("A variable entry on a display without VRR is exact and active")
+    func variableEntryWithoutVRR() throws {
         let set = try #require(RealTwins.find())
+        let profile = Profile(name: "VRR", entries: [entry(for: set.first, variable: true)])
         let store = makeStore()
         let staged = capturing(store)
         let outcome = store.applyDetailed(
-            Profile(name: "VRR", entries: [entry(for: set.first, variable: true)]),
+            profile,
             displays: [info(set, current: set.other, variable: [])]
         ).outcomes.first
         #expect(staged().count == 1)
-        #expect(outcome?.status == .appliedWithFallback)
-        #expect(outcome?.requestedVRR == true)
+        #expect(outcome?.status == .applied)
+        #expect(outcome?.requestedVRR == false)
         #expect(outcome?.appliedVRR == false)
-        #expect(outcome?.summary.contains("Hz VRR, used") == true)
+
+        #expect(store.isCurrentState(profile, displays: [info(set, current: set.first, variable: [])]))
+        #expect(store.isCurrentState(profile, displays: [info(set, current: set.second, variable: [])]))
+    }
+
+    @Test("A ProMotion variable entry stays exact and active when SkyLight says nothing is VRR")
+    func variableOnlyEntryWithoutSkyLight() throws {
+        let set = try #require(RealTwins.find())
+        let store = makeStore()
+        // `other` has no twin: declared variable, it is ProMotion's 120 Hz.
+        _ = store.captureCurrent(
+            name: "ProMotion",
+            displays: [info(set, current: set.other, variable: [set.other])],
+            selection: [101: .specific]
+        )
+        let profile = try #require(store.profiles.first)
+        #expect(profile.entries.first?.isVariableRefresh == true)
+
+        let staged = capturing(store)
+        let outcome = store.applyDetailed(
+            profile,
+            displays: [info(set, current: set.first, variable: [])]
+        ).outcomes.first
+        #expect(staged() == [set.other.ioDisplayModeID])
+        #expect(outcome?.status == .applied)
+        #expect(outcome?.requestedVRR == false)
+
+        #expect(store.isCurrentState(profile, displays: [info(set, current: set.other, variable: [])]))
     }
 
     @Test("VRR and fixed at one rate are not the same active state")
@@ -453,19 +485,44 @@ struct VariableRefreshProfileApplyTests {
         #expect(store.profiles.first?.entries.first?.isVariableRefresh == true)
     }
 
-    @Test("The preview names VRR on the saved side when it will fall back")
-    func previewSaysVRR() throws {
+    @Test("The preview of a variable entry on a display without VRR is exact and never says VRR")
+    func previewWithoutVRR() throws {
         let set = try #require(RealTwins.find())
         let store = makeStore()
-        let preview = store.previewApply(
+        let profile = Profile(name: "VRR", entries: [entry(for: set.first, variable: true)])
+
+        let pending = try #require(store.previewApply(
+            profile, against: [info(set, current: set.other, variable: [])]
+        ).rows.first)
+        #expect(!pending.savedVRR)
+        #expect(!pending.targetVRR)
+        if case .willApplyExact = pending.action {} else {
+            Issue.record("expected an exact apply, got \(pending.action)")
+        }
+
+        // With nothing variable the pair are two fixed modes; the lower ID wins.
+        let picked = [set.first, set.second].min { $0.ioDisplayModeID < $1.ioDisplayModeID }
+        let already = try #require(store.previewApply(
+            profile, against: [info(set, current: picked, variable: [])]
+        ).rows.first)
+        if case .alreadyApplied = already.action {} else {
+            Issue.record("expected already applied, got \(already.action)")
+        }
+        #expect(already.savedVRR == already.targetVRR)
+    }
+
+    @Test("The preview names VRR on both sides where the display offers both kinds")
+    func previewWithBothKinds() throws {
+        let set = try #require(RealTwins.find())
+        let store = makeStore()
+        let row = try #require(store.previewApply(
             Profile(name: "VRR", entries: [entry(for: set.first, variable: true)]),
-            against: [info(set, current: set.other, variable: [])]
-        )
-        let row = try #require(preview.rows.first)
+            against: [info(set, current: set.other, variable: [set.first])]
+        ).rows.first)
         #expect(row.savedVRR)
-        #expect(!row.targetVRR)
-        if case .willApplyFallback = row.action {} else {
-            Issue.record("expected a fallback, got \(row.action)")
+        #expect(row.targetVRR)
+        if case .willApplyExact = row.action {} else {
+            Issue.record("expected an exact apply, got \(row.action)")
         }
     }
 

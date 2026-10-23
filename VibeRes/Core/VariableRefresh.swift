@@ -28,17 +28,18 @@ enum VariableRefresh {
         return isVRR(Int32(bitPattern: display), modeID)
     }
 
-    /// True when `modes` also holds a *fixed* mode at the same point size,
-    /// scale and rounded rate as `mode`. Only then is "VRR" a choice the user
-    /// has to be shown: a ProMotion panel's 120 Hz modes are all variable and
-    /// have no fixed twin, so they stay plain "120".
-    static func hasFixedTwin<Mode: DisplayModeProtocol>(
+    /// True when `modes` also holds a mode of the *other* kind at the same
+    /// point size, scale and rounded rate as `mode`. Only then is the kind a
+    /// choice the user has to be shown: a ProMotion panel's 120 Hz modes are
+    /// all variable and have no fixed twin, so they stay plain "120".
+    static func hasTwin<Mode: DisplayModeProtocol>(
         _ mode: Mode,
         in modes: [Mode],
         isVariable: (Mode) -> Bool
     ) -> Bool {
-        modes.contains {
-            !isVariable($0)
+        let kind = isVariable(mode)
+        return modes.contains {
+            isVariable($0) != kind
                 && $0.width == mode.width
                 && $0.height == mode.height
                 && $0.isHiDPI == mode.isHiDPI
@@ -48,18 +49,19 @@ enum VariableRefresh {
 
     /// Whether a mode honours the refresh kind a saved entry asked for.
     ///
-    /// Asymmetric on purpose. A variable entry is honoured only by a variable
-    /// mode. A fixed entry is the shape of every profile saved before VRR
-    /// support, so "fixed" also means "unknown": it is honoured by a fixed
-    /// mode, and by a variable one that has no fixed twin, because there was
-    /// never a fixed mode to prefer. Otherwise every ProMotion profile would
-    /// read as a fallback and never as active.
+    /// A mode of the asked-for kind always does. A mode of the other kind does
+    /// too when it has no twin, because the display offers nothing to prefer
+    /// at that size, scale and rate. That keeps a fixed entry, the shape of
+    /// every profile saved before VRR support, active on ProMotion's
+    /// variable-only 120 Hz, and a variable entry active on a display without
+    /// VRR or on a macOS where `SLSIsDisplayModeVRR` is gone. Only where both
+    /// kinds are on offer is the other kind a fallback.
     static func honoursKind(
         wantsVariable: Bool,
         modeIsVariable: Bool,
-        modeHasFixedTwin: Bool
+        modeHasTwin: Bool
     ) -> Bool {
-        wantsVariable ? modeIsVariable : (!modeIsVariable || !modeHasFixedTwin)
+        modeIsVariable == wantsVariable || !modeHasTwin
     }
 
     /// The rate a one-click apply should pick among a size's options.

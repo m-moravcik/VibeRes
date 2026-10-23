@@ -1058,8 +1058,7 @@ final class ProfileStore {
     ///
     /// The entry's refresh kind only breaks ties, so a variable entry gets
     /// the VRR twin where there is one and the closest fixed mode where there
-    /// is not (reported as a fallback by `isExact`); a fixed entry gets the
-    /// fixed twin.
+    /// is not; a fixed entry gets the fixed twin.
     private func bestMatch(on info: DisplayInfo, entry: Profile.Entry, refreshHz: Int?) -> CGDisplayMode? {
         ModeScoring.bestMatch(
             in: info.modes,
@@ -1093,25 +1092,23 @@ final class ProfileStore {
         VariableRefresh.honoursKind(
             wantsVariable: entry.isVariableRefresh,
             modeIsVariable: info.isVariable(mode),
-            modeHasFixedTwin: VariableRefresh.hasFixedTwin(mode, in: info.modes, isVariable: info.isVariable)
+            modeHasTwin: info.hasTwin(mode)
         )
     }
 
     /// When to say "VRR" next to the requested and the picked rate: only
-    /// where this display offers both kinds, so a ProMotion profile reads as
-    /// it always has. The request says it when it asked for VRR and either
-    /// did not get a variable mode or could have had a fixed one instead.
+    /// where this display offers both kinds, so a ProMotion profile, or a
+    /// variable one on a display without VRR, reads as it always has.
     private static func vrrLabels(
         for entry: Profile.Entry,
         refreshHz hz: Int?,
         picked mode: CGDisplayMode,
         on info: DisplayInfo
     ) -> (requested: Bool, applied: Bool) {
-        let requested = entry.isVariableRefresh
-            && (!info.isVariable(mode) || info.offersFixed(
-                width: entry.pointWidth, height: entry.pointHeight,
-                isHiDPI: entry.isHiDPI, refreshHz: hz
-            ))
+        let requested = entry.isVariableRefresh && info.offersBothKinds(
+            width: entry.pointWidth, height: entry.pointHeight,
+            isHiDPI: entry.isHiDPI, refreshHz: hz
+        )
         return (requested, info.isVRRTwin(mode))
     }
 }
