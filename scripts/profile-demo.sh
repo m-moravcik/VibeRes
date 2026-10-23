@@ -77,7 +77,8 @@ for scheme in light dark; do
     # Seam: the harness renders one frame past the end of the loop, which
     # must equal the first ("inf" is identical). It then leaves the frames,
     # so the loop does not hold on a duplicate.
-    last=$(ls "$dir" | grep -c '^frame_')
+    found=("$dir"/frame_*.png)
+    last=${#found[@]}
     seam=$(printf "%s/frame_%04d.png" "$dir" $((last - 1)))
     echo "$scheme seam: $(ffmpeg -v info -i "$dir/frame_0000.png" -i "$seam" -lavfi psnr -f null - 2>&1 \
         | grep -o 'average:[^ ]*')"
