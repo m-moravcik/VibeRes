@@ -56,13 +56,12 @@ LENGTH="$(stat -f%z "$ZIP")"
 SIGNATURE="$("$SIGN_UPDATE" ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} -p "$ZIP")" || die "sign_update failed"
 [ -n "$SIGNATURE" ] || die "sign_update produced no signature"
 
-# Release notes: the matching CHANGELOG section, as HTML so Sparkle renders
-# bullets rather than raw markdown.
-NOTES="$(awk -v ver="## [$VERSION]" '
-  index($0, ver) == 1 { found=1; next }
-  found && /^## \[/ { exit }
-  found { print }
-' CHANGELOG.md)"
+# Release notes: release-notes/<version>.md (since 0.11.0; CHANGELOG.md is
+# history up to 0.10.6), as HTML so Sparkle renders bullets rather than raw
+# markdown.
+NOTES_FILE="release-notes/$VERSION.md"
+[ -s "$NOTES_FILE" ] || die "no release notes at $NOTES_FILE"
+NOTES="$(cat "$NOTES_FILE")"
 
 HTML="$(printf '%s\n' "$NOTES" | python3 -c '
 import html, re, sys

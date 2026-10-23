@@ -36,9 +36,11 @@ presentation).
   not unique value VibeRes brings.
 
 **If we revisit**
-- Make it a dedicated v1.0.0 release with mirror as the single headline
-  feature. Don't bolt it onto a patch. (0.9.0 went to main-display
-  selection instead.)
+- Make it a dedicated release with mirror as the single headline feature.
+  Don't bolt it onto a patch. (0.9.0 went to main-display selection
+  instead.) 1.0.0 is not tied to it: 1.0 marks the core (switching,
+  profiles, revert safety, updates, languages, diagnostics) as stable and
+  follows 0.11.0 once that has been in users' hands without regressions.
 - UI exploration first (Figma or whiteboard) for Save / Edit form before
   any code. Verify the form stays compact.
 - Decide upfront: does mirror replace the slave's resolution in the
