@@ -1455,7 +1455,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copia las versiones, el modelo de Mac, estos ajustes, las pantallas y las últimas líneas del registro para un informe de error. Sin números de serie ni rutas de archivos."
+            "value": "Copia versiones, modelo de Mac, estos ajustes, pantallas y las últimas líneas del registro para informar de un error. Sin números de serie ni rutas de archivo."
           }
         },
         "fr": {
@@ -3846,7 +3846,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desactivado de forma predeterminada. Registra los cambios de pantalla y sus resultados en ~/Library/Logs/VibeRes, hasta aproximadamente 1 MB. No se envía nada."
+            "value": "Desactivado por defecto. Registra los cambios de pantalla y sus resultados en ~/Library/Logs/VibeRes, hasta 1 MB aprox. No se envía nada."
           }
         },
         "fr": {
