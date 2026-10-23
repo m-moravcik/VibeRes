@@ -310,7 +310,7 @@ room to negotiate.
   separately so a registration invalidated by an update or a move is
   re-registered rather than silently forgotten.
 - A three-step welcome tour on first launch, replayable from Settings.
-- Settings in a standard `⌘,` scene: General, Display, Updates.
+- Settings in a standard `⌘,` scene: General, Display, Updates, Debug.
 - `⌘1`…`⌘9` apply the first nine profiles while the popover has focus.
 
 *Evidence:* `Core/LoginItem.swift`, `Core/Preferences.swift`,
