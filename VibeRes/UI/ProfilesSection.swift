@@ -36,7 +36,7 @@ struct ProfilesSection: View {
                 shownMode = newValue
                 return
             }
-            withAnimation(reduceMotion ? Design.Motion.quick : Design.Motion.closeUp) {
+            withAnimation(reduceMotion ? Design.Motion.jump : Design.Motion.closeUp) {
                 shownMode = newValue
             }
         }

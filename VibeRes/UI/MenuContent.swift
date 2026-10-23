@@ -161,7 +161,7 @@ struct RootView: View {
                 .background(Design.Palette.warningFill)
                 // Rises from the footer it belongs to, and fades before the
                 // footer closes up over it.
-                .transition(reduceMotion ? .opacity : .asymmetric(
+                .transition(reduceMotion ? .row(reduceMotion: true) : .asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
                     removal: .opacity.animation(Design.Motion.rowOut)
                 ))
@@ -173,10 +173,10 @@ struct RootView: View {
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: profiles.lastError)
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: updateStatus.isUpdateReady)
         // The countdown and the Revert row fade before the rows close up.
-        .animation(reduceMotion ? Design.Motion.quick
+        .animation(reduceMotion ? Design.Motion.jump
                    : store.confirmationSecondsRemaining == nil ? Design.Motion.closeUp : Design.Motion.layout,
                    value: store.confirmationSecondsRemaining == nil)
-        .animation(reduceMotion ? Design.Motion.quick
+        .animation(reduceMotion ? Design.Motion.jump
                    : store.revert.canRevert ? Design.Motion.layout : Design.Motion.closeUp,
                    value: store.revert.canRevert)
         // The MAIN badge travels to the display that became main.

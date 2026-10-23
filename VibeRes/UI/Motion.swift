@@ -67,12 +67,11 @@ extension AnyTransition {
     }
 
     /// A row or panel that fades in once the rows around it have made room,
-    /// and fades out before they close up. Reduce Motion: a crossfade both
-    /// ways.
+    /// and fades out before they close up. Reduce Motion: the same order
+    /// around the rows' `jump`.
     static func row(reduceMotion: Bool) -> AnyTransition {
-        guard !reduceMotion else { return .opacity.animation(Design.Motion.quick) }
-        return .asymmetric(
-            insertion: .opacity.animation(Design.Motion.rowIn),
+        .asymmetric(
+            insertion: .opacity.animation(reduceMotion ? Design.Motion.rowInReduced : Design.Motion.rowIn),
             removal: .opacity.animation(Design.Motion.rowOut)
         )
     }

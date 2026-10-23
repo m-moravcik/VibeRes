@@ -111,6 +111,12 @@ enum Design {
         static let rowOut: Animation = .easeOut(duration: 0.1)
         /// Rows closing up after something left: `layout`, a beat later.
         static let closeUp: Animation = layout.delay(0.08)
+        /// Under Reduce Motion the rows around such a row do not move: they
+        /// jump to their end state once the row leaving has faded (`rowOut`),
+        /// and the row arriving fades in after that (`rowInReduced`). A zero
+        /// duration would make SwiftUI ignore the delay.
+        static let jump: Animation = .linear(duration: 0.001).delay(0.1)
+        static let rowInReduced: Animation = quick.delay(0.1)
 
         /// The highlighted refresh rate slides to the one just picked, so the
         /// row reads as one control that changed its value.
