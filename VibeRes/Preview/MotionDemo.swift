@@ -2,7 +2,8 @@
 import AppKit
 import SwiftUI
 
-/// Development harness: renders the README hero animation frame by frame.
+/// Development harness: renders the README resolution-switch loop
+/// (`docs/hero-resolution*.gif`) frame by frame.
 /// Debug builds only; `scripts/motion-demo.sh` drives it and encodes the GIF.
 ///
 /// The story is the app's one key moment: a click on a size in the display

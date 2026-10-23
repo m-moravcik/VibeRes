@@ -33,13 +33,31 @@ image, which is not used here.
 - Copy the files you need over the ones here, or bump the suffix (`-v4`) and
   update the `<img>` tags in the root README so the two cannot drift apart.
 
-## The README hero animation
+## The README loops
 
-`docs/hero.gif` and `docs/hero-dark.gif` at the top of the root README come
-from a separate harness, `VibeRes/Preview/MotionDemo.swift`:
+`docs/hero.gif` and `docs/hero-dark.gif` at the top of the root README show a
+profile clicked in the popover. They come from
+`VibeRes/Preview/ProfileDemo.swift`:
 
 ```sh
-scripts/motion-demo.sh        # into build/motion
+scripts/profile-demo.sh                          # into build/profile-demo/en
+scripts/profile-demo.sh build/profile-demo/sk sk # Slovak, for the website
+```
+
+- The cards are this Mac's displays and the loop needs two, the built-in and
+  an external, both awake. The README alt text names the external and the
+  sizes the take switches between (LG UltraFine, 2560 × 1440 and
+  2048 × 1152); a retake on another setup must update that text in the same
+  commit.
+- Besides the GIFs, the script writes an MP4 and a poster per appearance for a
+  website, and a contact sheet to review before publishing.
+
+`docs/hero-resolution.gif` and `docs/hero-resolution-dark.gif`, under
+"Switching resolution", show a size picked in the display detail. They come
+from `VibeRes/Preview/MotionDemo.swift`:
+
+```sh
+scripts/motion-demo.sh        # into build/motion; copy hero*.gif to docs/hero-resolution*.gif
 ```
 
 - The sizes are the built-in display's, so the lid must be open and the screen

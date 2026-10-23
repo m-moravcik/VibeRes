@@ -1,5 +1,6 @@
 #!/bin/bash
-# Render the README hero animation from the app itself and encode it.
+# Render the README resolution-switch loop (docs/hero-resolution*.gif) from
+# the app itself and encode it.
 # See VibeRes/Preview/MotionDemo.swift.
 #
 #   scripts/motion-demo.sh [output-dir]     # default build/motion
