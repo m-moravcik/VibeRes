@@ -96,7 +96,7 @@ enum Diagnostics {
     /// them, this is the second line of defence for account and volume names.
     static func scrub(_ text: String) -> String {
         text.replacing(/\/Users\/[^\/\s]+/, with: "~")
-            .replacing(/\/Volumes\/[^\/\s]+/, with: "/Volumes/-")
+            .replacing(/\/Volumes\/[^\/\n]+/, with: "/Volumes/-")
     }
 }
 

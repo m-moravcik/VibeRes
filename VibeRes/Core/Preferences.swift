@@ -118,11 +118,15 @@ final class Preferences {
         }
     }
 
+    /// The sink the debug log choice drives; nil writes no file whatever the toggle says.
+    private let logSink: LogSink?
+
     private func applyDebugLog() {
-        LogSink.shared.configure(enabled: debugLogEnabled, verbosity: debugLogLevel)
+        logSink?.configure(enabled: debugLogEnabled, verbosity: debugLogLevel)
     }
 
-    init() {
+    init(logSink: LogSink? = nil) {
+        self.logSink = logSink
         self.confirmDisplayChanges = UserDefaults.standard.bool(forKey: Self.confirmChangesKey)
         // Read before the didSet observers can fire.
         self.launchAtLoginIntent = UserDefaults.standard.object(forKey: Self.launchAtLoginKey) as? Bool

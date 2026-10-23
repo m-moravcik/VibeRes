@@ -128,16 +128,58 @@ struct DebugLogPreferencesTests {
     private func reset() {
         UserDefaults.standard.removeObject(forKey: Preferences.debugLogEnabledKey)
         UserDefaults.standard.removeObject(forKey: Preferences.debugLogLevelKey)
-        LogSink.shared.configure(enabled: false, verbosity: .info)
     }
 
-    @Test("Off by default, standard level")
+    /// Writes one line per level through `sink` and returns the levels that landed.
+    private func written(_ sink: LogSink) -> [String] {
+        sink.write(.error, category: "t", "e")
+        sink.write(.info, category: "t", "i")
+        sink.write(.debug, category: "t", "d")
+        sink.flush()
+        return sink.lastLines(10).map { String($0.split(separator: " ").last ?? "") }
+    }
+
+    @Test("Off by default, standard level, and the sink stays off")
     func defaults() {
         reset()
         defer { reset() }
-        let prefs = Preferences()
+        let (url, cleanup) = scratchLog()
+        defer { cleanup() }
+        let sink = LogSink(file: LogFile(url: url))
+        let prefs = Preferences(logSink: sink)
         #expect(prefs.debugLogEnabled == false)
         #expect(prefs.debugLogLevel == .info)
+        #expect(written(sink).isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test("The toggle and the level drive the sink it was given")
+    func drivesSink() {
+        reset()
+        defer { reset() }
+        let (url, cleanup) = scratchLog()
+        defer { cleanup() }
+        let sink = LogSink(file: LogFile(url: url))
+        let prefs = Preferences(logSink: sink)
+        prefs.debugLogEnabled = true
+        #expect(written(sink) == ["e", "i"])
+        prefs.debugLogLevel = .debug
+        #expect(written(sink) == ["e", "i", "e", "i", "d"])
+        prefs.debugLogEnabled = false
+        #expect(written(sink).count == 5)
+    }
+
+    @Test("A stored opt-in reaches the sink at launch")
+    func storedOptIn() {
+        reset()
+        defer { reset() }
+        let (url, cleanup) = scratchLog()
+        defer { cleanup() }
+        UserDefaults.standard.set(true, forKey: Preferences.debugLogEnabledKey)
+        UserDefaults.standard.set(LogLevel.error.rawValue, forKey: Preferences.debugLogLevelKey)
+        let sink = LogSink(file: LogFile(url: url))
+        _ = Preferences(logSink: sink)
+        #expect(written(sink) == ["e"])
     }
 
     @Test("Opt-in and level persist across instances")
@@ -158,6 +200,11 @@ struct DebugLogPreferencesTests {
         defer { reset() }
         UserDefaults.standard.set(99, forKey: Preferences.debugLogLevelKey)
         #expect(Preferences().debugLogLevel == .info)
+    }
+
+    @Test("The app hosting the tests never hands out the real log file")
+    func hostedAppHasNoSink() {
+        #expect(VibeResApp.debugLogSink == nil)
     }
 }
 
@@ -199,7 +246,9 @@ struct DiagnosticsTests {
         #expect(!text.contains("jane.doe"))
         #expect(!text.contains("/Users/"))
         #expect(!text.contains("Secret"))
+        #expect(!text.contains("Drive"))
         #expect(text.contains("~/Library/x"))
+        #expect(text.contains("INFO capture /Volumes/-/shot.png"))
     }
 
     @Test("Scrub leaves ordinary text alone")

@@ -22,7 +22,7 @@ struct VibeResApp: App {
         #endif
         // First, so the debug log opt-in is in force before the stores below
         // log their first refresh.
-        let prefs = Preferences()
+        let prefs = Preferences(logSink: Self.debugLogSink)
         let info = Bundle.main.infoDictionary
         Log.app.info("launch: VibeRes \(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?")), macOS \(ProcessInfo.processInfo.operatingSystemVersionString), \(Diagnostics.hardwareModel())")
         Self.installDisplayNamer()
@@ -44,6 +44,12 @@ struct VibeResApp: App {
         // the toggle just reads off, with nothing to notice the regression.
         prefs.launchAtLoginIntent = LoginItem.reconcile(storedIntent: prefs.launchAtLoginIntent)
         _preferences = State(initialValue: prefs)
+    }
+
+    /// The real log file, unless this launch only hosts the unit tests: their
+    /// fixtures log too, and must not land in the file a bug report carries.
+    static var debugLogSink: LogSink? {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil ? .shared : nil
     }
 
     /// Wires up the AppKit-backed display name resolver. Must run before any

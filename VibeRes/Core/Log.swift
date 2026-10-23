@@ -83,7 +83,8 @@ enum Log {
 }
 
 /// Decides whether a line reaches the debug log file and owns the file. Off until
-/// `configure` turns it on, so the CLI and every test run write nothing.
+/// `configure` turns it on. Only the GUI app hands `shared` to `Preferences`, so
+/// the CLI, the preview harnesses and every test run write nothing.
 final class LogSink: @unchecked Sendable {
     static let shared = LogSink(file: LogFile(url: LogFile.defaultURL))
 
@@ -95,8 +96,6 @@ final class LogSink: @unchecked Sendable {
     init(file: LogFile) {
         self.file = file
     }
-
-    var fileURL: URL { file.url }
 
     func configure(enabled: Bool, verbosity: LogLevel) {
         lock.lock()
