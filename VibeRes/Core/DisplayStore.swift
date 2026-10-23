@@ -665,6 +665,7 @@ final class DisplayStore {
         // be a consistent layout to translate (F2), never a stale one (F1).
         var restored = restoredModes
         var failedMain: CGDirectDisplayID?
+        var mainRestored = false
         if let beforeMain = snapshot.beforeMain {
             let live = liveArrangement()
             if live.main != beforeMain {
@@ -677,6 +678,7 @@ final class DisplayStore {
                         let after = liveArrangement()
                         if after.main == beforeMain {
                             restored += 1
+                            mainRestored = true
                         } else {
                             failedMain = beforeMain
                             lastError = .previousMainNotRestored
@@ -697,6 +699,13 @@ final class DisplayStore {
         }
         if restored > 0 {
             refresh()
+        }
+        if mainRestored {
+            // The synchronous refresh takes the swap before any reconfiguration
+            // refresh can see it, so nothing re-anchored the popover's window
+            // after a Revert of the main display; it is done when the popover
+            // closes.
+            popoverNeedsReanchor = true
         }
         if restoredModes > 0 {
             onModeSwitch?()

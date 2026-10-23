@@ -84,6 +84,34 @@ struct RevertMainDisplayTests {
         #expect(!store.revert.canRevert)
     }
 
+    @Test("Restoring the old main re-anchors the popover's window when it closes")
+    func restoredMainReanchorsOnClose() {
+        let store = DisplayStore()
+        var dismissals = 0
+        store.dismissStalePopoverOverride = { dismissals += 1 }
+        var currentMain: CGDirectDisplayID = 7
+        store.applyMode = { _, _, _ in }
+        store.liveArrangement = {
+            (main: currentMain, bounds: [
+                5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+                7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        store.applyOrigins = { plan, _ in
+            if let landed = plan.first(where: { $0.value == .zero })?.key {
+                currentMain = landed
+            }
+        }
+        store.revert.recordBatch([], beforeMain: 5)
+
+        _ = store.performRevert()
+
+        #expect(dismissals == 0, "the Revert closed the popover instead of keeping it open")
+        #expect(store.popoverNeedsReanchor)
+        store.popoverDidClose()
+        #expect(dismissals == 1, "closing the popover did not re-anchor its window")
+    }
+
     @Test("A commit that silently leaves main unchanged is not counted as restored (F5)")
     func silentlyUnchangedMainNotCountedAsRestored() {
         let store = DisplayStore()
@@ -105,6 +133,7 @@ struct RevertMainDisplayTests {
         #expect(store.revert.canRevert)
         #expect(store.revert.consume().beforeMain == 5)
         #expect(store.lastError != nil)
+        #expect(!store.popoverNeedsReanchor, "the main never moved, so the window needs no re-anchoring")
     }
 
     @Test("An old main that is no longer active is skipped, not guessed at")
@@ -137,5 +166,6 @@ struct RevertMainDisplayTests {
         #expect(restored == 0)
         #expect(store.revert.canRevert, "the display is still not where the user wanted it")
         #expect(store.revert.consume().beforeMain == 5)
+        #expect(!store.popoverNeedsReanchor)
     }
 }
