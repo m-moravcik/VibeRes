@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in VibeRes does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        VibeRes sends nothing anywhere, so this report is all I get. The diagnostics below are what makes it fixable without a round of questions.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Plug in the external display
+        2. Click the menu bar icon and pick 2560 x 1440
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        In VibeRes open Settings, Debug and click **Copy diagnostics**, then paste here. It holds the app, macOS and Mac model, a few settings, your displays by name and mode, and the latest log lines. No serial numbers or file paths.
+        For a bug that is hard to catch, turn on **Write debug log to file** first, reproduce it, then copy.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, the display setup (dock, adapter, cable), whether it worked in an earlier version.
