@@ -97,11 +97,10 @@ enum Design {
 
         /// The note under the pills drops in from just above, a beat after
         /// the rows under it start making room, so it never lands on a card
-        /// still moving out of its way. It leaves by fading, faster, as exits
-        /// should.
+        /// still moving out of its way. It leaves like any row (`rowOut`),
+        /// faster, as exits should.
         static let noteIn: Animation = .spring(duration: 0.3, bounce: 0.2).delay(0.08)
         static let noteDrop: CGFloat = 6
-        static let leave: Animation = .smooth(duration: 0.2)
 
         /// A row or panel that takes a place the others make room for (the
         /// inline panels swapping with the pills, the footer's Revert row)
@@ -117,6 +116,15 @@ enum Design {
         /// duration would make SwiftUI ignore the delay.
         static let jump: Animation = .linear(duration: 0.001).delay(0.1)
         static let rowInReduced: Animation = quick.delay(0.1)
+
+        /// How the rest of the popover moves when a row arrives or leaves:
+        /// it makes room at once for an arriving row (`layout`) and closes up
+        /// only after a leaving one has faded (`closeUp`); Reduce Motion:
+        /// `jump`. Every row that comes and goes uses this, with `row` or
+        /// `note` as its transition.
+        static func rows(arriving: Bool, reduceMotion: Bool) -> Animation {
+            reduceMotion ? jump : arriving ? layout : closeUp
+        }
 
         /// The highlighted refresh rate slides to the one just picked, so the
         /// row reads as one control that changed its value.

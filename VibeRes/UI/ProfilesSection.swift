@@ -232,7 +232,7 @@ struct ProfilesSection: View {
                 // expire on their own; the rest stay until dismissed or the
                 // popover closes. See `PopoverNote`.
                 NoteRow(tone: current.tone, text: current.body.text, detail: current.body.detail) {
-                    note.dismiss()
+                    changeNote { $0.dismiss() }
                 }
                 .padding(.top, 2)
                 // A new note, even with the same words, arrives as a new one.
@@ -240,7 +240,6 @@ struct ProfilesSection: View {
                 .transition(.note(reduceMotion: reduceMotion))
             }
         }
-        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: note.current?.generation)
         .padding(.bottom, Design.Spacing.xs)
         .onAppear {
             if opensSaveForm, mode == .idle {
@@ -248,7 +247,7 @@ struct ProfilesSection: View {
             }
         }
         .onChange(of: popoverSession) {
-            note.dismiss()
+            changeNote { $0.dismiss() }
             // The confirmations answer a click from the last open; a reopen
             // hours later must not find "Apply 'Desk'?" still waiting. The
             // forms keep what was typed into them.
@@ -850,11 +849,24 @@ struct ProfilesSection: View {
     }
 
     private func show(_ body: NoteBody, tone: ApplyOutcomeNote.Tone) {
-        let generation = note.show(body, tone: tone)
+        var generation = 0
+        changeNote { generation = $0.show(body, tone: tone) }
         guard let delay = tone.autoDismissDelay else { return }
         Task { @MainActor in
             try? await Task.sleep(for: delay)
-            note.expire(generation)
+            changeNote { $0.expire(generation) }
+        }
+    }
+
+    /// Changes the note in one transaction for the whole popover, as `mode`
+    /// does: the cards and the footer it moves are `RootView`'s, out of reach
+    /// of an `.animation` here.
+    private func changeNote(_ change: (inout PopoverNote<NoteBody>) -> Void) {
+        var next = note
+        change(&next)
+        guard next != note else { return }
+        withAnimation(Design.Motion.rows(arriving: next.current != nil, reduceMotion: reduceMotion)) {
+            note = next
         }
     }
 
@@ -864,7 +876,7 @@ struct ProfilesSection: View {
         // Aggregation lives in ApplyOutcomeNote so the precedence rules are
         // testable and the copy is localisable. See ApplyOutcomeNoteTests.
         guard let outcome = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) else {
-            note.dismiss()
+            changeNote { $0.dismiss() }
             return
         }
         show(.outcome(outcome), tone: outcome.tone)

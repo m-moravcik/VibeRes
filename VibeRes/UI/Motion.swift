@@ -63,7 +63,7 @@ extension AnyTransition {
         return .asymmetric(
             insertion: .offset(y: -Design.Motion.noteDrop).combined(with: .opacity)
                 .animation(Design.Motion.noteIn),
-            removal: .opacity.animation(Design.Motion.leave)
+            removal: .opacity.animation(Design.Motion.rowOut)
         )
     }
 

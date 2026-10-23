@@ -92,16 +92,16 @@ struct RootView: View {
             // saying: `ProfileStore` recorded it and nothing ever showed it.
             if let problem = store.lastError {
                 ProblemRow(problem: problem) { store.dismissLastError() }
-                    .transition(.note(reduceMotion: reduceMotion))
+                    .transition(.row(reduceMotion: reduceMotion))
             }
             if let problem = profiles.lastError {
                 ProblemRow(problem: problem) { profiles.dismissLastError() }
-                    .transition(.note(reduceMotion: reduceMotion))
+                    .transition(.row(reduceMotion: reduceMotion))
             }
 
             if updateStatus.isUpdateReady {
                 UpdateReadyBanner { updater?.installUpdate() }
-                    .transition(.opacity)
+                    .transition(.row(reduceMotion: reduceMotion))
             }
 
             // Tight against the popover top — MenuBarExtra(.window) wraps us
@@ -159,25 +159,30 @@ struct RootView: View {
                 .padding(.horizontal, Design.Spacing.l)
                 .padding(.vertical, Design.Spacing.xs)
                 .background(Design.Palette.warningFill)
-                // Rises from the footer it belongs to, and fades before the
-                // footer closes up over it.
+                // Rises a touch from the footer it belongs to once the rows
+                // have made room, and fades before the footer closes up over
+                // it.
                 .transition(reduceMotion ? .row(reduceMotion: true) : .asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    insertion: .offset(y: Design.Motion.noteDrop).combined(with: .opacity)
+                        .animation(Design.Motion.rowIn),
                     removal: .opacity.animation(Design.Motion.rowOut)
                 ))
             }
 
             FooterBar()
         }
-        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: store.lastError)
-        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: profiles.lastError)
-        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: updateStatus.isUpdateReady)
-        // The countdown and the Revert row fade before the rows close up.
-        .animation(reduceMotion ? Design.Motion.jump
-                   : store.confirmationSecondsRemaining == nil ? Design.Motion.closeUp : Design.Motion.layout,
+        // The rows around these make room before they fade in, and close up
+        // only after they have faded out. On values seen here rather than
+        // where they change, so it reaches every row of the popover.
+        .animation(Design.Motion.rows(arriving: store.lastError != nil, reduceMotion: reduceMotion),
+                   value: store.lastError)
+        .animation(Design.Motion.rows(arriving: profiles.lastError != nil, reduceMotion: reduceMotion),
+                   value: profiles.lastError)
+        .animation(Design.Motion.rows(arriving: updateStatus.isUpdateReady, reduceMotion: reduceMotion),
+                   value: updateStatus.isUpdateReady)
+        .animation(Design.Motion.rows(arriving: store.confirmationSecondsRemaining != nil, reduceMotion: reduceMotion),
                    value: store.confirmationSecondsRemaining == nil)
-        .animation(reduceMotion ? Design.Motion.jump
-                   : store.revert.canRevert ? Design.Motion.layout : Design.Motion.closeUp,
+        .animation(Design.Motion.rows(arriving: store.revert.canRevert, reduceMotion: reduceMotion),
                    value: store.revert.canRevert)
         // The MAIN badge travels to the display that became main.
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.badge,
