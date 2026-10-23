@@ -120,8 +120,10 @@ enum Design {
         /// How the rest of the popover moves when a row arrives or leaves:
         /// it makes room at once for an arriving row (`layout`) and closes up
         /// only after a leaving one has faded (`closeUp`); Reduce Motion:
-        /// `jump`. Every row that comes and goes uses this, with `row` or
-        /// `note` as its transition.
+        /// `jump`. Every row that comes and goes uses this, with `row`,
+        /// `note` or (the countdown) a rise from the footer as its
+        /// transition. A panel swapping with the pills both leaves and
+        /// arrives, so it always closes up (`ProfilesSection.mode`).
         static func rows(arriving: Bool, reduceMotion: Bool) -> Animation {
             reduceMotion ? jump : arriving ? layout : closeUp
         }
