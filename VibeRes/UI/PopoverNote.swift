@@ -44,6 +44,38 @@ struct PopoverNote<Body: Equatable>: Equatable {
     }
 }
 
+/// Which auto-apply the popover has said "Applied ..." for in this open.
+///
+/// Two handlers announce it: the one for a new auto-apply, and the one for a
+/// closed popover, which clears the last open's note and looks again. SwiftUI
+/// can run both in one update, in either order, and a MenuBarExtra holds its
+/// updates back while closed, so that is the usual case. Both ask here, and
+/// whichever runs last, a fresh auto-apply ends up announced, once per open.
+struct AutoApplyAnnouncement: Equatable {
+    /// How long after an auto-apply the popover still says it happened.
+    /// Auto-apply runs when the displays change, usually with the popover
+    /// closed; opening it soon after explains why a resolution just changed,
+    /// opening it an hour later should not.
+    static let freshness: TimeInterval = 60
+
+    private var announced: ProfileStore.AutoApplyRecord?
+
+    /// `record` when it is fresh and not yet announced in this open, marked
+    /// as announced; nil otherwise.
+    mutating func take(_ record: ProfileStore.AutoApplyRecord?, now: Date) -> ProfileStore.AutoApplyRecord? {
+        guard let record, record != announced,
+              now.timeIntervalSince(record.date) < Self.freshness
+        else { return nil }
+        announced = record
+        return record
+    }
+
+    /// The popover closed: the next open may announce the same record again.
+    mutating func reset() {
+        announced = nil
+    }
+}
+
 extension ApplyOutcomeNote.Tone {
     /// How long a note in this tone stays before it clears itself; nil keeps
     /// it until it is dismissed or the popover closes.

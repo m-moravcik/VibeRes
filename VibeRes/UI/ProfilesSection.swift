@@ -11,9 +11,7 @@ struct ProfilesSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shownMode: Mode = .idle
     @State private var note = PopoverNote<NoteBody>()
-    /// Tracks the last auto-apply signal we acted on so we don't re-apply the
-    /// same display/wake event multiple times if the popover redraws.
-    @State private var lastObservedAutoApplyToken: Int = -1
+    @State private var autoApplyAnnouncement = AutoApplyAnnouncement()
     @FocusState private var nameFieldFocused: Bool
     /// Opens the save form on appear, for the screenshot harness. See `RootView`.
     private let opensSaveForm: Bool
@@ -211,18 +209,6 @@ struct ProfilesSection: View {
             }
             .transition(.row(reduceMotion: reduceMotion))
 
-            // Watch for display add/remove events and settled wake refreshes;
-            // mode-only changes (user manually picks a different resolution)
-            // don't bump the token, so they're ignored.
-            EmptyView()
-                .onChange(of: displays.autoApplyToken) { _, newToken in
-                    Log.autoApply.debug("token onChange: new=\(newToken) lastObserved=\(lastObservedAutoApplyToken) autoApplyEnabled=\(preferences.autoApplyOnDisplayChange)")
-                    guard preferences.autoApplyOnDisplayChange else { return }
-                    guard newToken != lastObservedAutoApplyToken else { return }
-                    lastObservedAutoApplyToken = newToken
-                    autoApplyMatchingProfile()
-                }
-
             if let current = note.current {
                 // A note that says a monitor fell back to 60 Hz is the only
                 // explanation the user gets, so only the reassuring ones
@@ -243,8 +229,17 @@ struct ProfilesSection: View {
                 mode = .saving(buildInitialFormState())
             }
         }
+        // Auto-apply itself runs in the stores when the displays change (see
+        // DisplayStore.onAutoApplyNeeded); the popover only says it happened.
+        .onChange(of: profiles.lastAutoApply) {
+            announceFreshAutoApply()
+        }
         .onChange(of: popoverSession) {
             changeNote { $0.dismiss() }
+            // An auto-apply that arrived in this same update must still be
+            // said, whichever of the two handlers runs first.
+            autoApplyAnnouncement.reset()
+            announceFreshAutoApply()
             // The confirmations answer a click from the last open; a reopen
             // hours later must not find "Apply 'Desk'?" still waiting. The
             // forms keep what was typed into them.
@@ -287,7 +282,10 @@ struct ProfilesSection: View {
                         // the inline confirmation panel so the user sees
                         // what will be skipped or left alone before the
                         // apply mutates display state.
-                        let classification = DisplaySetClassifier.classify(profile, against: displays.displays)
+                        let classification = DisplaySetClassifier.classify(
+                            profiles.bindings(of: profile, to: displays.displays),
+                            against: displays.displays
+                        )
                         if DisplaySetClassifier.isCleanApply(classification) {
                             commitApply(profile)
                         } else {
@@ -827,22 +825,12 @@ struct ProfilesSection: View {
         }
     }
 
-    /// Triggered by DisplayStore.autoApplyToken bumps. Looks for a saved
-    /// profile that matches the new display set and applies it. Silent on
-    /// no-match so users without saved profiles aren't bothered.
-    /// Also silent when every entry was already at its target mode — no
-    /// point announcing "applied" if nothing actually changed.
-    private func autoApplyMatchingProfile() {
-        guard let match = profiles.profileMatchingExactly(displays.displays) else {
-            Log.autoApply.info("autoApply: no matching profile, skipping")
-            return
-        }
-        Log.autoApply.info("autoApply: invoking applyDetailed across \(displays.displays.count) display(s)", detail: "profile '\(match.name)'")
-        let result = profiles.applyDetailed(match, displays: displays.displays)
-        Log.autoApply.info("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
-        if result.didChangeAnything {
-            announce("Applied '\(match.name)' for the new display setup.", tone: .info)
-        }
+    /// Says "Applied ..." for an auto-apply that is fresh and not yet
+    /// announced in this open. Both the auto-apply and the popover-close
+    /// handlers call it; see `AutoApplyAnnouncement`.
+    private func announceFreshAutoApply() {
+        guard let record = autoApplyAnnouncement.take(profiles.lastAutoApply, now: Date()) else { return }
+        announce("Applied '\(record.profileName)' for the new display setup.", tone: .info)
     }
 
     /// Shows a note in the given tone; see `PopoverNote` for how long it stays.
