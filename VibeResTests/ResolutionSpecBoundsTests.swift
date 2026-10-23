@@ -1,54 +1,16 @@
 import Testing
 @testable import VibeRes
 
-/// CLI parser bounds tests. The parser lives in VibeResCLI/main.swift and is
-/// duplicated here for unit-test reachability — the CLI is its own target
-/// without a public API. The parser shape is small enough that drift is
-/// catchable by the existing CLIArgsTests behavioural suite.
+/// CLI parser bounds tests, against the real `ResolutionSpec.parse` (moved
+/// into Core so this no longer tests a private copy of it).
 ///
 /// These tests focus on the new bounds-checking behaviour added in 0.3.0 to
 /// reject pathological inputs like 99999×99999 or 0×0 before they reach the
 /// scoring math.
 @Suite("ResolutionSpec parser bounds")
 struct ResolutionSpecBoundsTests {
-    /// Mirror of the production parser. Kept private to this test file so it
-    /// can never accidentally be relied on from app code.
-    private struct Spec: Equatable {
-        var width: Int
-        var height: Int
-        var refreshHz: Int?
-        var preferHiDPI: Bool
-    }
-
-    private func parse(_ s: String) -> Spec? {
-        var spec = Spec(width: 0, height: 0, refreshHz: nil, preferHiDPI: true)
-        var rest = s.lowercased()
-
-        if rest.hasSuffix("-native") {
-            spec.preferHiDPI = false
-            rest.removeLast("-native".count)
-        } else if rest.hasSuffix("-hidpi") {
-            spec.preferHiDPI = true
-            rest.removeLast("-hidpi".count)
-        }
-
-        let parts = rest.split(separator: "@", maxSplits: 1).map(String.init)
-        guard let dim = parts.first else { return nil }
-        let dims = dim.split(separator: "x", maxSplits: 1).map(String.init)
-        guard dims.count == 2, let w = Int(dims[0]), let h = Int(dims[1]) else { return nil }
-        guard (1...16384).contains(w), (1...16384).contains(h) else { return nil }
-        spec.width = w
-        spec.height = h
-
-        if parts.count == 2 {
-            let hz = parts[1].replacingOccurrences(of: "hz", with: "")
-            if let rate = Int(hz), (1...1000).contains(rate) {
-                spec.refreshHz = rate
-            } else {
-                return nil
-            }
-        }
-        return spec
+    private func parse(_ s: String) -> ResolutionSpec? {
+        ResolutionSpec.parse(s)
     }
 
     @Test("Realistic resolution still parses")
@@ -78,6 +40,13 @@ struct ResolutionSpecBoundsTests {
     @Test("Refresh rate above 1000 Hz rejected")
     func tooLargeRefresh() {
         #expect(parse("1920x1080@9999") == nil)
+    }
+
+    @Test("Refresh rate bounds apply to a vrr rate too")
+    func vrrRefreshBounds() {
+        #expect(parse("1920x1080@9999vrr") == nil)
+        #expect(parse("1920x1080@0vrr") == nil)
+        #expect(parse("1920x1080@1000vrr")?.refreshHz == 1000)
     }
 
     @Test("Refresh rate of 0 rejected")

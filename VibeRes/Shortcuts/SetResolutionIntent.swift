@@ -23,6 +23,7 @@ struct SetResolutionIntent: AppIntent {
         Summary("Set \(\.$display) to \(\.$width) by \(\.$height)") {
             \.$refreshHz
             \.$preferHiDPI
+            \.$variableRefresh
         }
     }
 
@@ -49,6 +50,15 @@ struct SetResolutionIntent: AppIntent {
     )
     var preferHiDPI: Bool
 
+    /// Off by default, so every Shortcut built before VRR support keeps
+    /// landing on the fixed rate it always meant.
+    @Parameter(
+        title: "Variable Refresh Rate",
+        description: "When the display offers a variable refresh rate (Adaptive Sync) next to a fixed one at the same rate, use the variable one.",
+        default: false
+    )
+    var variableRefresh: Bool
+
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         // Shortcuts hands over whatever the automation supplies, including
         // values no display could have. Scoring survives them now, but the
@@ -69,7 +79,7 @@ struct SetResolutionIntent: AppIntent {
             throw $display.needsValueError("That display is no longer connected.")
         }
 
-        guard let mode = bestMatch(in: info.modes) else {
+        guard let mode = bestMatch(on: info) else {
             throw $width.needsValueError(
                 "No mode close to \(width)×\(height) is available on \(display.name)."
             )
@@ -78,22 +88,32 @@ struct SetResolutionIntent: AppIntent {
         // CGConfigure* APIs are thread-safe; no need to hop to the main actor.
         try ResolutionSwitcher.apply(mode, to: info.id)
 
-        let hzPart = mode.refreshHz.map { " @ \($0) Hz" } ?? ""
-        return .result(value: "\(mode.width) × \(mode.height)\(hzPart)")
+        return .result(value: "\(mode.width) × \(mode.height)\(Self.hzPart(mode, on: info))")
     }
 
     /// Scoring: lower is better. Penalises distance from requested size, mismatched
     /// HiDPI preference, and (when refreshHz is set) distance from requested refresh.
-    private func bestMatch(in modes: [CGDisplayMode]) -> CGDisplayMode? {
+    private func bestMatch(on info: DisplayInfo) -> CGDisplayMode? {
         ModeScoring.bestMatch(
-            in: modes,
+            in: info.modes,
             request: ModeScoring.Request(
                 width: width,
                 height: height,
                 refreshHz: refreshHz,
-                preferHiDPI: preferHiDPI
-            )
+                preferHiDPI: preferHiDPI,
+                preferVariable: variableRefresh
+            ),
+            isVariable: info.isVariable
         )
+    }
+
+    /// " @ 160 Hz", or " @ 160 Hz VRR" for a variable mode that has a fixed
+    /// twin. Shared with Get Current Resolution so a Shortcut can compare the
+    /// two. ProMotion's 120 Hz never gets the suffix, which keeps conditions
+    /// written against "1800 × 1169 @ 120 Hz" working.
+    static func hzPart(_ mode: CGDisplayMode, on info: DisplayInfo) -> String {
+        guard let hz = mode.refreshHz else { return "" }
+        return " @ \(hz) Hz" + (info.isVRRTwin(mode) ? " VRR" : "")
     }
 }
 
@@ -117,7 +137,7 @@ struct GetCurrentResolutionIntent: AppIntent {
             throw $display.needsValueError("That display is no longer connected.")
         }
 
-        let hzPart = mode.refreshHz.map { " @ \($0) Hz" } ?? ""
+        let hzPart = SetResolutionIntent.hzPart(mode, on: info)
         let hidpi = mode.isHiDPI ? " (HiDPI)" : ""
         return .result(value: "\(mode.width) × \(mode.height)\(hzPart)\(hidpi)")
     }

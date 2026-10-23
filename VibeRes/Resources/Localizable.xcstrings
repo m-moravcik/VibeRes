@@ -3192,6 +3192,29 @@
         }
       }
     },
+    "Variable Refresh Rate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable Bildwiederholrate"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable Refresh Rate"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variabilná obnovovacia frekvencia"
+          }
+        }
+      }
+    },
     "Variable refresh rate, up to %lld Hz": {
       "extractionState": "manual",
       "localizations": {
@@ -3280,6 +3303,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keď pre danú veľkosť existujú HiDPI aj natívne režimy, preferovať HiDPI variantu."
+          }
+        }
+      }
+    },
+    "When the display offers a variable refresh rate (Adaptive Sync) next to a fixed one at the same rate, use the variable one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bietet das Display neben einer festen auch eine variable Bildwiederholrate (Adaptive Sync) mit gleichem Wert an, wird die variable verwendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the display offers a variable refresh rate (Adaptive Sync) next to a fixed one at the same rate, use the variable one."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keď displej popri pevnej frekvencii ponúka aj variabilnú (Adaptive Sync) s rovnakou hodnotou, použije sa variabilná."
           }
         }
       }

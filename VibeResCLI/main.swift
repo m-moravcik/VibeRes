@@ -36,74 +36,45 @@ extension DisplayInfo {
 // MARK: - Mode formatting
 
 extension CGDisplayMode {
-    /// One-line CLI-friendly description: "1800x1169 @ 120Hz HiDPI [id=66]"
-    var cliDescription: String {
+    /// One-line CLI-friendly description: "1800x1169 @120Hz VRR HiDPI [id=66]".
+    ///
+    /// `VRR` marks every variable refresh mode, ProMotion's included: unlike
+    /// the popover, which names VRR only where a fixed twin exists, a script
+    /// is better served by the plain fact.
+    func cliDescription(isVariable: Bool) -> String {
         var parts = ["\(width)x\(height)"]
         if let hz = refreshHz { parts.append("@\(hz)Hz") }
+        if isVariable { parts.append("VRR") }
         if isHiDPI { parts.append("HiDPI") }
         parts.append("[id=\(ioDisplayModeID)]")
         return parts.joined(separator: " ")
     }
 }
 
-// MARK: - Argument parsing
-
-struct ResolutionSpec {
-    var width: Int
-    var height: Int
-    var refreshHz: Int?
-    var preferHiDPI: Bool
-
-    /// Parse strings like:
-    ///   "1800x1169"          → 1800×1169, no refresh, default HiDPI prefer
-    ///   "1800x1169@120"      → with refresh
-    ///   "1920x1080@60-native" → native (non-HiDPI)
-    ///   "1920x1080-hidpi"    → HiDPI
-    static func parse(_ s: String) -> ResolutionSpec? {
-        var spec = ResolutionSpec(width: 0, height: 0, refreshHz: nil, preferHiDPI: true)
-        var rest = s.lowercased()
-
-        if rest.hasSuffix("-native") {
-            spec.preferHiDPI = false
-            rest.removeLast("-native".count)
-        } else if rest.hasSuffix("-hidpi") {
-            spec.preferHiDPI = true
-            rest.removeLast("-hidpi".count)
-        }
-
-        let parts = rest.split(separator: "@", maxSplits: 1).map(String.init)
-        guard let dim = parts.first else { return nil }
-        let dims = dim.split(separator: "x", maxSplits: 1).map(String.init)
-        guard dims.count == 2, let w = Int(dims[0]), let h = Int(dims[1]) else { return nil }
-        // Clamp to sane physical-display limits to keep scoring math safe even
-        // when the user feeds the CLI a number outside the realistic range.
-        guard (1...16384).contains(w), (1...16384).contains(h) else { return nil }
-        spec.width = w
-        spec.height = h
-
-        if parts.count == 2 {
-            let hz = parts[1].replacingOccurrences(of: "hz", with: "")
-            if let rate = Int(hz), (1...1000).contains(rate) {
-                spec.refreshHz = rate
-            } else {
-                return nil
-            }
-        }
-        return spec
+extension DisplayInfo {
+    func cliDescription(of mode: CGDisplayMode) -> String {
+        mode.cliDescription(isVariable: isVariable(mode))
     }
 }
 
+// MARK: - Argument parsing
+//
+// `ResolutionSpec` lives in VibeRes/Core so the unit tests reach the real
+// parser.
+
 // MARK: - Best-match scoring (mirrors SetResolutionIntent)
 
-func bestMatch(in modes: [CGDisplayMode], spec: ResolutionSpec) -> CGDisplayMode? {
+func bestMatch(on display: DisplayInfo, spec: ResolutionSpec) -> CGDisplayMode? {
     ModeScoring.bestMatch(
-        in: modes,
+        in: display.modes,
         request: ModeScoring.Request(
             width: spec.width,
             height: spec.height,
             refreshHz: spec.refreshHz,
-            preferHiDPI: spec.preferHiDPI
-        )
+            preferHiDPI: spec.preferHiDPI,
+            preferVariable: spec.preferVariable
+        ),
+        isVariable: display.isVariable
     )
 }
 
@@ -173,7 +144,9 @@ func cmdHelp() {
       viberes modes <display>                   List modes available on a display
       viberes current [<display>]               Show current mode (default: all displays)
       viberes set <display> <WxH[@Hz][-hidpi|-native]>
-                                                Switch a display to the closest matching mode
+                                                Switch a display to the closest matching mode.
+                                                  Add vrr to the rate (@160vrr, or @vrr for the
+                                                    highest) for the variable refresh mode.
       viberes profile list                      List saved profiles
       viberes profile show <name>               Show details (matchers, sizes, refresh)
       viberes profile save <name> [--any-external] [--only <display>...]
@@ -204,6 +177,7 @@ func cmdHelp() {
       viberes list
       viberes set "Built-in" 1800x1169@120
       viberes set Q3279 2560x1440-native
+      viberes set Q3279 2560x1440@160vrr
       viberes profile save Work
       viberes profile save Presentation --any-external
       viberes profile save "Code Mode" --only Built-in
@@ -222,7 +196,7 @@ func cmdList() {
         let main = d.isMain ? " [MAIN]" : ""
         var line = "\(d.id)\t\(d.name)\(main)"
         if let cur = d.currentMode {
-            line += "\t\(cur.cliDescription)"
+            line += "\t\(d.cliDescription(of: cur))"
         }
         print(line)
     }
@@ -234,10 +208,11 @@ func cmdModes(_ needle: String) {
         fail("no display matching \"\(needle)\"")
     }
     print("# \(display.name) (id=\(display.id))")
-    let groups = ResolutionGroup.build(from: display.modes)
-    for g in groups {
+    for g in display.groups {
         let kind = g.isHiDPI ? "HiDPI" : "Native"
-        let rates = g.modesByRefresh.map { String($0.hz) }.joined(separator: ",")
+        // "160vrr" is the spelling `set` accepts, so a rate can be copied
+        // straight from this list.
+        let rates = g.modesByRefresh.map { "\($0.hz)\($0.isVariable ? "vrr" : "")" }.joined(separator: ",")
         let curMark = g.modesByRefresh.contains { $0.mode.ioDisplayModeID == display.currentMode?.ioDisplayModeID } ? " *" : ""
         print("\(g.pointWidth)x\(g.pointHeight)\t\(kind)\t@[\(rates)]Hz\(curMark)")
     }
@@ -253,7 +228,7 @@ func cmdCurrent(_ needle: String?) {
     }
     for d in targets {
         if let cur = d.currentMode {
-            print("\(d.name)\t\(cur.cliDescription)")
+            print("\(d.name)\t\(d.cliDescription(of: cur))")
         } else {
             print("\(d.name)\t(no current mode)")
         }
@@ -268,12 +243,12 @@ func cmdSet(_ needle: String, _ specStr: String) {
     guard let spec = ResolutionSpec.parse(specStr) else {
         fail("could not parse mode spec \"\(specStr)\". Try \"1800x1169@120\".")
     }
-    guard let mode = bestMatch(in: display.modes, spec: spec) else {
+    guard let mode = bestMatch(on: display, spec: spec) else {
         fail("no mode close to \(spec.width)x\(spec.height) on \(display.name)")
     }
     do {
         try ResolutionSwitcher.apply(mode, to: display.id)
-        print("\(display.name) → \(mode.cliDescription)")
+        print("\(display.name) → \(display.cliDescription(of: mode))")
     } catch {
         fail(error.userFacingText)
     }
@@ -352,7 +327,7 @@ func cmdProfileShow(_ name: String) {
         case .anyExternal: kind = "any-external"
         case .builtIn: kind = "built-in"
         }
-        let hz = entry.refreshHz.map { "@\($0)Hz" } ?? "@?Hz"
+        let hz = (entry.refreshHz.map { "@\($0)Hz" } ?? "@?Hz") + (entry.isVariableRefresh ? " VRR" : "")
         let scale = entry.isHiDPI ? "HiDPI" : "Native"
         print("  - \(entry.displayName) [\(kind)]\t\(entry.pointWidth)x\(entry.pointHeight) \(hz) \(scale)")
     }

@@ -126,6 +126,7 @@ viberes modes <display>                   Show available modes
 viberes current [<display>]               Print current mode (one or all)
 viberes set <display> <WxH[@Hz][-hidpi|-native]>
                                           Switch to closest matching mode
+                                          (@160vrr or @vrr: the variable refresh mode)
 
 viberes profile list
 viberes profile show <name>
@@ -142,6 +143,7 @@ viberes profile delete <name>
 ```bash
 viberes set "Built-in" 1800x1169@120
 viberes set LG 2560x1440-native
+viberes set LG 2560x1440@160vrr            # Adaptive Sync instead of fixed 160 Hz
 viberes profile save Presentation --any-external
 viberes profile save Code --only Built-in
 viberes profile apply Presentation
@@ -149,6 +151,8 @@ viberes profile apply Presentation
 #   ✓ Built-in Retina Display → 1280×800 @60Hz
 #   ~ LG UltraFine: wanted 1920×1080 @60Hz, used 1920×1080 @60Hz (closest available)
 ```
+
+`list`, `current`, `set` and `profile show` print `VRR` after the rate of a variable refresh mode, and `modes` lists it as `160vrr`, the spelling `set` accepts.
 
 Set `VIBERES_PROFILE_DIR` to read and write profiles somewhere other than
 `~/Library/Application Support/VibeRes` — useful for scripting against a
@@ -162,7 +166,7 @@ Exit code is `0` for full success, `2` if anything fell back or was skipped. Eas
 
 Two AppIntents auto-register with Shortcuts, Spotlight, and Siri:
 
-- **Set Display Resolution** — pick a display + width + height (+ optional refresh and HiDPI preference). Closest-match scoring.
+- **Set Display Resolution** — pick a display + width + height (+ optional refresh, HiDPI and variable refresh preference). Closest-match scoring.
 - **Get Current Resolution** — for conditional workflows ("if my MacBook is at 1800×1169, switch to 1280×800").
 
 Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings — pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
