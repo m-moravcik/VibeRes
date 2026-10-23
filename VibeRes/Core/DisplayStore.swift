@@ -3,7 +3,6 @@ import CoreGraphics
 import Observation
 import SwiftUI
 
-
 /// Observable view-model the UI binds to. Refreshes the display list when the menu opens
 /// and whenever macOS posts a reconfiguration event (display added, removed, mode changed
 /// from System Settings while we're running).

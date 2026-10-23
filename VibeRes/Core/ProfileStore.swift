@@ -2,7 +2,6 @@ import CoreGraphics
 import Foundation
 import Observation
 
-
 /// User-facing intent at save time: should this entry match a specific
 /// physical display (EDID-locked) or any monitor of that role.
 enum ProfileMatchKind {

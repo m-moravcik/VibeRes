@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 /// Compact profiles strip shown above the displays list. Each saved profile is one
 /// pill button; tap to apply, right-click for actions. "+" pill expands an inline
 /// save form letting users include/exclude displays and mark externals as flexible.
