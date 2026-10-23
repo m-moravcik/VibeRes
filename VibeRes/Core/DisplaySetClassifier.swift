@@ -33,22 +33,24 @@ enum DisplaySetClassifier {
         case disjoint
     }
 
-    /// Compute the classification for a profile against the live display set.
-    /// `.anyExternal` matchers can bind multiple externals, which complicates
-    /// the "extras" detection — we count any display matched by *any* entry
-    /// as covered, even if multiple entries claim the same display.
-    static func classify(_ profile: Profile, against displays: [DisplayInfo]) -> Classification {
+    /// Compute the classification for a profile against the live display set,
+    /// from the profile's `ProfileStore.bindings`, so it sees exactly what
+    /// the apply and the preview will do. `.anyExternal` matchers can bind
+    /// multiple externals; any display bound by *any* entry counts as covered.
+    static func classify(
+        _ bindings: [(entry: Profile.Entry, displays: [DisplayInfo])],
+        against displays: [DisplayInfo]
+    ) -> Classification {
         // Empty profile is semantically nothing to apply — surface as
         // `.disjoint` so the UI shows the "nothing to apply" path rather
         // than "every live display is an extra".
-        if profile.entries.isEmpty { return .disjoint }
+        if bindings.isEmpty { return .disjoint }
 
         // Bucket entries into matched vs missing.
         var missingEntries: [Profile.Entry] = []
         var matchedDisplayIDs: Set<CGDirectDisplayID> = []
 
-        for entry in profile.entries {
-            let matches = displays.filter { entry.matcher.matches($0.id) }
+        for (entry, matches) in bindings {
             if matches.isEmpty {
                 missingEntries.append(entry)
             } else {

@@ -280,7 +280,10 @@ struct ProfilesSection: View {
                         // the inline confirmation panel so the user sees
                         // what will be skipped or left alone before the
                         // apply mutates display state.
-                        let classification = DisplaySetClassifier.classify(profile, against: displays.displays)
+                        let classification = DisplaySetClassifier.classify(
+                            profiles.bindings(of: profile, to: displays.displays),
+                            against: displays.displays
+                        )
                         if DisplaySetClassifier.isCleanApply(classification) {
                             commitApply(profile)
                         } else {
