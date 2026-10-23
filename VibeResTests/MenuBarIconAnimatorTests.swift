@@ -106,7 +106,7 @@ struct MenuBarIconAnimatorTests {
     func successfulApplyPlays() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.applyMode = { _, _, _ in }
 
@@ -120,7 +120,7 @@ struct MenuBarIconAnimatorTests {
     func noSwitchNoAnimation() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.applyMode = { _, _, _ in throw ResolutionSwitcher.Failure.applyMode(.cannotComplete) }
 
@@ -134,11 +134,23 @@ struct MenuBarIconAnimatorTests {
         #expect(rig.started == 0)
     }
 
-    @Test("Clicking the mode already in use does not play it")
+    /// The store lists active displays only, and an asleep display is not
+    /// one: the no-mistakes gate runs on the owner's Mac, where this test
+    /// failed with the screen asleep. Skipped then, as the CLI integration
+    /// tests do, rather than failing for the environment.
+    nonisolated private static let hasActiveDisplay: Bool = {
+        var count: UInt32 = 0
+        return CGGetActiveDisplayList(0, nil, &count) == .success && count > 0
+    }()
+
+    @Test(
+        "Clicking the mode already in use does not play it",
+        .enabled(if: MenuBarIconAnimatorTests.hasActiveDisplay)
+    )
     func currentModeClickDoesNotPlay() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.applyMode = { _, _, _ in }
         let display = try #require(store.displays.first, "no active display on this machine")
@@ -154,7 +166,7 @@ struct MenuBarIconAnimatorTests {
     func mainOnlyRevertDoesNotPlay() {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         var currentMain: CGDirectDisplayID = 7
         store.liveArrangement = {
@@ -174,7 +186,7 @@ struct MenuBarIconAnimatorTests {
     func revertPlays() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.revert.record(displayID: 1, displayName: "Built-in", before: try aRealMode())
         store.applyMode = { _, _, _ in }

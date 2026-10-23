@@ -60,6 +60,27 @@ final class DisplayStore {
         var shouldBumpSetChangeToken: Bool { setChanged }
         var shouldClearRevertHistory: Bool { setChanged }
         var shouldDismissMenuBarPopover: Bool { setChanged || mainSwapped }
+
+        /// What a reconfiguration refresh does with an open popover.
+        ///
+        /// A swap made in System Settings strands the popover's window on the
+        /// old primary, so it closes and re-anchors at once. A swap VibeRes
+        /// made itself, from a profile's main pin while the popover was open,
+        /// keeps it open: the refresh that sees the swap is the one that rolls
+        /// the cards' numbers, moves the MAIN badge and turns the pill active,
+        /// and closing ~200 ms later used to throw all of that away. Its window
+        /// is re-anchored when the user closes it instead.
+        func popoverAction(ownMainChangeExpected: Bool) -> PopoverAction {
+            if setChanged { return .dismiss }
+            guard mainSwapped else { return .keepOpen }
+            return ownMainChangeExpected ? .reanchorOnClose : .dismiss
+        }
+    }
+
+    enum PopoverAction: Equatable {
+        case keepOpen
+        case reanchorOnClose
+        case dismiss
     }
 
     struct CallbackRefreshDecision: Equatable {
@@ -300,15 +321,66 @@ final class DisplayStore {
         pendingRefresh = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled, let self else { return }
-            // Honour the same rule the wake path uses. Dismissing
+            // Act on `RefreshTransition.popoverAction`. Dismissing
             // unconditionally closed the popover ~200ms after every mode change,
             // because a resolution change also fires a reconfiguration
             // callback — taking the outcome note and the Revert row with it.
-            let transition = self.applyRefresh(triggeredByCallback: true)
-            if transition.shouldDismissMenuBarPopover {
-                self.dismissStaleMenuBarPopover()
-            }
+            self.handlePopover(after: self.applyRefresh(triggeredByCallback: true))
         }
+    }
+
+    /// How long after VibeRes moved the main display a swap seen by a
+    /// reconfiguration refresh counts as its own. The refresh comes ~200 ms
+    /// after the last callback; this only has to outlast that, and stays
+    /// short so a swap made in System Settings soon after still closes the
+    /// popover.
+    static let ownMainChangeWindow: TimeInterval = 3
+
+    private var ownMainChangeDeadline: Date?
+
+    /// Set when the popover stayed open across a main-display swap VibeRes
+    /// made; its window is re-anchored once it closes (`popoverDidClose`).
+    private(set) var popoverNeedsReanchor = false
+
+    /// Called right after VibeRes itself moved the main display while the
+    /// popover is open (a profile's main pin), so the refresh that follows
+    /// keeps the popover open. See `RefreshTransition.popoverAction`.
+    func expectOwnMainChange(now: Date = Date()) {
+        ownMainChangeDeadline = now.addingTimeInterval(Self.ownMainChangeWindow)
+    }
+
+    /// Acts on a reconfiguration refresh's transition. Internal so the wiring
+    /// can be tested with a synthetic transition.
+    func handlePopover(after transition: RefreshTransition, now: Date = Date()) {
+        let ownExpected = ownMainChangeDeadline.map { now < $0 } ?? false
+        switch transition.popoverAction(ownMainChangeExpected: ownExpected) {
+        case .keepOpen:
+            break
+        case .reanchorOnClose:
+            ownMainChangeDeadline = nil
+            reanchorAfterOwnMainChange()
+        case .dismiss:
+            dismissStaleMenuBarPopover()
+        }
+    }
+
+    /// Re-anchors the popover's window after VibeRes moved the main display:
+    /// at once when the popover is closed, otherwise once it closes.
+    private func reanchorAfterOwnMainChange() {
+        if popoverIsOpen {
+            popoverNeedsReanchor = true
+        } else {
+            dismissStaleMenuBarPopover()
+        }
+    }
+
+    /// The popover closed. If it stayed open across a main-display swap, its
+    /// window gets the re-anchoring a swap in System Settings gets at once,
+    /// now that closing it cannot take anything off screen.
+    func popoverDidClose() {
+        guard popoverNeedsReanchor else { return }
+        popoverNeedsReanchor = false
+        dismissStaleMenuBarPopover()
     }
 
     /// Re-snapshots the display list and bumps `setChangeToken` if a display
@@ -407,19 +479,38 @@ final class DisplayStore {
     /// *whether* a refresh decided to dismiss.
     var dismissStalePopoverOverride: (() -> Void)?
 
+    /// Test seam, same rationale as `dismissStalePopoverOverride`: lets a test
+    /// say whether the popover is open.
+    var popoverIsOpenOverride: (() -> Bool)?
+
+    // MenuBarExtra panels are not standard NSWindows — they're internal
+    // _NSPopoverWindow / NSStatusBarWindow subclasses. Match by class
+    // name fragment so we don't depend on private types.
+    private static func isMenuBarWindow(_ className: String) -> Bool {
+        className.contains("MenuBarExtra")
+            || className.contains("StatusBar")
+            || className.contains("Popover")
+    }
+
+    private var popoverIsOpen: Bool {
+        if let popoverIsOpenOverride { return popoverIsOpenOverride() }
+        return NSApp.windows.contains { window in
+            let className = String(describing: type(of: window))
+            // The status item's own window is visible whenever the menu bar
+            // icon is, so it says nothing about the popover.
+            return window.isVisible
+                && className != "NSStatusBarWindow"
+                && Self.isMenuBarWindow(className)
+        }
+    }
+
     private func dismissStaleMenuBarPopover() {
         if let dismissStalePopoverOverride {
             dismissStalePopoverOverride()
             return
         }
         for window in NSApp.windows {
-            // MenuBarExtra panels are not standard NSWindows — they're internal
-            // _NSPopoverWindow / NSStatusBarWindow subclasses. Match by class
-            // name fragment so we don't depend on private types.
-            let className = String(describing: type(of: window))
-            guard className.contains("MenuBarExtra")
-                || className.contains("StatusBar")
-                || className.contains("Popover") else { continue }
+            guard Self.isMenuBarWindow(String(describing: type(of: window))) else { continue }
             if window.isVisible {
                 window.orderOut(nil)
             }
@@ -492,6 +583,10 @@ final class DisplayStore {
             lastError = nil
         }
         refresh()
+        // The synchronous refresh takes the swap before any reconfiguration
+        // refresh can see it, so nothing re-anchored the popover's window
+        // after a Make main display.
+        reanchorAfterOwnMainChange()
     }
 
     // MARK: - Confirmation countdown
@@ -599,6 +694,7 @@ final class DisplayStore {
         // be a consistent layout to translate (F2), never a stale one (F1).
         var restored = restoredModes
         var failedMain: CGDirectDisplayID?
+        var mainRestored = false
         if let beforeMain = snapshot.beforeMain {
             let live = liveArrangement()
             if live.main != beforeMain {
@@ -611,6 +707,7 @@ final class DisplayStore {
                         let after = liveArrangement()
                         if after.main == beforeMain {
                             restored += 1
+                            mainRestored = true
                         } else {
                             failedMain = beforeMain
                             lastError = .previousMainNotRestored
@@ -631,6 +728,12 @@ final class DisplayStore {
         }
         if restored > 0 {
             refresh()
+        }
+        if mainRestored {
+            // The synchronous refresh takes the swap before any reconfiguration
+            // refresh can see it, so nothing re-anchored the popover's window
+            // after a Revert of the main display.
+            reanchorAfterOwnMainChange()
         }
         if restoredModes > 0 {
             onModeSwitch?()

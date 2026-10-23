@@ -22,7 +22,7 @@ struct RevertMainDisplayTests {
 
     @Test("A failed mode restore and a successful main restore are counted independently")
     func mixedModeAndMainRestore() throws {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let mode = try aRealMode()
         store.revert.recordBatch(
             [(id: 1, name: "Built-in", before: mode)],
@@ -55,7 +55,7 @@ struct RevertMainDisplayTests {
 
     @Test("performRevert translates the live arrangement back to the old main")
     func revertsMain() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var plans: [[CGDirectDisplayID: CGPoint]] = []
         var currentMain: CGDirectDisplayID = 7
         store.applyMode = { _, _, _ in }
@@ -84,9 +84,56 @@ struct RevertMainDisplayTests {
         #expect(!store.revert.canRevert)
     }
 
+    private func storeWithMainToRestore() -> DisplayStore {
+        let store = DisplayStore.forTesting()
+        var currentMain: CGDirectDisplayID = 7
+        store.applyMode = { _, _, _ in }
+        store.liveArrangement = {
+            (main: currentMain, bounds: [
+                5: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+                7: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        store.applyOrigins = { plan, _ in
+            if let landed = plan.first(where: { $0.value == .zero })?.key {
+                currentMain = landed
+            }
+        }
+        store.revert.recordBatch([], beforeMain: 5)
+        return store
+    }
+
+    @Test("Restoring the old main re-anchors the open popover's window when it closes")
+    func restoredMainReanchorsOnClose() {
+        let store = storeWithMainToRestore()
+        var dismissals = 0
+        store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { true }
+
+        _ = store.performRevert()
+
+        #expect(dismissals == 0, "the Revert closed the popover instead of keeping it open")
+        #expect(store.popoverNeedsReanchor)
+        store.popoverDidClose()
+        #expect(dismissals == 1, "closing the popover did not re-anchor its window")
+    }
+
+    @Test("Restoring the old main with the popover closed re-anchors at once")
+    func restoredMainWithPopoverClosedReanchorsAtOnce() {
+        let store = storeWithMainToRestore()
+        var dismissals = 0
+        store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { false }
+
+        _ = store.performRevert()
+
+        #expect(dismissals == 1, "the timed-out Revert left the closed popover's anchor stale")
+        #expect(!store.popoverNeedsReanchor)
+    }
+
     @Test("A commit that silently leaves main unchanged is not counted as restored (F5)")
     func silentlyUnchangedMainNotCountedAsRestored() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
             (main: 7, bounds: [
@@ -105,11 +152,12 @@ struct RevertMainDisplayTests {
         #expect(store.revert.canRevert)
         #expect(store.revert.consume().beforeMain == 5)
         #expect(store.lastError != nil)
+        #expect(!store.popoverNeedsReanchor, "the main never moved, so the window needs no re-anchoring")
     }
 
     @Test("An old main that is no longer active is skipped, not guessed at")
     func staleMainSkipped() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var originCalled = false
         store.applyMode = { _, _, _ in }
         store.liveArrangement = { (main: 7, bounds: [7: .zero]) }
@@ -124,7 +172,7 @@ struct RevertMainDisplayTests {
 
     @Test("A failed origin restore keeps the way back armed")
     func failedRestoreStaysArmed() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
             (main: 7, bounds: [5: CGRect(x: -1800, y: 0, width: 1800, height: 1169), 7: .zero])
@@ -137,5 +185,6 @@ struct RevertMainDisplayTests {
         #expect(restored == 0)
         #expect(store.revert.canRevert, "the display is still not where the user wanted it")
         #expect(store.revert.consume().beforeMain == 5)
+        #expect(!store.popoverNeedsReanchor)
     }
 }

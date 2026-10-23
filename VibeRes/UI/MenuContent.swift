@@ -60,6 +60,7 @@ struct MenuContent: View {
             if className.contains("MenuBarExtra") || className.contains("StatusBar") || className.contains("Popover") {
                 path = NavigationPath()
                 popoverSession += 1
+                store.popoverDidClose()
             }
         }
     }

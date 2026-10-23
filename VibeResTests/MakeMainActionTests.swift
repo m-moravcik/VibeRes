@@ -44,7 +44,7 @@ struct MakeMainActionTests {
 
     @Test("Making a non-main display main commits a full-coverage translation and arms revert")
     func happyPath() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let probes = arrange(store, main: real, bounds: [
             fake: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
             real: CGRect(x: 0, y: 0, width: 1920, height: 1080),
@@ -63,7 +63,7 @@ struct MakeMainActionTests {
 
     @Test("Already main is a no-op — no transaction, revert not armed")
     func alreadyMain() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let probes = arrange(store, main: real, bounds: [
             fake: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
             real: CGRect(x: 0, y: 0, width: 1920, height: 1080),
@@ -77,7 +77,7 @@ struct MakeMainActionTests {
 
     @Test("A display that is not active is a no-op")
     func notActive() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let probes = arrange(store, main: real, bounds: [
             fake: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
             real: CGRect(x: 0, y: 0, width: 1920, height: 1080),
@@ -91,7 +91,7 @@ struct MakeMainActionTests {
 
     @Test("A mirrored arrangement refuses the change and reports why")
     func mirrored() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let probes = arrange(store, main: real, bounds: [
             fake: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
             real: CGRect(x: 0, y: 0, width: 1920, height: 1080),
@@ -105,7 +105,7 @@ struct MakeMainActionTests {
 
     @Test("A throwing transaction is reported and revert is not armed")
     func transactionThrows() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         _ = arrange(store, main: real, bounds: [
             fake: CGRect(x: -1800, y: 0, width: 1800, height: 1169),
             real: CGRect(x: 0, y: 0, width: 1920, height: 1080),
@@ -119,7 +119,7 @@ struct MakeMainActionTests {
 
     @Test("A commit that lands off the planned origin is reported as adjusted (F5), but revert still arms")
     func adjusted() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var liveMain = real
         var liveBounds: [CGDirectDisplayID: CGRect] = [
             fake: CGRect(x: -1800, y: 0, width: 1800, height: 1169),

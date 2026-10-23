@@ -22,7 +22,7 @@ struct RevertFailureTests {
 
     @Test("A failed restore keeps the entry so the user can try again")
     func failureRetainsHistory() throws {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let mode = try aRealMode()
         store.revert.record(displayID: 1, displayName: "Built-in", before: mode)
         store.applyMode = { _, _, _ in throw ResolutionSwitcher.Failure.applyMode(.cannotComplete) }
@@ -36,7 +36,7 @@ struct RevertFailureTests {
 
     @Test("A successful restore clears the history and counts once")
     func successConsumesHistory() throws {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let mode = try aRealMode()
         store.revert.record(displayID: 1, displayName: "Built-in", before: mode)
         store.applyMode = { _, _, _ in }
@@ -47,7 +47,7 @@ struct RevertFailureTests {
 
     @Test("A partial restore keeps only what failed and counts only what worked")
     func partialRestore() throws {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let mode = try aRealMode()
         store.revert.record(displayID: 1, displayName: "Built-in", before: mode)
         store.revert.record(displayID: 2, displayName: "LG", before: mode)
@@ -61,7 +61,7 @@ struct RevertFailureTests {
 
     @Test("Confirming a change that cannot be made permanent keeps the safety net")
     func failedConfirmationKeepsRecovery() throws {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let mode = try aRealMode()
         store.revert.record(displayID: 1, displayName: "Built-in", before: mode)
         store.armConfirmationForTesting(mode: mode, display: 1)
