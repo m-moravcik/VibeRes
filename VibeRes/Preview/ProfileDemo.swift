@@ -34,6 +34,9 @@ enum ProfileDemo {
     /// Removed on every exit, `fail` included: it holds this Mac's display
     /// serials in `profiles.json`. Set once by `run`, before any sample.
     nonisolated(unsafe) private static var scratch: URL?
+    /// Where every take writes its PNGs, off the main thread.
+    nonisolated private static let encoder = DispatchQueue(label: "profile-demo.encode", qos: .utility, attributes: .concurrent)
+    nonisolated private static let encoding = DispatchGroup()
 
     static var requestedOutput: URL? {
         guard let path = ProcessInfo.processInfo.environment[environmentKey], !path.isEmpty else {
@@ -190,6 +193,8 @@ enum ProfileDemo {
 
     nonisolated fileprivate static func fail(_ message: String) -> Never {
         FileHandle.standardError.write(Data("profile-demo: \(message)\n".utf8))
+        // The encoder's own failure must not wait for itself.
+        if Thread.isMainThread { _ = encoding.wait(timeout: .now() + 5) }
         removeScratch()
         exit(1)
     }
@@ -314,8 +319,6 @@ enum ProfileDemo {
         let hosting: NSHostingView<AnyView>
         let samplesDir: URL
         let names: [String]
-        let encoder = DispatchQueue(label: "profile-demo.encode", qos: .utility, attributes: .concurrent)
-        let encoding = DispatchGroup()
         /// The loop's clock: seconds since the take started.
         var start: TimeInterval = 0
         var now: Double { ProcessInfo.processInfo.systemUptime - start }
@@ -493,7 +496,7 @@ enum ProfileDemo {
                 RunLoop.main.run(until: Date().addingTimeInterval(0.05))
             }
             ticker.invalidate()
-            encoding.wait()
+            ProfileDemo.encoding.wait()
             window.orderOut(nil)
 
             if let problem = displays.lastError ?? profiles.lastError {
@@ -523,7 +526,7 @@ enum ProfileDemo {
             rep.size = size
             hosting.cacheDisplay(in: hosting.bounds, to: rep)
             guard let image = rep.cgImage else { ProfileDemo.fail("could not read a sample") }
-            encoder.async(group: encoding) { writePNG(image, to: url) }
+            ProfileDemo.encoder.async(group: ProfileDemo.encoding) { writePNG(image, to: url) }
             return (url, animator.phase)
         }
 
