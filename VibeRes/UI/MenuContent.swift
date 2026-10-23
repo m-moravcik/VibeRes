@@ -159,8 +159,12 @@ struct RootView: View {
                 .padding(.horizontal, Design.Spacing.l)
                 .padding(.vertical, Design.Spacing.xs)
                 .background(Design.Palette.warningFill)
-                // Rises from the footer it belongs to.
-                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                // Rises from the footer it belongs to, and fades before the
+                // footer closes up over it.
+                .transition(reduceMotion ? .opacity : .asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .opacity.animation(Design.Motion.rowOut)
+                ))
             }
 
             FooterBar()
@@ -168,9 +172,13 @@ struct RootView: View {
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: store.lastError)
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: profiles.lastError)
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: updateStatus.isUpdateReady)
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout,
+        // The countdown and the Revert row fade before the rows close up.
+        .animation(reduceMotion ? Design.Motion.quick
+                   : store.confirmationSecondsRemaining == nil ? Design.Motion.closeUp : Design.Motion.layout,
                    value: store.confirmationSecondsRemaining == nil)
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: store.revert.canRevert)
+        .animation(reduceMotion ? Design.Motion.quick
+                   : store.revert.canRevert ? Design.Motion.layout : Design.Motion.closeUp,
+                   value: store.revert.canRevert)
         // The MAIN badge travels to the display that became main.
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.badge,
                    value: store.displays.first(where: \.isMain)?.id)
@@ -725,6 +733,7 @@ private struct FooterBar: View {
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -755,7 +764,8 @@ private struct FooterBar: View {
                         }
                     )
                     .keyboardShortcut("z")
-                    .transition(.opacity)
+                    // Waits for Refresh and Settings to make room.
+                    .transition(.row(reduceMotion: reduceMotion))
                 }
 
                 MenuRow(

@@ -103,6 +103,15 @@ enum Design {
         static let noteDrop: CGFloat = 6
         static let leave: Animation = .smooth(duration: 0.2)
 
+        /// A row or panel that takes a place the others make room for (the
+        /// inline panels swapping with the pills, the footer's Revert row)
+        /// fades in once they mostly have, and leaves by fading before they
+        /// close up over it (`closeUp`), so no text crosses another.
+        static let rowIn: Animation = .easeInOut(duration: 0.18).delay(0.2)
+        static let rowOut: Animation = .easeOut(duration: 0.1)
+        /// Rows closing up after something left: `layout`, a beat later.
+        static let closeUp: Animation = layout.delay(0.08)
+
         /// The highlighted refresh rate slides to the one just picked, so the
         /// row reads as one control that changed its value.
         static let chip: Animation = .snappy(duration: 0.28)

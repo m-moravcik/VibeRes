@@ -12,7 +12,7 @@ struct ProfilesSection: View {
     @Environment(Preferences.self) private var preferences
     @Environment(\.popoverSession) private var popoverSession
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var mode: Mode = .idle
+    @State private var shownMode: Mode = .idle
     @State private var note = PopoverNote<NoteBody>()
     /// Tracks the last auto-apply signal we acted on so we don't re-apply the
     /// same display/wake event multiple times if the popover redraws.
@@ -23,6 +23,23 @@ struct ProfilesSection: View {
 
     init(opensSaveForm: Bool = false) {
         self.opensSaveForm = opensSaveForm
+    }
+
+    /// What the section shows. Switching panels changes the popover's height,
+    /// so it animates in one transaction that also reaches the cards and the
+    /// footer below, which are `RootView`'s and out of reach of an
+    /// `.animation` here. Typing into a panel does not animate.
+    private var mode: Mode {
+        get { shownMode }
+        nonmutating set {
+            guard newValue.kind != shownMode.kind else {
+                shownMode = newValue
+                return
+            }
+            withAnimation(reduceMotion ? Design.Motion.quick : Design.Motion.closeUp) {
+                shownMode = newValue
+            }
+        }
     }
 
     /// What the note under the pills is currently showing.
@@ -177,8 +194,8 @@ struct ProfilesSection: View {
             .padding(.horizontal, Design.Spacing.l)
             .padding(.top, Design.Spacing.s)
 
-            // Each panel takes the pills' place by crossfading while the rows
-            // under it make room (`layout`), rather than cutting in.
+            // Each panel takes the pills' place by crossfading around the
+            // rows under it making room, rather than cutting in. See `mode`.
             Group {
                 switch mode {
                 case .idle:
@@ -195,7 +212,7 @@ struct ProfilesSection: View {
                     confirmDeletePanel
                 }
             }
-            .transition(.opacity)
+            .transition(.row(reduceMotion: reduceMotion))
 
             // Watch for display add/remove events and settled wake refreshes;
             // mode-only changes (user manually picks a different resolution)
@@ -224,7 +241,6 @@ struct ProfilesSection: View {
             }
         }
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: note.current?.generation)
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: mode.kind)
         .padding(.bottom, Design.Spacing.xs)
         .onAppear {
             if opensSaveForm, mode == .idle {
