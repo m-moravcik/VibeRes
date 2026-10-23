@@ -104,7 +104,7 @@ Built-in is always specific. Excluded displays are left untouched, so a "Code" p
 
 Pill icons telegraph the type at a glance. `[🖥 Work]` is locked to specific monitors, `[🖥 Presentation ✱]` carries the small `✱` badge that means *"this profile travels"*, `[💻 Code]` uses the laptop icon when the profile only touches the built-in. The profile that matches what the displays are currently doing is highlighted with a checkmark and an accent border — that one is *on*, the others are one click away.
 
-When you click a pill, a coloured note shows the outcome: green for an exact match, orange when the closest available mode was used as a fallback (e.g. *"LG UltraFine: wanted 2560 × 1440 @ 75 Hz, used 2560 × 1440 @ 60 Hz (closest available)"*), red when a target display isn't connected.
+When you click a pill, a note under the pills shows the outcome. A green check means it applied as saved, and the note clears itself after a few seconds. An orange triangle means the closest available mode was used as a fallback (e.g. *"LG UltraFine: wanted 2560 × 1440 @ 75 Hz, used 2560 × 1440 @ 60 Hz (closest available)"*); a red one means a display had no usable mode or the switch failed. Those stay until you dismiss them or close the popover. A display the profile names that isn't connected is mentioned on a quieter second line; only when none of them is connected does it become the note itself, in orange.
 
 ### Editing a profile
 

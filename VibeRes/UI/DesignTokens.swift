@@ -55,5 +55,11 @@ enum Design {
         static let rowSelectedFill = Color.accentColor.opacity(0.12)
         static let rowSelectedTint = Color.accentColor
         static let separator = Color.secondary.opacity(0.15)
+        /// Behind a note that asks to be read: a warm wash for a warning (and
+        /// the revert countdown), a red one for a failure, as Eject Guard and
+        /// ClipShot draw their attention rows. The words on them stay in label
+        /// colours; only the symbol takes the hue.
+        static let warningFill = Color.orange.opacity(0.12)
+        static let problemFill = Color.red.opacity(0.10)
     }
 }

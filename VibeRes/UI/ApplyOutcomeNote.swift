@@ -43,6 +43,9 @@ struct ApplyOutcomeNote: Equatable {
         case fallbacks([Detail])
         case applied(Detail, extraCount: Int)
         case alreadyAtSavedSettings
+        /// Every display the profile names was missing, so nothing was
+        /// applied. The details say which.
+        case skippedOnly([Detail])
     }
 
     let tone: Tone
@@ -51,11 +54,22 @@ struct ApplyOutcomeNote: Equatable {
     /// separate from Content so the aggregation precedence above stays about
     /// modes only.
     let mainDetail: Detail?
+    /// Displays the profile names that are not connected, said on a line of
+    /// their own under the content.
+    ///
+    /// Not part of the tone. A manual apply reaches a missing display only
+    /// after the confirmation panel listed it and the user chose Apply Anyway,
+    /// and auto-apply never applies a profile with one, so the skip is news to
+    /// nobody. It used to count as a problem: the note then read "GN246HL not
+    /// connected" in red and nothing else, over a profile whose other displays
+    /// had applied fine.
+    let skipped: [Detail]
 
-    init(tone: Tone, content: Content, mainDetail: Detail? = nil) {
+    init(tone: Tone, content: Content, mainDetail: Detail? = nil, skipped: [Detail] = []) {
         self.tone = tone
         self.content = content
         self.mainDetail = mainDetail
+        self.skipped = skipped
     }
 
     static func make(
@@ -70,7 +84,8 @@ struct ApplyOutcomeNote: Equatable {
         return ApplyOutcomeNote(
             tone: max(base?.tone ?? .info, mainTone),
             content: content,
-            mainDetail: detail
+            mainDetail: detail,
+            skipped: base?.skipped ?? []
         )
     }
 
@@ -95,21 +110,35 @@ struct ApplyOutcomeNote: Equatable {
         }
     }
 
-    private static func modeNote(from outcomes: [ProfileStore.ApplyOutcome]) -> ApplyOutcomeNote? {
-        guard !outcomes.isEmpty else { return nil }
+    private static func modeNote(from all: [ProfileStore.ApplyOutcome]) -> ApplyOutcomeNote? {
+        guard !all.isEmpty else { return nil }
+
+        // Missing displays are taken out first and said separately; see
+        // `skipped`. Only when nothing else is left are they the whole note.
+        let skipped = all
+            .filter { if case .skippedNoMatch = $0.status { return true } else { return false } }
+            .map(detail(for:))
+        let outcomes = all.filter {
+            if case .skippedNoMatch = $0.status { return false } else { return true }
+        }
+        guard !outcomes.isEmpty else {
+            return ApplyOutcomeNote(tone: .fallback, content: .skippedOnly(skipped))
+        }
 
         // Precedence is deliberate: one broken display matters more than three
         // working ones, so the worst status in the batch sets the tone. Every
-        // problem is carried, because "Dell not connected" and "LG failed" are
-        // different actions for the user.
+        // problem is carried, because "Dell has no usable mode" and "LG failed"
+        // are different actions for the user.
         let problems = outcomes.filter {
             switch $0.status {
-            case .skippedNoMatch, .skippedNoMode, .failed: return true
-            case .applied, .alreadyApplied, .appliedWithFallback: return false
+            case .skippedNoMode, .failed: return true
+            case .skippedNoMatch, .applied, .alreadyApplied, .appliedWithFallback: return false
             }
         }
         if !problems.isEmpty {
-            return ApplyOutcomeNote(tone: .problem, content: .problems(problems.map(detail(for:))))
+            return ApplyOutcomeNote(
+                tone: .problem, content: .problems(problems.map(detail(for:))), skipped: skipped
+            )
         }
 
         let fallbacks = outcomes.filter {
@@ -117,7 +146,9 @@ struct ApplyOutcomeNote: Equatable {
             return false
         }
         if !fallbacks.isEmpty {
-            return ApplyOutcomeNote(tone: .fallback, content: .fallbacks(fallbacks.map(detail(for:))))
+            return ApplyOutcomeNote(
+                tone: .fallback, content: .fallbacks(fallbacks.map(detail(for:))), skipped: skipped
+            )
         }
 
         if let first = outcomes.first(where: {
@@ -126,7 +157,8 @@ struct ApplyOutcomeNote: Equatable {
         }) {
             return ApplyOutcomeNote(
                 tone: .info,
-                content: .applied(detail(for: first), extraCount: outcomes.count - 1)
+                content: .applied(detail(for: first), extraCount: outcomes.count - 1),
+                skipped: skipped
             )
         }
 
@@ -136,7 +168,7 @@ struct ApplyOutcomeNote: Equatable {
             if case .alreadyApplied = $0.status { return true }
             return false
         }) {
-            return ApplyOutcomeNote(tone: .info, content: .alreadyAtSavedSettings)
+            return ApplyOutcomeNote(tone: .info, content: .alreadyAtSavedSettings, skipped: skipped)
         }
 
         return nil
@@ -321,6 +353,9 @@ extension ApplyOutcomeNote {
         case let .fallbacks(details):
             base = Self.joined(details)
 
+        case let .skippedOnly(details):
+            base = Self.joined(details)
+
         case let .applied(detail, extraCount):
             if extraCount > 0 {
                 let more = String(localized: LocalizedStringResource(
@@ -342,6 +377,12 @@ extension ApplyOutcomeNote {
         }
         guard let mainDetail else { return base }
         return base + "; " + mainDetail.localizedDescription
+    }
+
+    /// The skipped displays as one resolved string, for the note's second
+    /// line; nil when none was skipped.
+    var localizedSkipped: String? {
+        skipped.isEmpty ? nil : Self.joined(skipped)
     }
 
     private static func joined(_ details: [Detail]) -> String {

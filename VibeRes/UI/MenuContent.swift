@@ -5,6 +5,8 @@ struct MenuContent: View {
     @Environment(Preferences.self) private var preferences
     @State private var path = NavigationPath()
     @State private var menuTracking = false
+    /// Counts closes, for the views that drop what belonged to the last open.
+    @State private var popoverSession = 0
 
     var body: some View {
         Group {
@@ -22,6 +24,7 @@ struct MenuContent: View {
                             DisplayDetailView(displayID: displayID)
                         }
                 }
+                .environment(\.popoverSession, popoverSession)
             }
         }
         .frame(width: Design.Layout.popoverWidth)
@@ -56,6 +59,7 @@ struct MenuContent: View {
             let className = String(describing: type(of: window))
             if className.contains("MenuBarExtra") || className.contains("StatusBar") || className.contains("Popover") {
                 path = NavigationPath()
+                popoverSession += 1
             }
         }
     }
@@ -144,7 +148,7 @@ struct RootView: View {
                 }
                 .padding(.horizontal, Design.Spacing.l)
                 .padding(.vertical, Design.Spacing.xs)
-                .background(Color.orange.opacity(0.12))
+                .background(Design.Palette.warningFill)
             }
 
             FooterBar()
@@ -156,31 +160,15 @@ struct RootView: View {
 ///
 /// The copy is resolved through `UserFacingProblem.localizedDescription`, so a
 /// Slovak or German interface no longer carries an English sentence about a
-/// CoreGraphics failure.
+/// CoreGraphics failure. Drawn as a `NoteRow`, like the outcome under the
+/// pills: it used to be red text, which read badly on the popover's material.
 private struct ProblemRow: View {
     let problem: UserFacingProblem
     let dismiss: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: Design.Spacing.s) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(Design.Typography.footer)
-                .accessibilityHidden(true)
-            Text(verbatim: problem.localizedDescription)
-                .font(Design.Typography.footer)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: Design.Spacing.s)
-            Button(action: dismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .semibold))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Dismiss")
-            .help("Dismiss")
-        }
-        .foregroundStyle(.red)
-        .padding(.horizontal, Design.Spacing.l)
-        .padding(.top, Design.Spacing.xs)
+        NoteRow(tone: .problem, text: Text(verbatim: problem.localizedDescription), dismiss: dismiss)
+            .padding(.top, Design.Spacing.xs)
     }
 }
 
