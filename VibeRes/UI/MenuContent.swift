@@ -213,7 +213,7 @@ private struct DisplayCard: View {
                         }
                     }
                     if let cur = display.currentMode {
-                        Text(currentModeSubtitle(cur))
+                        Text(currentModeSubtitle(cur, isVRRTwin: display.isVRRTwin(cur)))
                             .font(Design.Typography.cardSubtitle)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -239,9 +239,11 @@ private struct DisplayCard: View {
         .onHover { isHovering = $0 }
     }
 
-    private func currentModeSubtitle(_ m: CGDisplayMode) -> String {
+    /// "2 560 × 1 440 · 160 Hz VRR · HiDPI". VRR is named only where the
+    /// display also offers a fixed 160 Hz, the one case it is ambiguous.
+    private func currentModeSubtitle(_ m: CGDisplayMode, isVRRTwin: Bool) -> String {
         var parts = ["\(formatThousands(m.width)) × \(formatThousands(m.height))"]
-        if let hz = m.refreshHz { parts.append("\(hz) Hz") }
+        if let hz = m.refreshHz { parts.append(isVRRTwin ? "\(hz) Hz VRR" : "\(hz) Hz") }
         if m.isHiDPI { parts.append("HiDPI") }
         return parts.joined(separator: " · ")
     }
@@ -412,6 +414,9 @@ struct DisplayDetailView: View {
                     HStack(spacing: 4) {
                         if let hz = cur.refreshHz {
                             Text("\(hz) Hz")
+                            if display.isVRRTwin(cur) {
+                                Text("VRR")
+                            }
                         }
                         if cur.isHiDPI {
                             Text("·").foregroundStyle(.tertiary)
@@ -610,6 +615,7 @@ struct DisplayDetailView: View {
         CompactResolutionRow(
             group: group,
             currentMode: display.currentMode,
+            currentIsVariable: display.currentMode.map(display.isVariable) ?? false,
             isHovered: hoveredGroupID == group.id,
             simpleMode: preferences.simpleMode,
             onHoverChange: { hovering in
@@ -929,23 +935,27 @@ private struct BackButton: View {
 private struct CompactResolutionRow: View {
     let group: ResolutionGroup
     let currentMode: CGDisplayMode?
+    /// The display runs a variable refresh mode right now, which a one-click
+    /// apply keeps (see `VariableRefresh.preferredIndex`).
+    let currentIsVariable: Bool
     /// Whether the cursor is currently over this row. Hover state lives in
     /// the parent view so it can render a single shared preview banner
     /// rather than a per-row popover (which would steal the first click).
     let isHovered: Bool
     /// When true, the per-rate chip group is hidden and a click on the row
-    /// applies the highest available refresh rate for the size. Driven by
-    /// `Preferences.simpleMode`.
+    /// applies `preferredOption`: the highest rate, or the variable one when
+    /// the display is on VRR already. Driven by `Preferences.simpleMode`.
     let simpleMode: Bool
     let onHoverChange: (Bool) -> Void
     let apply: (CGDisplayMode) -> Void
 
     private var currentModeID: Int32? { currentMode?.ioDisplayModeID }
 
-    /// Highest available refresh rate for this size — what Simple Mode
-    /// applies on a row click.
-    private var preferredMode: CGDisplayMode? {
-        group.modesByRefresh.last?.mode
+    /// What Simple Mode applies on a row click, and Advanced Mode on a click
+    /// on the size label. It used to be "the highest rate", which turned a
+    /// display on Adaptive Sync into a fixed 160 Hz one (issue #7).
+    private var preferredOption: RefreshOption<CGDisplayMode>? {
+        group.preferredOption(currentIsVariable: currentIsVariable)
     }
 
     /// The row is a `Button`, not an `HStack` with an `.onTapGesture`.
@@ -1001,8 +1011,8 @@ private struct CompactResolutionRow: View {
     @ViewBuilder
     private func rowButton<Label: View>(@ViewBuilder label: () -> Label) -> some View {
         Button {
-            if let mode = preferredMode {
-                apply(mode)
+            if let option = preferredOption {
+                apply(option.mode)
             }
         } label: {
             label()
@@ -1018,8 +1028,8 @@ private struct CompactResolutionRow: View {
     /// carry the refresh rate too, because the Hz label beside it is decorative.
     private var accessibilityLabelText: String {
         var text = "\(group.pointWidth) by \(group.pointHeight)"
-        if simpleMode, let hz = preferredMode?.refreshHz {
-            text += ", \(hz) hertz"
+        if simpleMode, let preferred = preferredOption, let hz = preferred.mode.refreshHz {
+            text += preferred.isVariable ? ", variable refresh rate up to \(hz) hertz" : ", \(hz) hertz"
         }
         if isCurrentSize { text += ", current" }
         return text
@@ -1035,14 +1045,21 @@ private struct CompactResolutionRow: View {
 
     /// Subtle Hz hint shown in Simple Mode — communicates the preferred
     /// refresh rate without the chip group's chrome. Hidden from VoiceOver
-    /// because `accessibilityLabelText` already says it.
+    /// because `accessibilityLabelText` already says it. "VRR" when the click
+    /// would apply a variable mode that has a fixed twin, matching its chip.
     @ViewBuilder
     private var simpleHzLabel: some View {
-        if let preferred = preferredMode {
-            Text(preferred.refreshHz.map { "\($0) Hz" } ?? "")
-                .font(Design.Typography.cardSubtitle)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+        if let preferred = preferredOption {
+            Group {
+                if preferred.isVRRTwin {
+                    Text("VRR")
+                } else {
+                    Text(verbatim: preferred.mode.refreshHz.map { "\($0) Hz" } ?? "")
+                }
+            }
+            .font(Design.Typography.cardSubtitle)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
         }
     }
 
@@ -1066,9 +1083,15 @@ private struct CompactResolutionRow: View {
                     )
             }
             .buttonStyle(.plain)
+            .modifier(VariableRateHint(option: only))
         } else {
             // Multi-rate: render as horizontally laid-out chips, but bigger and
             // grouped in a single capsule "track" so they read as one control.
+            //
+            // Five or more chips get tighter padding. An Adaptive Sync panel
+            // offering 60 · 95 · 144 · 160 · VRR at the regular width pushed
+            // the track past the 300 pt popover next to a 2 560 × 1 440 label.
+            let compact = entries.count > 4
             HStack(spacing: 0) {
                 ForEach(entries.indices, id: \.self) { index in
                     let entry = entries[index]
@@ -1077,17 +1100,16 @@ private struct CompactResolutionRow: View {
                     Button {
                         apply(entry.mode)
                     } label: {
-                        Text("\(entry.hz)")
+                        chipLabel(for: entry)
                             .font(.system(size: 11, weight: isActive ? .bold : .regular).monospacedDigit())
                             .foregroundStyle(isActive ? Color.white : .primary)
-                            .frame(minWidth: 22)
+                            .frame(minWidth: compact ? 20 : 22)
                             .padding(.vertical, 3)
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, compact ? 4 : 6)
                             .background(chipBackground(active: isActive))
                     }
                     .buttonStyle(.plain)
-                    .help("\(entry.hz) Hz")
-                    .accessibilityLabel("\(entry.hz) Hertz")
+                    .modifier(VariableRateHint(option: entry))
 
                     if index < entries.count - 1 {
                         Rectangle()
@@ -1099,6 +1121,18 @@ private struct CompactResolutionRow: View {
             .background(
                 Capsule().fill(Color.secondary.opacity(0.12))
             )
+        }
+    }
+
+    /// A rate's number, or "VRR" for a variable option whose rate also has a
+    /// fixed chip. A variable rate without one (ProMotion's 120) keeps its
+    /// number: to the user it simply is the 120 Hz option.
+    @ViewBuilder
+    private func chipLabel(for option: RefreshOption<CGDisplayMode>) -> some View {
+        if option.isVRRTwin {
+            Text("VRR")
+        } else {
+            Text("\(option.hz)")
         }
     }
 
@@ -1139,6 +1173,27 @@ private struct CompactResolutionRow: View {
 }
 
 
+
+/// Tooltip and VoiceOver label of one refresh chip. A variable chip says so
+/// whatever its label reads, so ProMotion's "120" also explains itself.
+private struct VariableRateHint: ViewModifier {
+    let option: RefreshOption<CGDisplayMode>
+
+    func body(content: Content) -> some View {
+        if option.hz == 0 {
+            // The placeholder chip of a mode that reports no rate says nothing.
+            content
+        } else if option.isVariable {
+            content
+                .help("Variable refresh rate, up to \(option.hz) Hz")
+                .accessibilityLabel("Variable refresh rate, up to \(option.hz) Hz")
+        } else {
+            content
+                .help("\(option.hz) Hz")
+                .accessibilityLabel("\(option.hz) Hertz")
+        }
+    }
+}
 
 // MARK: - Number formatting (shared)
 

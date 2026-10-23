@@ -2,13 +2,25 @@ import Foundation
 
 /// Shared "closest display mode" scoring for GUI, CLI, profiles, and Shortcuts.
 /// Lower score wins; ties prefer the highest refresh rate when the caller did
-/// not request a specific Hz.
+/// not request a specific Hz, then the requested refresh kind.
 enum ModeScoring {
     struct Request {
         let width: Int
         let height: Int
         let refreshHz: Int?
         let preferHiDPI: Bool
+        /// Pick the variable refresh (VRR) twin when a fixed and a variable
+        /// mode tie. Never outweighs size or rate: asking for VRR at 160 Hz
+        /// on a panel whose only VRR mode is 144 Hz still lands on 160.
+        let preferVariable: Bool
+
+        init(width: Int, height: Int, refreshHz: Int?, preferHiDPI: Bool, preferVariable: Bool = false) {
+            self.width = width
+            self.height = height
+            self.refreshHz = refreshHz
+            self.preferHiDPI = preferHiDPI
+            self.preferVariable = preferVariable
+        }
     }
 
     /// Bounds a caller-supplied request has to satisfy before it reaches
@@ -42,12 +54,16 @@ enum ModeScoring {
         return overflowed ? .max : product
     }
 
+    /// `isVariable` says which modes are VRR. The default, "none of them",
+    /// leaves twins to the mode ID tie-break as before VRR support; callers
+    /// with a live display pass `DisplayInfo.isVariable`.
     static func bestMatch<Mode: DisplayModeProtocol>(
         in modes: [Mode],
-        request: Request
+        request: Request,
+        isVariable: (Mode) -> Bool = { _ in false }
     ) -> Mode? {
         modes.min { lhs, rhs in
-            isBetter(lhs, than: rhs, request: request)
+            isBetter(lhs, than: rhs, request: request, isVariable: isVariable)
         }
     }
 
@@ -71,7 +87,8 @@ enum ModeScoring {
     private static func isBetter<Mode: DisplayModeProtocol>(
         _ lhs: Mode,
         than rhs: Mode,
-        request: Request
+        request: Request,
+        isVariable: (Mode) -> Bool
     ) -> Bool {
         let lhsScore = score(lhs, request: request)
         let rhsScore = score(rhs, request: request)
@@ -82,6 +99,11 @@ enum ModeScoring {
             let rhsHz = rhs.refreshHz ?? Int.min
             if lhsHz != rhsHz { return lhsHz > rhsHz }
         }
+
+        // A fixed and a variable mode at one size and rate score the same.
+        // Without this the mode ID decided, i.e. whichever macOS listed first.
+        let lhsVariable = isVariable(lhs)
+        if lhsVariable != isVariable(rhs) { return lhsVariable == request.preferVariable }
 
         return lhs.ioDisplayModeID < rhs.ioDisplayModeID
     }

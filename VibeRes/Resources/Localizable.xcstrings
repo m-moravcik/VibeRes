@@ -70,6 +70,29 @@
         }
       }
     },
+    "%lld Hz VRR": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Hz VRR"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Hz VRR"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Hz VRR"
+          }
+        }
+      }
+    },
     "%lld by %lld%@": {
       "extractionState": "manual",
       "localizations": {
@@ -3142,6 +3165,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aktualizácie"
+          }
+        }
+      }
+    },
+    "VRR": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRR"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRR"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRR"
+          }
+        }
+      }
+    },
+    "Variable refresh rate, up to %lld Hz": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable Bildwiederholrate, bis zu %lld Hz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable refresh rate, up to %lld Hz"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variabilná obnovovacia frekvencia, až do %lld Hz"
           }
         }
       }

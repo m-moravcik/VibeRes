@@ -118,6 +118,8 @@ struct ProfilesSection: View {
         /// when the matcher doesn't bind to a connected display — user keeps
         /// the snapshotted values without a picker.
         var availableModes: [LiveMode]
+        /// The entry targets the variable refresh (VRR) mode at `refreshHz`.
+        var isVariableRefresh = false
     }
 
     enum MatcherKind: Equatable {
@@ -132,6 +134,7 @@ struct ProfilesSection: View {
         let pointHeight: Int
         let refreshHz: Int?
         let isHiDPI: Bool
+        var isVariable = false
     }
 
     var body: some View {
@@ -360,7 +363,7 @@ struct ProfilesSection: View {
                 displayID: d.id,
                 displayName: d.name,
                 isBuiltIn: d.isMain || CGDisplayIsBuiltin(d.id) != 0,
-                currentModeDescription: d.currentMode.map(currentModeDescription) ?? "",
+                currentModeDescription: d.currentMode.map { currentModeDescription($0, on: d) } ?? "",
                 isIncluded: true,
                 matchAnyExternal: false
             )
@@ -397,9 +400,11 @@ struct ProfilesSection: View {
         )
     }
 
-    private func currentModeDescription(_ m: CGDisplayMode) -> String {
+    /// Says "VRR" where the display also offers the fixed rate, so the save
+    /// form shows which of the two the profile will remember.
+    private func currentModeDescription(_ m: CGDisplayMode, on display: DisplayInfo) -> String {
         var parts = ["\(m.width)×\(m.height)"]
-        if let hz = m.refreshHz { parts.append("\(hz)Hz") }
+        if let hz = m.refreshHz { parts.append(display.isVRRTwin(m) ? "\(hz)Hz VRR" : "\(hz)Hz") }
         if m.isHiDPI { parts.append("HiDPI") }
         return parts.joined(separator: " · ")
     }
@@ -611,8 +616,9 @@ struct ProfilesSection: View {
                         && CGDisplaySerialNumber(d.id) == s
                 }
             }
-            // Dedup by (size, refresh, HiDPI) so the picker doesn't show
-            // the same resolution twice when multiple monitors support it.
+            // Dedup by (size, refresh, HiDPI, refresh kind) so the picker
+            // doesn't show the same resolution twice when multiple monitors
+            // support it, but keeps a VRR twin next to its fixed rate.
             var seen: Set<LiveMode> = []
             var live: [LiveMode] = []
             for d in boundDisplays {
@@ -621,7 +627,8 @@ struct ProfilesSection: View {
                         pointWidth: m.width,
                         pointHeight: m.height,
                         refreshHz: m.refreshHz,
-                        isHiDPI: m.isHiDPI
+                        isHiDPI: m.isHiDPI,
+                        isVariable: d.isVariable(m)
                     )
                     if seen.insert(mode).inserted { live.append(mode) }
                 }
@@ -639,7 +646,8 @@ struct ProfilesSection: View {
                 refreshHz: e.refreshHz,
                 isHiDPI: e.isHiDPI,
                 isIncluded: true,
-                availableModes: live
+                availableModes: live,
+                isVariableRefresh: e.isVariableRefresh
             )
         }
         var state = EditFormState(profileID: profile.id, name: profile.name, entries: entries)
@@ -677,7 +685,8 @@ struct ProfilesSection: View {
                 pointWidth: e.pointWidth,
                 pointHeight: e.pointHeight,
                 refreshHz: e.refreshHz,
-                isHiDPI: e.isHiDPI
+                isHiDPI: e.isHiDPI,
+                isVariableRefresh: e.isVariableRefresh
             )
         }
         // Replace entries first so the multiple-anyExternal guard fires

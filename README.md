@@ -72,6 +72,8 @@ Click a display card to drill in. Each row is one logical size; refresh rates ap
 
 VibeRes deduplicates NTSC drop-frame variants (59.94, 47.95) against their integer counterparts (60, 48) automatically.
 
+Variable refresh rate (Adaptive Sync, FreeSync, ProMotion) is supported: a monitor that offers both a variable and a fixed mode at the same rate gets a separate **VRR** chip, and a row click keeps a display that runs VRR on VRR.
+
 ### Preview on hover
 
 Hover any row other than the current one and a small sketch appears in the top-right corner of the list: the thin outline is the mode you're on, the filled rectangle inside it is the mode you're about to pick, both drawn at the same scale — so shrinking and growing read the same way. It sits in a fixed corner instead of following the cursor, which is deliberate: a popover anchored to the hovered row kept eating the first click and lagging behind fast pointer movement.

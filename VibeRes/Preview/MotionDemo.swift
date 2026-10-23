@@ -94,7 +94,8 @@ enum MotionDemo {
             known.map { info in
                 guard info.id == display.id else { return info }
                 return DisplayInfo(id: info.id, name: info.name, isMain: info.isMain,
-                                   modes: info.modes, currentMode: mode, groups: info.groups)
+                                   modes: info.modes, currentMode: mode, groups: info.groups,
+                                   variableModeIDs: info.variableModeIDs)
             }
         }
 

@@ -257,7 +257,8 @@ final class ProfileStore {
                 pointWidth: mode.width,
                 pointHeight: mode.height,
                 refreshHz: mode.refreshHz,
-                isHiDPI: mode.isHiDPI
+                isHiDPI: mode.isHiDPI,
+                isVariableRefresh: info.isVariable(mode)
             )
         }
         profiles[i] = updated
@@ -426,7 +427,8 @@ final class ProfileStore {
                 pointWidth: mode.width,
                 pointHeight: mode.height,
                 refreshHz: mode.refreshHz,
-                isHiDPI: mode.isHiDPI
+                isHiDPI: mode.isHiDPI,
+                isVariableRefresh: info.isVariable(mode)
             )
         }
         guard !entries.isEmpty else { return .rejectedEmpty }
@@ -483,6 +485,12 @@ final class ProfileStore {
         var appliedSize: PointSize?
         var appliedHz: Int?
         var status: Status
+        /// Whether "VRR" belongs next to the requested and the applied rate.
+        /// Set only where the display offers a fixed and a variable mode at
+        /// that rate, so the copy matches the chips: ProMotion's 120 Hz is
+        /// never called VRR, Adaptive Sync's variable 160 always is.
+        var requestedVRR = false
+        var appliedVRR = false
 
         /// Slim mirror of DisplayMatcher kept on outcomes so summary copy can
         /// adapt to the matcher style without holding EDID identifiers in UI
@@ -499,13 +507,15 @@ final class ProfileStore {
         var summary: String {
             switch status {
             case .applied:
-                let hz = appliedHz.map { " @ \($0)Hz" } ?? ""
+                let hz = appliedHz.map { " @ \($0)Hz" + (appliedVRR ? " VRR" : "") } ?? ""
                 return "\(displayName) → \(appliedSize?.formatted ?? "?")\(hz)"
             case .alreadyApplied:
                 return "\(displayName) already at requested mode"
             case .appliedWithFallback:
-                let req = requestedSize.formatted + (requestedHz.map { " @\($0)Hz" } ?? "")
-                let got = (appliedSize?.formatted ?? "?") + (appliedHz.map { " @\($0)Hz" } ?? "")
+                let req = requestedSize.formatted
+                    + (requestedHz.map { " @\($0)Hz" + (requestedVRR ? " VRR" : "") } ?? "")
+                let got = (appliedSize?.formatted ?? "?")
+                    + (appliedHz.map { " @\($0)Hz" + (appliedVRR ? " VRR" : "") } ?? "")
                 return "\(displayName): wanted \(req), used \(got) (closest available)"
             case .skippedNoMatch:
                 switch matcherKind {
@@ -598,6 +608,7 @@ final class ProfileStore {
         let mode: CGDisplayMode
         let previous: CGDisplayMode?
         let isExact: Bool
+        let isVariable: Bool
     }
 
     /// Called after a profile apply switched at least one display's mode.
@@ -671,7 +682,7 @@ final class ProfileStore {
             }
             for info in matches {
                 let hz = entry.requestedHz(currentHz: info.currentMode?.refreshHz)
-                guard let mode = bestMatch(in: info.modes, entry: entry, refreshHz: hz) else {
+                guard let mode = bestMatch(on: info, entry: entry, refreshHz: hz) else {
                     outcomes.append(ApplyOutcome(
                         displayName: info.name,
                         matcherKind: mk,
@@ -688,10 +699,8 @@ final class ProfileStore {
                 // so callers can distinguish "we did something" from "nothing
                 // to do". Auto-apply uses this to suppress redundant toasts.
                 let isAlready = mode.ioDisplayModeID == info.currentMode?.ioDisplayModeID
-                let isExact = mode.width == entry.pointWidth
-                    && mode.height == entry.pointHeight
-                    && (hz == nil || hz == mode.refreshHz)
-                    && mode.isHiDPI == entry.isHiDPI
+                let isExact = Self.isExact(mode, for: entry, refreshHz: hz, on: info)
+                let labels = Self.vrrLabels(for: entry, refreshHz: hz, picked: mode, on: info)
 
                 if isAlready {
                     outcomes.append(ApplyOutcome(
@@ -701,7 +710,9 @@ final class ProfileStore {
                         requestedHz: hz,
                         appliedSize: PointSize(width: mode.width, height: mode.height),
                         appliedHz: mode.refreshHz,
-                        status: .alreadyApplied
+                        status: .alreadyApplied,
+                        requestedVRR: labels.requested,
+                        appliedVRR: labels.applied
                     ))
                     continue
                 }
@@ -716,7 +727,8 @@ final class ProfileStore {
                     name: info.name,
                     mode: mode,
                     previous: info.currentMode,
-                    isExact: isExact
+                    isExact: isExact,
+                    isVariable: info.isVariable(mode)
                 ))
                 outcomes.append(ApplyOutcome(
                     displayName: info.name,
@@ -725,7 +737,9 @@ final class ProfileStore {
                     requestedHz: hz,
                     appliedSize: PointSize(width: mode.width, height: mode.height),
                     appliedHz: mode.refreshHz,
-                    status: .failed(.other("not attempted"))
+                    status: .failed(.other("not attempted")),
+                    requestedVRR: labels.requested,
+                    appliedVRR: labels.applied
                 ))
             }
         }
@@ -740,7 +754,7 @@ final class ProfileStore {
                 // Diagnostic logging — when apply silently fails the user has
                 // zero visibility into why. Goes to Console.app under
                 // sk.moravcik.VibeRes.
-                viberesLog.notice("apply \(change.name, privacy: .public): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) modeID=\(change.mode.ioDisplayModeID)")
+                viberesLog.notice("apply \(change.name, privacy: .public): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) vrr=\(change.isVariable) modeID=\(change.mode.ioDisplayModeID)")
             }
 
             do {
@@ -764,6 +778,7 @@ final class ProfileStore {
                         let reason = failure.userFacingDescription
                         outcomes[change.outcomeIndex].appliedSize = nil
                         outcomes[change.outcomeIndex].appliedHz = nil
+                        outcomes[change.outcomeIndex].appliedVRR = false
                         viberesLog.error("apply \(change.name, privacy: .public): REJECTED — \(reason, privacy: .public)")
                     }
                 }
@@ -776,6 +791,7 @@ final class ProfileStore {
                     outcomes[change.outcomeIndex].status = .failed(error.asUserFacingProblem)
                     outcomes[change.outcomeIndex].appliedSize = nil
                     outcomes[change.outcomeIndex].appliedHz = nil
+                    outcomes[change.outcomeIndex].appliedVRR = false
                 }
             }
         }
@@ -942,7 +958,10 @@ final class ProfileStore {
                       current.width == entry.pointWidth,
                       current.height == entry.pointHeight,
                       entry.requestedHz(currentHz: current.refreshHz).map({ $0 == current.refreshHz }) ?? true,
-                      current.isHiDPI == entry.isHiDPI
+                      current.isHiDPI == entry.isHiDPI,
+                      // Variable 160 and fixed 160 are different states, or
+                      // the pill would light up for the one not saved.
+                      Self.honoursKind(current, for: entry, on: info)
                 else { return false }
             }
         }
@@ -978,7 +997,7 @@ final class ProfileStore {
             for info in matches {
                 touchedIDs.insert(info.id)
                 let hz = entry.requestedHz(currentHz: info.currentMode?.refreshHz)
-                guard let mode = bestMatch(in: info.modes, entry: entry, refreshHz: hz) else {
+                guard let mode = bestMatch(on: info, entry: entry, refreshHz: hz) else {
                     rows.append(ProfileApplyPreview.Row(
                         id: UUID(),
                         displayName: info.name,
@@ -991,10 +1010,8 @@ final class ProfileStore {
                     continue
                 }
                 let isAlready = mode.ioDisplayModeID == info.currentMode?.ioDisplayModeID
-                let isExact = mode.width == entry.pointWidth
-                    && mode.height == entry.pointHeight
-                    && (hz == nil || hz == mode.refreshHz)
-                    && mode.isHiDPI == entry.isHiDPI
+                let isExact = Self.isExact(mode, for: entry, refreshHz: hz, on: info)
+                let labels = Self.vrrLabels(for: entry, refreshHz: hz, picked: mode, on: info)
                 let action: ProfileApplyPreview.Row.Action = {
                     if isAlready {
                         // Report what the display is actually at right now,
@@ -1025,7 +1042,9 @@ final class ProfileStore {
                     savedWidth: entry.pointWidth,
                     savedHeight: entry.pointHeight,
                     savedHz: hz,
-                    savedIsHiDPI: entry.isHiDPI
+                    savedIsHiDPI: entry.isHiDPI,
+                    savedVRR: labels.requested,
+                    targetVRR: labels.applied
                 ))
             }
         }
@@ -1036,15 +1055,63 @@ final class ProfileStore {
 
     /// `refreshHz` is the entry's rate as resolved for one display
     /// (`Profile.Entry.requestedHz`), not the raw saved value.
-    private func bestMatch(in modes: [CGDisplayMode], entry: Profile.Entry, refreshHz: Int?) -> CGDisplayMode? {
+    ///
+    /// The entry's refresh kind only breaks ties, so a variable entry gets
+    /// the VRR twin where there is one and the closest fixed mode where there
+    /// is not (reported as a fallback by `isExact`); a fixed entry gets the
+    /// fixed twin.
+    private func bestMatch(on info: DisplayInfo, entry: Profile.Entry, refreshHz: Int?) -> CGDisplayMode? {
         ModeScoring.bestMatch(
-            in: modes,
+            in: info.modes,
             request: ModeScoring.Request(
                 width: entry.pointWidth,
                 height: entry.pointHeight,
                 refreshHz: refreshHz,
-                preferHiDPI: entry.isHiDPI
-            )
+                preferHiDPI: entry.isHiDPI,
+                preferVariable: entry.isVariableRefresh
+            ),
+            isVariable: info.isVariable
         )
+    }
+
+    /// The picked mode is what the entry asked for: size, rate, scale and
+    /// refresh kind.
+    private static func isExact(
+        _ mode: CGDisplayMode,
+        for entry: Profile.Entry,
+        refreshHz hz: Int?,
+        on info: DisplayInfo
+    ) -> Bool {
+        mode.width == entry.pointWidth
+            && mode.height == entry.pointHeight
+            && (hz == nil || hz == mode.refreshHz)
+            && mode.isHiDPI == entry.isHiDPI
+            && honoursKind(mode, for: entry, on: info)
+    }
+
+    private static func honoursKind(_ mode: CGDisplayMode, for entry: Profile.Entry, on info: DisplayInfo) -> Bool {
+        VariableRefresh.honoursKind(
+            wantsVariable: entry.isVariableRefresh,
+            modeIsVariable: info.isVariable(mode),
+            modeHasFixedTwin: VariableRefresh.hasFixedTwin(mode, in: info.modes, isVariable: info.isVariable)
+        )
+    }
+
+    /// When to say "VRR" next to the requested and the picked rate: only
+    /// where this display offers both kinds, so a ProMotion profile reads as
+    /// it always has. The request says it when it asked for VRR and either
+    /// did not get a variable mode or could have had a fixed one instead.
+    private static func vrrLabels(
+        for entry: Profile.Entry,
+        refreshHz hz: Int?,
+        picked mode: CGDisplayMode,
+        on info: DisplayInfo
+    ) -> (requested: Bool, applied: Bool) {
+        let requested = entry.isVariableRefresh
+            && (!info.isVariable(mode) || info.offersFixed(
+                width: entry.pointWidth, height: entry.pointHeight,
+                isHiDPI: entry.isHiDPI, refreshHz: hz
+            ))
+        return (requested, info.isVRRTwin(mode))
     }
 }
