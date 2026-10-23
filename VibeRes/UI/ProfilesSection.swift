@@ -205,7 +205,7 @@ struct ProfilesSection: View {
             }
         }
         .onChange(of: popoverSession) {
-            note.popoverClosed()
+            note.dismiss()
             // The confirmations answer a click from the last open; a reopen
             // hours later must not find "Apply 'Desk'?" still waiting. The
             // forms keep what was typed into them.

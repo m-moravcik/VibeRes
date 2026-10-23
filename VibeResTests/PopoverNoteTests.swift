@@ -44,7 +44,7 @@ struct PopoverNoteTests {
         var slot = PopoverNote<String>()
         _ = slot.show("Dell: no usable mode", tone: .problem)
 
-        slot.popoverClosed()
+        slot.dismiss()
 
         #expect(slot.current == nil)
     }

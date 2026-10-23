@@ -42,10 +42,6 @@ struct PopoverNote<Body: Equatable>: Equatable {
     mutating func dismiss() {
         current = nil
     }
-
-    mutating func popoverClosed() {
-        dismiss()
-    }
 }
 
 extension ApplyOutcomeNote.Tone {
@@ -107,7 +103,6 @@ struct NoteRow: View {
                 }
             }
             .font(Design.Typography.note)
-            .lineLimit(3)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
 
