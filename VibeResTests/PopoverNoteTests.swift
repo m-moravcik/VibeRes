@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import VibeRes
 
@@ -61,5 +62,85 @@ struct PopoverNoteTests {
 
         slot.dismiss()
         #expect(slot.current == nil)
+    }
+}
+
+/// The "Applied ..." note after an auto-apply. The popover-close handler
+/// clears the last open's note, and a MenuBarExtra holds updates back while
+/// closed, so the close and a new auto-apply often reach the view in one
+/// update. SwiftUI may run their handlers in either order; the note used to
+/// be dismissed by the close handler when it ran second.
+@Suite("Auto-apply note")
+struct AutoApplyAnnouncementTests {
+    /// The two handlers in `ProfilesSection`, on the real note and marker.
+    struct Popover {
+        var note = PopoverNote<String>()
+        var announcement = AutoApplyAnnouncement()
+        var lastAutoApply: ProfileStore.AutoApplyRecord?
+        let now: Date
+
+        mutating func autoApplyChanged() {
+            announceFresh()
+        }
+
+        mutating func popoverClosed() {
+            note.dismiss()
+            announcement.reset()
+            announceFresh()
+        }
+
+        private mutating func announceFresh() {
+            guard let record = announcement.take(lastAutoApply, now: now) else { return }
+            note.show("Applied \(record.profileName)", tone: .info)
+        }
+    }
+
+    static let now = Date(timeIntervalSinceReferenceDate: 1_000_000)
+    static let fresh = ProfileStore.AutoApplyRecord(profileName: "Presentation", date: now.addingTimeInterval(-5))
+
+    @Test("A close and an auto-apply in one update show the note, close handler last")
+    func closeHandlerLast() {
+        var popover = Popover(lastAutoApply: Self.fresh, now: Self.now)
+        popover.autoApplyChanged()
+        popover.popoverClosed()
+        #expect(popover.note.current?.body == "Applied Presentation")
+    }
+
+    @Test("A close and an auto-apply in one update show the note, close handler first")
+    func closeHandlerFirst() {
+        var popover = Popover(lastAutoApply: Self.fresh, now: Self.now)
+        popover.popoverClosed()
+        let generation = popover.note.current?.generation
+        popover.autoApplyChanged()
+        #expect(popover.note.current?.body == "Applied Presentation")
+        // Announced once: the second handler does not replace it.
+        #expect(popover.note.current?.generation == generation)
+    }
+
+    @Test("An auto-apply older than the freshness window is not announced")
+    func staleRecordIsQuiet() {
+        let stale = ProfileStore.AutoApplyRecord(
+            profileName: "Presentation",
+            date: Self.now.addingTimeInterval(-AutoApplyAnnouncement.freshness - 1))
+        var popover = Popover(lastAutoApply: stale, now: Self.now)
+        popover.autoApplyChanged()
+        popover.popoverClosed()
+        #expect(popover.note.current == nil)
+    }
+
+    @Test("No auto-apply, no note")
+    func noRecordIsQuiet() {
+        var popover = Popover(lastAutoApply: nil, now: Self.now)
+        popover.popoverClosed()
+        #expect(popover.note.current == nil)
+    }
+
+    @Test("A record is announced at most once per open")
+    func oncePerOpen() {
+        var announcement = AutoApplyAnnouncement()
+        #expect(announcement.take(Self.fresh, now: Self.now) == Self.fresh)
+        #expect(announcement.take(Self.fresh, now: Self.now) == nil)
+        announcement.reset()
+        #expect(announcement.take(Self.fresh, now: Self.now) == Self.fresh)
     }
 }
