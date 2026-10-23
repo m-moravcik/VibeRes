@@ -358,8 +358,18 @@ final class DisplayStore {
             break
         case .reanchorOnClose:
             ownMainChangeDeadline = nil
-            popoverNeedsReanchor = true
+            reanchorAfterOwnMainChange()
         case .dismiss:
+            dismissStaleMenuBarPopover()
+        }
+    }
+
+    /// Re-anchors the popover's window after VibeRes moved the main display:
+    /// at once when the popover is closed, otherwise once it closes.
+    private func reanchorAfterOwnMainChange() {
+        if popoverIsOpen {
+            popoverNeedsReanchor = true
+        } else {
             dismissStaleMenuBarPopover()
         }
     }
@@ -469,19 +479,38 @@ final class DisplayStore {
     /// *whether* a refresh decided to dismiss.
     var dismissStalePopoverOverride: (() -> Void)?
 
+    /// Test seam, same rationale as `dismissStalePopoverOverride`: lets a test
+    /// say whether the popover is open.
+    var popoverIsOpenOverride: (() -> Bool)?
+
+    // MenuBarExtra panels are not standard NSWindows — they're internal
+    // _NSPopoverWindow / NSStatusBarWindow subclasses. Match by class
+    // name fragment so we don't depend on private types.
+    private static func isMenuBarWindow(_ className: String) -> Bool {
+        className.contains("MenuBarExtra")
+            || className.contains("StatusBar")
+            || className.contains("Popover")
+    }
+
+    private var popoverIsOpen: Bool {
+        if let popoverIsOpenOverride { return popoverIsOpenOverride() }
+        return NSApp.windows.contains { window in
+            let className = String(describing: type(of: window))
+            // The status item's own window is visible whenever the menu bar
+            // icon is, so it says nothing about the popover.
+            return window.isVisible
+                && className != "NSStatusBarWindow"
+                && Self.isMenuBarWindow(className)
+        }
+    }
+
     private func dismissStaleMenuBarPopover() {
         if let dismissStalePopoverOverride {
             dismissStalePopoverOverride()
             return
         }
         for window in NSApp.windows {
-            // MenuBarExtra panels are not standard NSWindows — they're internal
-            // _NSPopoverWindow / NSStatusBarWindow subclasses. Match by class
-            // name fragment so we don't depend on private types.
-            let className = String(describing: type(of: window))
-            guard className.contains("MenuBarExtra")
-                || className.contains("StatusBar")
-                || className.contains("Popover") else { continue }
+            guard Self.isMenuBarWindow(String(describing: type(of: window))) else { continue }
             if window.isVisible {
                 window.orderOut(nil)
             }
@@ -556,8 +585,8 @@ final class DisplayStore {
         refresh()
         // The synchronous refresh takes the swap before any reconfiguration
         // refresh can see it, so nothing re-anchored the popover's window
-        // after a Make main display; it is done when the popover closes.
-        popoverNeedsReanchor = true
+        // after a Make main display.
+        reanchorAfterOwnMainChange()
     }
 
     // MARK: - Confirmation countdown
@@ -703,9 +732,8 @@ final class DisplayStore {
         if mainRestored {
             // The synchronous refresh takes the swap before any reconfiguration
             // refresh can see it, so nothing re-anchored the popover's window
-            // after a Revert of the main display; it is done when the popover
-            // closes.
-            popoverNeedsReanchor = true
+            // after a Revert of the main display.
+            reanchorAfterOwnMainChange()
         }
         if restoredModes > 0 {
             onModeSwitch?()

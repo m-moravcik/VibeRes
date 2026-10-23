@@ -84,11 +84,8 @@ struct RevertMainDisplayTests {
         #expect(!store.revert.canRevert)
     }
 
-    @Test("Restoring the old main re-anchors the popover's window when it closes")
-    func restoredMainReanchorsOnClose() {
+    private func storeWithMainToRestore() -> DisplayStore {
         let store = DisplayStore()
-        var dismissals = 0
-        store.dismissStalePopoverOverride = { dismissals += 1 }
         var currentMain: CGDirectDisplayID = 7
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
@@ -103,6 +100,15 @@ struct RevertMainDisplayTests {
             }
         }
         store.revert.recordBatch([], beforeMain: 5)
+        return store
+    }
+
+    @Test("Restoring the old main re-anchors the open popover's window when it closes")
+    func restoredMainReanchorsOnClose() {
+        let store = storeWithMainToRestore()
+        var dismissals = 0
+        store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { true }
 
         _ = store.performRevert()
 
@@ -110,6 +116,19 @@ struct RevertMainDisplayTests {
         #expect(store.popoverNeedsReanchor)
         store.popoverDidClose()
         #expect(dismissals == 1, "closing the popover did not re-anchor its window")
+    }
+
+    @Test("Restoring the old main with the popover closed re-anchors at once")
+    func restoredMainWithPopoverClosedReanchorsAtOnce() {
+        let store = storeWithMainToRestore()
+        var dismissals = 0
+        store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { false }
+
+        _ = store.performRevert()
+
+        #expect(dismissals == 1, "the timed-out Revert left the closed popover's anchor stale")
+        #expect(!store.popoverNeedsReanchor)
     }
 
     @Test("A commit that silently leaves main unchanged is not counted as restored (F5)")

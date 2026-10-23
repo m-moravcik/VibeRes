@@ -47,6 +47,7 @@ struct DisplayStoreDismissWiringTests {
         let store = DisplayStore()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { true }
         let now = Date()
 
         store.expectOwnMainChange(now: now)
@@ -61,6 +62,21 @@ struct DisplayStoreDismissWiringTests {
 
         store.popoverDidClose()
         #expect(dismissals == 1, "a later close re-anchored again")
+    }
+
+    @Test("A swap VibeRes made after the popover already closed re-anchors at once")
+    func ownSwapWithPopoverClosedReanchorsAtOnce() {
+        let store = DisplayStore()
+        var dismissals = 0
+        store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { false }
+        let now = Date()
+
+        store.expectOwnMainChange(now: now)
+        store.handlePopover(after: Self.swap, now: now.addingTimeInterval(0.4))
+
+        #expect(dismissals == 1, "a popover closed before the refresh kept its stale anchor")
+        #expect(!store.popoverNeedsReanchor)
     }
 
     @Test("A swap made in System Settings still closes the popover at once")
@@ -96,6 +112,7 @@ struct DisplayStoreDismissWiringTests {
         let store = DisplayStore()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
+        store.popoverIsOpenOverride = { true }
         let now = Date()
 
         store.expectOwnMainChange(now: now)
