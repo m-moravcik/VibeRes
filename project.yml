@@ -114,13 +114,19 @@ targets:
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: "Copyright © 2026 Michal Moravčík. MIT License."
         # Tell macOS which UI languages the bundle ships. The String Catalog
-        # at VibeRes/Resources/Localizable.xcstrings provides en/sk/de copy;
-        # without this list, the system will only ever pick the development
-        # language and translated catalog entries are silently ignored.
+        # at VibeRes/Resources/Localizable.xcstrings provides the copy and
+        # InfoPlist.xcstrings the Info.plist strings, both in the six languages
+        # of the app family (en, sk, cs, de, es, fr); without this list, the
+        # system will only ever pick the development language and translated
+        # catalog entries are silently ignored. scripts/check-localisation.sh
+        # requires every key in all six.
         CFBundleLocalizations:
           - en
           - sk
+          - cs
           - de
+          - es
+          - fr
         CFBundleAllowMixedLocalizations: true
         # Live preview captures the desktop through ScreenCaptureKit
         # (DesktopCapture.swift), so the declaration is required, not optional:

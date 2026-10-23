@@ -225,6 +225,7 @@ private struct PopoverPanel<Content: View>: View {
                         ? Color(red: 0.16, green: 0.16, blue: 0.17)
                         : Color(red: 0.95, green: 0.95, blue: 0.96))
             .environment(\.colorScheme, scheme)
+            .environment(\.locale, .appLanguage)
     }
 }
 
@@ -431,8 +432,8 @@ private struct NoteGallery: View {
                 let note = notes[index]
                 NoteRow(
                     tone: note.tone,
-                    text: Text(verbatim: note.localizedDescription),
-                    detail: note.localizedSkipped.map { Text(verbatim: $0) }
+                    text: Text(verbatim: note.localizedDescription()),
+                    detail: note.localizedSkipped().map { Text(verbatim: $0) }
                 ) {}
             }
         }

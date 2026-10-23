@@ -75,6 +75,9 @@ struct VibeResApp: App {
                 .environment(\.updater, updater)
                 .environment(updater.updateStatus)
                 .environment(preferences)
+                // Plural rules follow the app's language, not the system
+                // locale; see Locale.appLanguage.
+                .environment(\.locale, .appLanguage)
                 .frame(minWidth: 280)
         } label: {
             MenuBarLabel(animator: iconAnimator)
@@ -92,6 +95,7 @@ struct VibeResApp: App {
                 .environment(\.updater, updater)
                 .environment(updater.updateStatus)
                 .environment(preferences)
+                .environment(\.locale, .appLanguage)
         }
     }
 }
