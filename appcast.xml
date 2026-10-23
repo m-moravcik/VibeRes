@@ -6,27 +6,33 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.10.6</title>
-      <pubDate>Tue, 20 Oct 2026 05:57:02 +0000</pubDate>
-      <sparkle:version>29</sparkle:version>
-      <sparkle:shortVersionString>0.10.6</sparkle:shortVersionString>
+      <title>0.11.0</title>
+      <pubDate>Fri, 23 Oct 2026 22:55:45 +0000</pubDate>
+      <sparkle:version>30</sparkle:version>
+      <sparkle:shortVersionString>0.11.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
-<p><strong>Highlights:</strong> VibeRes has its own menu bar icon, and it reacts when you switch resolution.</p>
-<h3>Changed</h3>
 <ul>
-<li><strong>A menu bar icon of its own.</strong> The generic pair of rectangles is replaced by the VibeRes app icon in miniature: a display with a smaller window in its corner. It is drawn at the size and line weight of the system icons next to it, and like them it follows light, dark and tinted menu bars and the highlight when the menu is open.</li>
-<li><strong>The icon reacts when you switch resolution.</strong> When a change goes through, from the menu, a profile or Revert, the small window springs out to fill the screen and settles back into its corner. With Reduce Motion on, the icon stays still.</li>
+<li>Clicking a profile or a display now answers in the popover: the numbers on the changed displays roll to the new resolution, the changed card lights up, the MAIN badge moves to the new main display, and the profile&#x27;s checkmark bounces as the menu bar icon plays its switch animation. With Reduce Motion on, all of it crossfades.</li>
+<li>Variable refresh rate (Adaptive Sync, ProMotion): VibeRes now tells variable modes from fixed ones. A display that offers both shows a separate VRR chip, Simple mode keeps a display that is on Variable on Variable, profiles remember it, and the CLI accepts <code>@160vrr</code>.</li>
+<li>Auto-apply now runs when a display connects, not the next time you open the menu, and a flexible &quot;any external&quot; profile no longer takes over a monitor that another profile names.</li>
+<li>A profile that moves the main display keeps the menu open, so you see what changed.</li>
+<li>Calmer notes: colour only on the symbol, a display that is not connected is mentioned on a quieter line instead of as an error, and notes clear when the menu closes.</li>
+<li>Scaled / Native and Make main display share one row, display cards keep their order when the main display moves, and long display names fit beside the MAIN badge.</li>
+<li>Czech, Spanish and French, so VibeRes now speaks six languages.</li>
+<li>Settings &gt; Debug: an opt-in local debug log and Copy diagnostics for bug reports. VibeRes still sends nothing anywhere, and display names are never written to the log.</li>
+<li>Fixed: the MAIN badge could stay on the display that had lost the menu bar, and the laptop symbol followed the main display instead of the built-in one.</li>
 </ul>
+<p>Signed with Developer ID, notarized and stapled. Requires macOS 26.</p>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.10.6/VibeRes-0.10.6.zip"
-                 sparkle:edSignature="cpVW5dzAoPQtEA5tCszj84Lmiqhylt0O5eqnQ4oDznrDrKBzBEIOm+f+3NcFD9Z+TpxD9uZ2v1Tj/PjPT5b+BA=="
-                 length="4128505"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.11.0/VibeRes-0.11.0.zip"
+                 sparkle:edSignature="A8BRyVy87nq2g5SO16mO2PyDDp/OldfYYjfazaT1hDgjDgrxhXu4e9vpQty8wdWVNwfZto8BZw3ccu9JxYE4AA=="
+                 length="4466173"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: C+WCSMiDCLdSh/p3rYy8B23YdLQq5FHd4QsccLZndPEBfXHFDKpnXzgZCSVZtavDNAlTzsfg6MPzNopvSLTVAg==
-length: 1774
+edSignature: 4UZxewSJotEgYmnvHdlFEGVcz40GuwCyR8A+YoqOaQMVJ5IzCMB0CO1MrC0mbGVG586WR6fv34Q14m51eQOrBQ==
+length: 2788
 -->
