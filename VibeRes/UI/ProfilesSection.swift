@@ -8,7 +8,8 @@ struct ProfilesSection: View {
     @Environment(DisplayStore.self) private var displays
     @Environment(Preferences.self) private var preferences
     @Environment(\.popoverSession) private var popoverSession
-    @State private var mode: Mode = .idle
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shownMode: Mode = .idle
     @State private var note = PopoverNote<NoteBody>()
     /// Tracks the last auto-apply signal we acted on so we don't re-apply the
     /// same display/wake event multiple times if the popover redraws.
@@ -19,6 +20,23 @@ struct ProfilesSection: View {
 
     init(opensSaveForm: Bool = false) {
         self.opensSaveForm = opensSaveForm
+    }
+
+    /// What the section shows. Switching panels changes the popover's height,
+    /// so it animates in one transaction that also reaches the cards and the
+    /// footer below, which are `RootView`'s and out of reach of an
+    /// `.animation` here. Typing into a panel does not animate.
+    private var mode: Mode {
+        get { shownMode }
+        nonmutating set {
+            guard newValue.kind != shownMode.kind else {
+                shownMode = newValue
+                return
+            }
+            withAnimation(reduceMotion ? Design.Motion.jump : Design.Motion.closeUp) {
+                shownMode = newValue
+            }
+        }
     }
 
     /// What the note under the pills is currently showing.
@@ -62,6 +80,19 @@ struct ProfilesSection: View {
         /// profile store. Inline for the same reason as `confirmingApply`: an
         /// NSAlert dismisses the popover out from under the question.
         case confirmingDelete(profileID: UUID, name: String)
+
+        /// Which panel is up, without what is typed into it, so switching
+        /// panels animates and typing a name does not.
+        var kind: Int {
+            switch self {
+            case .idle: return 0
+            case .saving: return 1
+            case .renaming: return 2
+            case .editing: return 3
+            case .confirmingApply: return 4
+            case .confirmingDelete: return 5
+            }
+        }
     }
 
     struct ConfirmApplyState: Equatable {
@@ -160,20 +191,25 @@ struct ProfilesSection: View {
             .padding(.horizontal, Design.Spacing.l)
             .padding(.top, Design.Spacing.s)
 
-            switch mode {
-            case .idle:
-                idlePillBar
-            case .saving:
-                saveForm
-            case .renaming:
-                renameForm
-            case .editing:
-                editForm
-            case .confirmingApply:
-                confirmApplyPanel
-            case .confirmingDelete:
-                confirmDeletePanel
+            // Each panel takes the pills' place by crossfading around the
+            // rows under it making room, rather than cutting in. See `mode`.
+            Group {
+                switch mode {
+                case .idle:
+                    idlePillBar
+                case .saving:
+                    saveForm
+                case .renaming:
+                    renameForm
+                case .editing:
+                    editForm
+                case .confirmingApply:
+                    confirmApplyPanel
+                case .confirmingDelete:
+                    confirmDeletePanel
+                }
             }
+            .transition(.row(reduceMotion: reduceMotion))
 
             // Watch for display add/remove events and settled wake refreshes;
             // mode-only changes (user manually picks a different resolution)
@@ -193,9 +229,12 @@ struct ProfilesSection: View {
                 // expire on their own; the rest stay until dismissed or the
                 // popover closes. See `PopoverNote`.
                 NoteRow(tone: current.tone, text: current.body.text, detail: current.body.detail) {
-                    note.dismiss()
+                    changeNote { $0.dismiss() }
                 }
                 .padding(.top, 2)
+                // A new note, even with the same words, arrives as a new one.
+                .id(current.generation)
+                .transition(.note(reduceMotion: reduceMotion))
             }
         }
         .padding(.bottom, Design.Spacing.xs)
@@ -205,7 +244,7 @@ struct ProfilesSection: View {
             }
         }
         .onChange(of: popoverSession) {
-            note.dismiss()
+            changeNote { $0.dismiss() }
             // The confirmations answer a click from the last open; a reopen
             // hours later must not find "Apply 'Desk'?" still waiting. The
             // forms keep what was typed into them.
@@ -352,7 +391,7 @@ struct ProfilesSection: View {
             DisplayChoice(
                 displayID: d.id,
                 displayName: d.name,
-                isBuiltIn: d.isMain || CGDisplayIsBuiltin(d.id) != 0,
+                isBuiltIn: CGDisplayIsBuiltin(d.id) != 0,
                 currentModeDescription: d.currentMode.map { currentModeDescription($0, on: d) } ?? "",
                 isIncluded: true,
                 matchAnyExternal: false
@@ -807,11 +846,24 @@ struct ProfilesSection: View {
     }
 
     private func show(_ body: NoteBody, tone: ApplyOutcomeNote.Tone) {
-        let generation = note.show(body, tone: tone)
+        var generation = 0
+        changeNote { generation = $0.show(body, tone: tone) }
         guard let delay = tone.autoDismissDelay else { return }
         Task { @MainActor in
             try? await Task.sleep(for: delay)
-            note.expire(generation)
+            changeNote { $0.expire(generation) }
+        }
+    }
+
+    /// Changes the note in one transaction for the whole popover, as `mode`
+    /// does: the cards and the footer it moves are `RootView`'s, out of reach
+    /// of an `.animation` here.
+    private func changeNote(_ change: (inout PopoverNote<NoteBody>) -> Void) {
+        var next = note
+        change(&next)
+        guard next != note else { return }
+        withAnimation(Design.Motion.rows(arriving: next.current != nil, reduceMotion: reduceMotion)) {
+            note = next
         }
     }
 
@@ -821,7 +873,7 @@ struct ProfilesSection: View {
         // Aggregation lives in ApplyOutcomeNote so the precedence rules are
         // testable and the copy is localisable. See ApplyOutcomeNoteTests.
         guard let outcome = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) else {
-            note.dismiss()
+            changeNote { $0.dismiss() }
             return
         }
         show(.outcome(outcome), tone: outcome.tone)

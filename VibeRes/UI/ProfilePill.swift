@@ -20,18 +20,22 @@ struct ProfilePill: View {
     let onDelete: () -> Void
     @State private var isHovering = false
     @State private var cachedPreview: ProfileApplyPreview?
+    /// Goes up each time the pill turns active while on screen, for the
+    /// checkmark's one bounce.
+    @State private var activations = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: onApply) {
             HStack(spacing: 4) {
-                if isActive {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.tint)
-                } else {
-                    Image(systemName: iconName)
-                        .font(.system(size: 9))
-                }
+                // One symbol that changes, rather than two in an if/else, so
+                // the swap to the checkmark is the system's symbol replace
+                // instead of one image cut for another.
+                Image(systemName: isActive ? "checkmark.circle.fill" : iconName)
+                    .font(.system(size: 9))
+                    .foregroundStyle(isActive ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                    .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
+                    .symbolEffect(.bounce, options: .nonRepeating, value: activations)
                 Text(profile.name)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
@@ -50,13 +54,19 @@ struct ProfilePill: View {
                           : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18)))
             )
             .overlay {
-                if isActive {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .strokeBorder(Color.accentColor.opacity(0.8), lineWidth: 1)
-                }
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .strokeBorder(Color.accentColor.opacity(isActive ? 0.8 : 0), lineWidth: 1)
             }
+            .animation(Design.Motion.quick, value: isHovering)
+            .animation(Design.Motion.quick, value: isActive)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle(scale: Design.Motion.pillPressScale))
+        // The pill turns active on the refresh after the displays come back
+        // from the change, about when the menu bar icon's window springs out,
+        // so the bounce lands with it. See `Design.Motion`.
+        .onChange(of: isActive) { _, active in
+            if active, !reduceMotion { activations += 1 }
+        }
         .onHover { hover in
             isHovering = hover
             // Refresh the preview on each hover-in so it reflects the

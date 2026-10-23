@@ -72,7 +72,10 @@ struct RootView: View {
     @Environment(ProfileStore.self) private var profiles
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var path: NavigationPath
+    /// The MAIN badge is one element that moves between cards.
+    @Namespace private var mainBadge
     /// Opens the inline save form on appear. Only the screenshot harness sets
     /// it; the popover always starts on the pills.
     private let opensSaveForm: Bool
@@ -89,13 +92,16 @@ struct RootView: View {
             // saying: `ProfileStore` recorded it and nothing ever showed it.
             if let problem = store.lastError {
                 ProblemRow(problem: problem) { store.dismissLastError() }
+                    .transition(.row(reduceMotion: reduceMotion))
             }
             if let problem = profiles.lastError {
                 ProblemRow(problem: problem) { profiles.dismissLastError() }
+                    .transition(.row(reduceMotion: reduceMotion))
             }
 
             if updateStatus.isUpdateReady {
                 UpdateReadyBanner { updater?.installUpdate() }
+                    .transition(.row(reduceMotion: reduceMotion))
             }
 
             // Tight against the popover top — MenuBarExtra(.window) wraps us
@@ -123,7 +129,7 @@ struct RootView: View {
                             .onAppear { store.refresh() }
                     } else {
                         ForEach(store.displays) { display in
-                            DisplayCard(display: display) {
+                            DisplayCard(display: display, mainBadge: mainBadge) {
                                 path.append(display.id)
                             }
                         }
@@ -138,8 +144,12 @@ struct RootView: View {
                 HStack(spacing: Design.Spacing.s) {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(Design.Typography.note)
+                    // The seconds count down rather than flick, so the row
+                    // reads as a clock that is running.
                     Text("Keep this resolution? Reverting in \(seconds)s")
-                        .font(Design.Typography.note)
+                        .font(Design.Typography.note.monospacedDigit())
+                        .contentTransition(reduceMotion ? .opacity : .numericText(countsDown: true))
+                        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.number, value: seconds)
                     Spacer(minLength: Design.Spacing.s)
                     Button("Keep") { store.confirmDisplayChange() }
                         .font(Design.Typography.note)
@@ -149,10 +159,35 @@ struct RootView: View {
                 .padding(.horizontal, Design.Spacing.l)
                 .padding(.vertical, Design.Spacing.xs)
                 .background(Design.Palette.warningFill)
+                // Rises a touch from the footer it belongs to once the rows
+                // have made room, and fades before the footer closes up over
+                // it.
+                .transition(reduceMotion ? .row(reduceMotion: true) : .asymmetric(
+                    insertion: .offset(y: Design.Motion.noteDrop).combined(with: .opacity)
+                        .animation(Design.Motion.rowIn),
+                    removal: .opacity.animation(Design.Motion.rowOut)
+                ))
             }
 
             FooterBar()
         }
+        // The rows around these make room before they fade in, and close up
+        // only after they have faded out. On values seen here rather than
+        // where they change, so it reaches every row of the popover.
+        .animation(Design.Motion.rows(arriving: store.lastError != nil, reduceMotion: reduceMotion),
+                   value: store.lastError)
+        .animation(Design.Motion.rows(arriving: profiles.lastError != nil, reduceMotion: reduceMotion),
+                   value: profiles.lastError)
+        .animation(Design.Motion.rows(arriving: updateStatus.isUpdateReady, reduceMotion: reduceMotion),
+                   value: updateStatus.isUpdateReady)
+        .animation(Design.Motion.rows(arriving: store.confirmationSecondsRemaining != nil, reduceMotion: reduceMotion),
+                   value: store.confirmationSecondsRemaining == nil)
+        .animation(Design.Motion.rows(arriving: store.revert.canRevert, reduceMotion: reduceMotion),
+                   value: store.revert.canRevert)
+        // The MAIN badge travels to the display that became main; under
+        // Reduce Motion it fades out on one card and in on the other.
+        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.badge,
+                   value: store.displays.first(where: \.isMain)?.id)
     }
 }
 
@@ -172,15 +207,26 @@ private struct ProblemRow: View {
     }
 }
 
+/// One display on the root list.
+///
+/// Motion: the card gives under the pointer and its chevron leans the way the
+/// click goes; when its mode changes, from a profile or anywhere else, the
+/// size rolls to the new numbers and the card glows once, so after a profile
+/// touches several displays the eye finds the ones that changed. The MAIN
+/// badge is matched across cards, so it travels when the main display moves.
 private struct DisplayCard: View {
     let display: DisplayInfo
+    let mainBadge: Namespace.ID
     let action: () -> Void
     @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: Design.Spacing.m) {
-                Image(systemName: display.isMain ? "laptopcomputer" : "display")
+                // The kind of display, not whether it is main: the laptop used
+                // to move to whichever display had the menu bar.
+                Image(systemName: CGDisplayIsBuiltin(display.id) != 0 ? "laptopcomputer" : "display")
                     .font(.system(size: 18))
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
@@ -198,6 +244,8 @@ private struct DisplayCard: View {
                                 .padding(.vertical, 1)
                                 .background(.secondary.opacity(0.22), in: Capsule())
                                 .foregroundStyle(.secondary)
+                                .matchedGeometryEffect(id: reduceMotion ? AnyHashable(display.id) : "main",
+                                                       in: mainBadge)
                         }
                     }
                     if let cur = display.currentMode {
@@ -205,6 +253,7 @@ private struct DisplayCard: View {
                             .font(Design.Typography.cardSubtitle)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                     }
                 }
 
@@ -213,6 +262,7 @@ private struct DisplayCard: View {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
+                    .offset(x: isHovering && !reduceMotion ? Design.Motion.chevronLean : 0)
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, Design.Spacing.l)
@@ -221,9 +271,11 @@ private struct DisplayCard: View {
                 RoundedRectangle(cornerRadius: Design.Radius.card)
                     .fill(isHovering ? Design.Palette.cardFillHover : Design.Palette.cardFill)
             )
+            .changedGlow(on: display.currentMode?.ioDisplayModeID, cornerRadius: Design.Radius.card)
             .contentShape(RoundedRectangle(cornerRadius: Design.Radius.card))
+            .animation(Design.Motion.press, value: isHovering)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle(scale: Design.Motion.cardPressScale))
         .onHover { isHovering = $0 }
     }
 
@@ -245,6 +297,7 @@ struct DisplayDetailView: View {
     @Environment(DisplayStore.self) private var store
     @Environment(Preferences.self) private var preferences
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The tab the user picked, or nil until they pick one. Until then the
     /// detail follows the display's current mode, so an external running a
     /// native mode opens on Native with its current mode in the list.
@@ -396,11 +449,15 @@ struct DisplayDetailView: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
+                    // Rolls to the size just picked: the click is answered
+                    // here, at the top, while the displays come back.
                     Text("\(formatThousands(cur.width)) × \(formatThousands(cur.height))")
                         .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                        .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                     HStack(spacing: 4) {
                         if let hz = cur.refreshHz {
                             Text("\(hz) Hz")
+                                .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                             if display.isVRRTwin(cur) {
                                 Text("VRR")
                             }
@@ -683,6 +740,7 @@ private struct FooterBar: View {
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -713,6 +771,8 @@ private struct FooterBar: View {
                         }
                     )
                     .keyboardShortcut("z")
+                    // Waits for Refresh and Settings to make room.
+                    .transition(.row(reduceMotion: reduceMotion))
                 }
 
                 MenuRow(
@@ -956,6 +1016,9 @@ private struct CompactResolutionRow: View {
     let simpleMode: Bool
     let onHoverChange: (Bool) -> Void
     let apply: (CGDisplayMode) -> Void
+    /// The highlighted rate is one capsule that slides between chips.
+    @Namespace private var rateHighlight
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var currentModeID: Int32? { currentMode?.ioDisplayModeID }
 
@@ -1048,6 +1111,9 @@ private struct CompactResolutionRow: View {
             .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
             .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
             .frame(minWidth: 100, alignment: .leading)
+            // Fades to the accent rather than cutting to it when this becomes
+            // the current size; nothing moves.
+            .animation(Design.Motion.quick, value: isCurrentSize)
             .accessibilityHidden(true)
     }
 
@@ -1114,7 +1180,7 @@ private struct CompactResolutionRow: View {
                             .frame(minWidth: compact ? 20 : 22)
                             .padding(.vertical, 3)
                             .padding(.horizontal, compact ? 4 : 6)
-                            .background(chipBackground(active: isActive))
+                            .background(chipBackground(active: isActive, modeID: entry.mode.ioDisplayModeID))
                     }
                     .buttonStyle(.plain)
                     .modifier(VariableRateHint(option: entry))
@@ -1129,6 +1195,7 @@ private struct CompactResolutionRow: View {
             .background(
                 Capsule().fill(Color.secondary.opacity(0.12))
             )
+            .animation(reduceMotion ? Design.Motion.quick : Design.Motion.chip, value: currentModeID)
         }
     }
 
@@ -1146,10 +1213,14 @@ private struct CompactResolutionRow: View {
 
     /// Avoids `AnyView` type-erasure (which defeats SwiftUI's diffing) by using
     /// `@ViewBuilder` with both branches typed as concrete shapes.
+    ///
+    /// The highlight slides from chip to chip; under Reduce Motion each chip
+    /// keeps its own, so the old one fades out and the new one fades in.
     @ViewBuilder
-    private func chipBackground(active: Bool) -> some View {
+    private func chipBackground(active: Bool, modeID: Int32) -> some View {
         if active {
             Capsule().fill(Color.accentColor)
+                .matchedGeometryEffect(id: reduceMotion ? AnyHashable(modeID) : "rate", in: rateHighlight)
         } else {
             Color.clear
         }
