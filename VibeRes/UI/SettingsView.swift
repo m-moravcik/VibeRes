@@ -209,7 +209,7 @@ struct SettingsView: View {
         Form {
             Section {
                 Toggle("Write debug log to file", isOn: prefs.debugLogEnabled)
-                Text("Off by default. Records display changes and the results of resolution changes in ~/Library/Logs/VibeRes, capped at about 1 MB. Nothing is sent anywhere.")
+                Text("Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -232,7 +232,7 @@ struct SettingsView: View {
             }
 
             Section {
-                Text("Copies the app and macOS versions, your Mac model, these settings, your displays and the latest log lines, ready to paste into a bug report. No serial numbers or file paths.")
+                Text("Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

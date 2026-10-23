@@ -669,25 +669,25 @@
         }
       }
     },
-    "Copies the app and macOS versions, your Mac model, these settings, your displays and the latest log lines, ready to paste into a bug report. No serial numbers or file paths.": {
+    "Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths.": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kopiert App- und macOS-Version, Mac-Modell, diese Einstellungen, Bildschirme und die letzten Protokollzeilen, bereit zum Einfügen in einen Fehlerbericht. Ohne Seriennummern und Dateipfade."
+            "value": "Kopiert Versionen, Mac-Modell, diese Einstellungen, Bildschirme und die letzten Protokollzeilen für einen Fehlerbericht. Keine Seriennummern oder Dateipfade."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copies the app and macOS versions, your Mac model, these settings, your displays and the latest log lines, ready to paste into a bug report. No serial numbers or file paths."
+            "value": "Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skopíruje verziu aplikácie a macOS, model Macu, tieto nastavenia, displeje a posledné riadky záznamu, pripravené na vloženie do hlásenia chyby. Bez sériových čísel a ciest k súborom."
+            "value": "Skopíruje verzie, model Macu, tieto nastavenia, displeje a posledné riadky záznamu do hlásenia chyby. Bez sériových čísel a ciest k súborom."
           }
         }
       }
@@ -2016,25 +2016,25 @@
         }
       }
     },
-    "Off by default. Records display changes and the results of resolution changes in ~/Library/Logs/VibeRes, capped at about 1 MB. Nothing is sent anywhere.": {
+    "Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent.": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standardmäßig aus. Protokolliert Bildschirmänderungen und die Ergebnisse von Auflösungswechseln in ~/Library/Logs/VibeRes, begrenzt auf etwa 1 MB. Es wird nichts gesendet."
+            "value": "Standardmäßig aus. Protokolliert Änderungen und Ergebnisse in ~/Library/Logs/VibeRes, maximal etwa 1 MB. Es wird nichts gesendet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Off by default. Records display changes and the results of resolution changes in ~/Library/Logs/VibeRes, capped at about 1 MB. Nothing is sent anywhere."
+            "value": "Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Predvolene vypnuté. Zaznamenáva zmeny displejov a výsledky zmien rozlíšenia do ~/Library/Logs/VibeRes, najviac okolo 1 MB. Nič sa nikam neodosiela."
+            "value": "Predvolene vypnuté. Zaznamenáva zmeny a výsledky do ~/Library/Logs/VibeRes, najviac okolo 1 MB. Nič sa neodosiela."
           }
         }
       }
