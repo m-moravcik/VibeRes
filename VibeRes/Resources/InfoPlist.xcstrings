@@ -1,0 +1,48 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSScreenCaptureUsageDescription": {
+      "comment": "Screen Recording permission prompt for the live preview on hover",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes zobrazuje živý náhled tvé plochy, když najedeš na rozlišení, aby bylo vidět, jak bude vypadat, než ho použiješ. Nic se nenahrává, neukládá ani neodesílá."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes zeigt eine Live-Vorschau deines Schreibtischs, wenn du eine Auflösung überfährst, damit du siehst, wie sie aussehen wird, bevor du sie anwendest. Es wird nichts aufgenommen, gespeichert oder gesendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes shows a live thumbnail of your desktop when you hover a resolution, so you can see how it will look before applying it. Nothing is recorded, stored or sent anywhere."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes muestra una miniatura en vivo de tu escritorio cuando pasas el cursor por una resolución, para que veas cómo quedará antes de aplicarla. No se graba, guarda ni envía nada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes affiche une miniature en direct de votre bureau lorsque vous survolez une résolution, afin que vous voyiez le résultat avant de l’appliquer. Rien n’est enregistré, stocké ni envoyé."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes zobrazuje živý náhľad tvojej plochy, keď prejdeš myšou nad rozlíšením, aby bolo vidieť, ako bude vyzerať, kým ho použiješ. Nič sa nenahráva, neukladá ani neodosiela."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
