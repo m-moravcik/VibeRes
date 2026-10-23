@@ -321,7 +321,7 @@ final class DisplayStore {
         pendingRefresh = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled, let self else { return }
-            // Honour the same rule the wake path uses. Dismissing
+            // Act on `RefreshTransition.popoverAction`. Dismissing
             // unconditionally closed the popover ~200ms after every mode change,
             // because a resolution change also fires a reconfiguration
             // callback — taking the outcome note and the Revert row with it.
