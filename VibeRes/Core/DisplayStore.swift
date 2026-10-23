@@ -364,8 +364,9 @@ final class DisplayStore {
         return transition
     }
 
-    /// One line per refresh worth reading in a bug report: name, size, rate. No
-    /// serial numbers; `DisplayInfo` does not carry any.
+    /// One line per refresh worth reading in a bug report: the display's label
+    /// (type plus EDID codes, see `DisplayLabel`), size and rate, never its name.
+    /// No serial numbers; `DisplayInfo` does not carry any.
     nonisolated static func describe(_ displays: [DisplayInfo]) -> String {
         displays.map { d in
             let mode = d.currentMode.map { "\($0.width)x\($0.height)@\($0.refreshHz ?? 0)Hz" } ?? "no mode"
