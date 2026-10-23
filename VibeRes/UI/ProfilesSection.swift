@@ -458,6 +458,11 @@ struct ProfilesSection: View {
             displays: displays.displays,
             revert: displays.revert
         )
+        // A profile that moved the main display keeps the popover open, so the
+        // refresh that follows can show what changed. See `DisplayStore`.
+        if result.mainChange?.didChange == true {
+            displays.expectOwnMainChange()
+        }
         announceOutcome(result)
     }
 

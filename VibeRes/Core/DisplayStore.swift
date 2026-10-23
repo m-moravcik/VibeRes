@@ -60,6 +60,27 @@ final class DisplayStore {
         var shouldBumpSetChangeToken: Bool { setChanged }
         var shouldClearRevertHistory: Bool { setChanged }
         var shouldDismissMenuBarPopover: Bool { setChanged || mainSwapped }
+
+        /// What a reconfiguration refresh does with an open popover.
+        ///
+        /// A swap made in System Settings strands the popover's window on the
+        /// old primary, so it closes and re-anchors at once. A swap VibeRes
+        /// made itself, from a profile's main pin while the popover was open,
+        /// keeps it open: the refresh that sees the swap is the one that rolls
+        /// the cards' numbers, moves the MAIN badge and turns the pill active,
+        /// and closing ~200 ms later used to throw all of that away. Its window
+        /// is re-anchored when the user closes it instead.
+        func popoverAction(ownMainChangeExpected: Bool) -> PopoverAction {
+            if setChanged { return .dismiss }
+            guard mainSwapped else { return .keepOpen }
+            return ownMainChangeExpected ? .reanchorOnClose : .dismiss
+        }
+    }
+
+    enum PopoverAction: Equatable {
+        case keepOpen
+        case reanchorOnClose
+        case dismiss
     }
 
     struct CallbackRefreshDecision: Equatable {
@@ -304,11 +325,52 @@ final class DisplayStore {
             // unconditionally closed the popover ~200ms after every mode change,
             // because a resolution change also fires a reconfiguration
             // callback — taking the outcome note and the Revert row with it.
-            let transition = self.applyRefresh(triggeredByCallback: true)
-            if transition.shouldDismissMenuBarPopover {
-                self.dismissStaleMenuBarPopover()
-            }
+            self.handlePopover(after: self.applyRefresh(triggeredByCallback: true))
         }
+    }
+
+    /// How long after VibeRes moved the main display a swap seen by a
+    /// reconfiguration refresh counts as its own. The refresh comes ~200 ms
+    /// after the last callback; this only has to outlast that, and stays
+    /// short so a swap made in System Settings soon after still closes the
+    /// popover.
+    static let ownMainChangeWindow: TimeInterval = 3
+
+    private var ownMainChangeDeadline: Date?
+
+    /// Set when the popover stayed open across a main-display swap VibeRes
+    /// made; its window is re-anchored once it closes (`popoverDidClose`).
+    private(set) var popoverNeedsReanchor = false
+
+    /// Called right after VibeRes itself moved the main display while the
+    /// popover is open (a profile's main pin), so the refresh that follows
+    /// keeps the popover open. See `RefreshTransition.popoverAction`.
+    func expectOwnMainChange(now: Date = Date()) {
+        ownMainChangeDeadline = now.addingTimeInterval(Self.ownMainChangeWindow)
+    }
+
+    /// Acts on a reconfiguration refresh's transition. Internal so the wiring
+    /// can be tested with a synthetic transition.
+    func handlePopover(after transition: RefreshTransition, now: Date = Date()) {
+        let ownExpected = ownMainChangeDeadline.map { now < $0 } ?? false
+        switch transition.popoverAction(ownMainChangeExpected: ownExpected) {
+        case .keepOpen:
+            break
+        case .reanchorOnClose:
+            ownMainChangeDeadline = nil
+            popoverNeedsReanchor = true
+        case .dismiss:
+            dismissStaleMenuBarPopover()
+        }
+    }
+
+    /// The popover closed. If it stayed open across a main-display swap, its
+    /// window gets the re-anchoring a swap in System Settings gets at once,
+    /// now that closing it cannot take anything off screen.
+    func popoverDidClose() {
+        guard popoverNeedsReanchor else { return }
+        popoverNeedsReanchor = false
+        dismissStaleMenuBarPopover()
     }
 
     /// Re-snapshots the display list and bumps `setChangeToken` if a display
@@ -492,6 +554,10 @@ final class DisplayStore {
             lastError = nil
         }
         refresh()
+        // The synchronous refresh takes the swap before any reconfiguration
+        // refresh can see it, so nothing re-anchored the popover's window
+        // after a Make main display; it is done when the popover closes.
+        popoverNeedsReanchor = true
     }
 
     // MARK: - Confirmation countdown
