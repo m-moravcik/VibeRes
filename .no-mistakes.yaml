@@ -33,9 +33,10 @@ test:
     - The viberes CLI built from the branch, with VIBERES_PROFILE_DIR set to a
       temporary directory. Read-only commands (list, modes, current, profile
       list/show) are safe; `set` and `profile apply` change real displays.
-    - The debug-only offscreen harnesses: `scripts/screenshots.sh <lang>`
-      (popover, detail, save form, notes and the README shots as PNG) and
-      `scripts/motion-demo.sh`. They rig every apply path to abort.
+    - The debug-only offscreen harnesses. `scripts/screenshots.sh <lang>`
+      renders the README shots as PNG against a scratch profile directory and
+      never applies anything. `scripts/motion-demo.sh` rigs every apply path
+      to abort.
     - DisplayStore.showForDemo, to stage a display state without touching a
       display.
     When a scenario can only be checked by driving the real GUI, report it as
