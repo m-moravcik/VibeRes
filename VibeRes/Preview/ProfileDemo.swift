@@ -444,7 +444,11 @@ enum ProfileDemo {
                 hosting.layoutSubtreeIfNeeded()
             }
             for profile in profiles.profiles.prefix(2) {
-                guard DisplaySetClassifier.isCleanApply(DisplaySetClassifier.classify(profile, against: displays.displays)) else {
+                let classification = DisplaySetClassifier.classify(
+                    profiles.bindings(of: profile, to: displays.displays),
+                    against: displays.displays
+                )
+                guard DisplaySetClassifier.isCleanApply(classification) else {
                     ProfileDemo.fail("\(profile.name) would open the confirmation panel, not apply")
                 }
             }
