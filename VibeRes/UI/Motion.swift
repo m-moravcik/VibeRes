@@ -56,9 +56,10 @@ extension View {
 
 extension AnyTransition {
     /// A note that drops in from just above and fades out, faster. Reduce
-    /// Motion: a crossfade both ways.
+    /// Motion: the fades of `row`, around the rows' `jump`, so the note never
+    /// shows over a card that has not jumped out of its way yet.
     static func note(reduceMotion: Bool) -> AnyTransition {
-        guard !reduceMotion else { return .opacity.animation(Design.Motion.quick) }
+        guard !reduceMotion else { return .row(reduceMotion: true) }
         return .asymmetric(
             insertion: .offset(y: -Design.Motion.noteDrop).combined(with: .opacity)
                 .animation(Design.Motion.noteIn),

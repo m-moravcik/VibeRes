@@ -169,9 +169,9 @@ struct RootView: View {
 
             FooterBar()
         }
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: store.lastError)
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: profiles.lastError)
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: updateStatus.isUpdateReady)
+        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: store.lastError)
+        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: profiles.lastError)
+        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: updateStatus.isUpdateReady)
         // The countdown and the Revert row fade before the rows close up.
         .animation(reduceMotion ? Design.Motion.jump
                    : store.confirmationSecondsRemaining == nil ? Design.Motion.closeUp : Design.Motion.layout,

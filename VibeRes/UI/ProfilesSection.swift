@@ -240,7 +240,7 @@ struct ProfilesSection: View {
                 .transition(.note(reduceMotion: reduceMotion))
             }
         }
-        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.layout, value: note.current?.generation)
+        .animation(reduceMotion ? Design.Motion.jump : Design.Motion.layout, value: note.current?.generation)
         .padding(.bottom, Design.Spacing.xs)
         .onAppear {
             if opensSaveForm, mode == .idle {
