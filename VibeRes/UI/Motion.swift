@@ -32,8 +32,28 @@ extension View {
     /// Lights the view up in the accent colour when `value` changes, and fades
     /// it back: "this is the one that changed". Not on first appearance, only
     /// on a change. Colour only, so Reduce Motion keeps it.
-    func changedGlow(on value: some Equatable, cornerRadius: CGFloat) -> some View {
-        keyframeAnimator(initialValue: 0.0, trigger: value) { content, glow in
+    func changedGlow(on value: some Equatable & Sendable, cornerRadius: CGFloat) -> some View {
+        modifier(ChangedGlow(value: value, cornerRadius: cornerRadius))
+    }
+
+    /// Digits that roll to their new value when `value` changes. Reduce
+    /// Motion: a crossfade.
+    func rollingNumbers(on value: some Equatable, reduceMotion: Bool) -> some View {
+        contentTransition(reduceMotion ? .opacity : .numericText())
+            .animation(reduceMotion ? Design.Motion.quick : Design.Motion.number, value: value)
+    }
+}
+
+/// `changedGlow` as a modifier of its own: a closure in a `View` extension
+/// would capture the generic `Self`, which Swift 6 flags as a non-Sendable
+/// metatype crossing into the keyframe animator's isolated closure.
+private struct ChangedGlow<Value: Equatable & Sendable>: ViewModifier {
+    let value: Value
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        let cornerRadius = cornerRadius
+        return content.keyframeAnimator(initialValue: 0.0, trigger: value) { content, glow in
             content.overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(Color.accentColor.opacity(Design.Motion.changedGlowOpacity * glow))
@@ -44,13 +64,6 @@ extension View {
             LinearKeyframe(1, duration: Design.Motion.changedGlowHold)
             CubicKeyframe(0, duration: Design.Motion.changedGlowOut)
         }
-    }
-
-    /// Digits that roll to their new value when `value` changes. Reduce
-    /// Motion: a crossfade.
-    func rollingNumbers(on value: some Equatable, reduceMotion: Bool) -> some View {
-        contentTransition(reduceMotion ? .opacity : .numericText())
-            .animation(reduceMotion ? Design.Motion.quick : Design.Motion.number, value: value)
     }
 }
 

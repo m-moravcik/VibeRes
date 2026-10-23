@@ -11,7 +11,7 @@ Available in six languages: English, Slovak, Czech, German, Spanish and French.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.gif">
-    <img src="docs/hero.gif" alt="A demo desktop with VibeRes open on the built-in display's sizes. The pointer moves up the list with the hover preview of each size, clicks 1800 × 1169, the screen goes dark for a moment and comes back with more room, while the menu bar icon plays its switch animation, shown enlarged in a loupe at the top left. Then it switches back to 1512 × 982.">
+    <img src="docs/hero.gif" alt="A demo desktop with the VibeRes popover open under the menu bar and the Desk profile active. The pointer clicks the Presentation pill and the screens go dark for a moment. A note drops in under the pills, the LG UltraFine card rolls from 2560 × 1440 to 2048 × 1152 and glows, the MAIN badge moves to the LG UltraFine, and the Presentation checkmark bounces while the menu bar icon, enlarged in a loupe at the top left, plays its switch animation. Then the pointer clicks Desk and everything goes back.">
   </picture>
 </p>
 
@@ -64,6 +64,13 @@ Click a display card to drill in. Each row is one logical size; refresh rates ap
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/detail-v3-dark.png">
     <img src="docs/screenshots/detail-v3-light.png" width="300" alt="Per-display detail: the current 1800 × 1169 at 120 Hz card, the Scaled and Native toggle, size rows with refresh-rate chips, and the hover preview for 1512 × 982 in the corner">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/hero-resolution-dark.gif">
+    <img src="docs/hero-resolution.gif" alt="A demo desktop with VibeRes open on the built-in display's sizes. The pointer moves up the list with the hover preview of each size, clicks 1800 × 1169, the screen goes dark for a moment and comes back with more room, while the menu bar icon plays its switch animation, shown enlarged in a loupe at the top left. Then it switches back to 1512 × 982.">
   </picture>
 </p>
 

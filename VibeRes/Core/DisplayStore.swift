@@ -266,7 +266,7 @@ final class DisplayStore {
             for (index, delayMs) in Self.wakeSettleDelaysMs.enumerated() {
                 try? await Task.sleep(for: .milliseconds(delayMs))
                 guard !Task.isCancelled else { return }
-                settledDisplays = DisplayManager.snapshot()
+                settledDisplays = self.liveSnapshot()
                 let sample = Self.currentModeSignatures(settledDisplays)
                 Log.display.debug("wakeRefresh sample \(index + 1): displaysNow=\(settledDisplays.count) previouslyCommitted=\(self.displays.count)")
                 // Two consecutive identical samples mean the window server has
@@ -314,7 +314,22 @@ final class DisplayStore {
     func showForDemo(_ snapshot: [DisplayInfo]) {
         displays = snapshot
     }
+
+    /// Demo seam for the profile harness (`ProfileDemo`): what every refresh
+    /// reads instead of asking macOS, so the real refresh paths (the debounced
+    /// reconfiguration refresh above all) run on a demo display list. Nil
+    /// reads the live list. Debug builds only.
+    @ObservationIgnored
+    var demoSnapshot: (() -> [DisplayInfo])?
     #endif
+
+    /// The display list as macOS reports it, or the demo's in a harness.
+    private func liveSnapshot() -> [DisplayInfo] {
+        #if DEBUG
+        if let demoSnapshot { return demoSnapshot() }
+        #endif
+        return DisplayManager.snapshot()
+    }
 
     /// Coalesces bursts of reconfiguration callbacks (macOS often fires several in rapid
     /// succession during a single mode change) into one refresh ~200ms after the last event.
@@ -410,7 +425,7 @@ final class DisplayStore {
     /// trigger the popover appears off-screen on the new primary's edge.
     @discardableResult
     private func applyRefresh(triggeredByCallback: Bool) -> RefreshTransition {
-        applySnapshot(DisplayManager.snapshot(), triggeredByCallback: triggeredByCallback)
+        applySnapshot(liveSnapshot(), triggeredByCallback: triggeredByCallback)
     }
 
     @discardableResult

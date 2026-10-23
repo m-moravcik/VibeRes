@@ -19,6 +19,9 @@ struct VibeResApp: App {
         if let output = MotionDemo.requestedOutput {
             MotionDemo.run(into: output)
         }
+        if let output = ProfileDemo.requestedOutput {
+            ProfileDemo.run(into: output)
+        }
         #endif
         // First, so the debug log opt-in is in force before the stores below
         // log their first refresh.
