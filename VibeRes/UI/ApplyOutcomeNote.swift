@@ -248,13 +248,16 @@ struct ApplyOutcomeNote: Equatable {
 // language has to reassemble "2560\u{00D7}1440 @60Hz".
 
 extension ApplyOutcomeNote.Detail {
-    var localizedDescription: String {
+    /// `locale` decides the plural form as well as the table, so it defaults to
+    /// the app's language rather than `Locale.current`; see `Locale.appLanguage`.
+    func localizedDescription(locale: Locale = .appLanguage) -> String {
         switch self {
         case let .applied(display, width, height, hz, vrr):
             let mode = ApplyOutcomeNote.modeString(width: width, height: height, hz: hz, vrr: vrr)
             return String(localized: LocalizedStringResource(
                 "note.detail.applied",
                 defaultValue: "\(display) \u{2192} \(mode)",
+                locale: locale,
                 comment: "Display was set to a mode. 1: display name, 2: mode e.g. 2560x1440 @60Hz"
             ))
 
@@ -264,6 +267,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.fallback",
                 defaultValue: "\(display): wanted \(wanted), used \(used) (closest available)",
+                locale: locale,
                 comment: "Requested mode was unavailable. 1: display, 2: requested mode, 3: mode actually used"
             ))
 
@@ -271,6 +275,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.notConnected",
                 defaultValue: "\(display) not connected",
+                locale: locale,
                 comment: "A profile names this display but it is not attached. 1: display name"
             ))
 
@@ -278,6 +283,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.noExternalConnected",
                 defaultValue: "No external monitor connected",
+                locale: locale,
                 comment: "A flexible profile matches any external monitor, but none is attached"
             ))
 
@@ -286,6 +292,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.noUsableMode",
                 defaultValue: "\(display): no usable mode for \(mode)",
+                locale: locale,
                 comment: "Display matched but offers no mode close to the saved one. 1: display, 2: saved mode"
             ))
 
@@ -296,6 +303,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.failed",
                 defaultValue: "\(display): \(reason)",
+                locale: locale,
                 comment: "Applying a mode failed. 1: display name, 2: the reason"
             ))
 
@@ -303,6 +311,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.mainChanged",
                 defaultValue: "Main display \u{2192} \(display)",
+                locale: locale,
                 comment: "The menu bar moved to this display. 1: display name"
             ))
 
@@ -310,6 +319,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.mainAdjusted",
                 defaultValue: "Main display \u{2192} \(display), but macOS adjusted the arrangement",
+                locale: locale,
                 comment: "Main display was set but the layout differs from what was requested. 1: display name"
             ))
 
@@ -317,6 +327,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.mainNotConnected",
                 defaultValue: "Main display unchanged — the saved display is not connected",
+                locale: locale,
                 comment: "The profile's main display is not attached"
             ))
 
@@ -324,6 +335,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.mainAmbiguous",
                 defaultValue: "Main display unchanged — \(count) connected displays match",
+                locale: locale,
                 comment: "Several displays match the saved main. 1: how many"
             ))
 
@@ -331,6 +343,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.mainMirrored",
                 defaultValue: "Main display unchanged — displays are mirrored",
+                locale: locale,
                 comment: "Arrangement is not touched while mirroring is on"
             ))
 
@@ -339,6 +352,7 @@ extension ApplyOutcomeNote.Detail {
             return String(localized: LocalizedStringResource(
                 "note.detail.mainFailed",
                 defaultValue: "Main display unchanged: \(reason)",
+                locale: locale,
                 comment: "Setting the main display failed. 1: the reason"
             ))
         }
@@ -352,48 +366,50 @@ extension ApplyOutcomeNote {
     /// `Text` with `+` is deprecated on macOS 26, and interpolating one `Text`
     /// into another would put an opaque `%@` in the middle of a translatable
     /// sentence.
-    var localizedDescription: String {
+    func localizedDescription(locale: Locale = .appLanguage) -> String {
         let base: String
         switch content {
         case let .problems(details):
-            base = Self.joined(details)
+            base = Self.joined(details, locale: locale)
 
         case let .fallbacks(details):
-            base = Self.joined(details)
+            base = Self.joined(details, locale: locale)
 
         case let .skippedOnly(details):
-            base = Self.joined(details)
+            base = Self.joined(details, locale: locale)
 
         case let .applied(detail, extraCount):
             if extraCount > 0 {
                 let more = String(localized: LocalizedStringResource(
                     "note.moreDisplays",
                     defaultValue: " (+\(extraCount) more)",
+                    locale: locale,
                     comment: "Appended when a profile also applied to further displays. 1: how many others"
                 ))
-                base = detail.localizedDescription + more
+                base = detail.localizedDescription(locale: locale) + more
             } else {
-                base = detail.localizedDescription
+                base = detail.localizedDescription(locale: locale)
             }
 
         case .alreadyAtSavedSettings:
             base = String(localized: LocalizedStringResource(
                 "note.alreadyAtSavedSettings",
                 defaultValue: "Already at the saved settings.",
+                locale: locale,
                 comment: "The profile was applied but nothing needed changing"
             ))
         }
         guard let mainDetail else { return base }
-        return base + "; " + mainDetail.localizedDescription
+        return base + "; " + mainDetail.localizedDescription(locale: locale)
     }
 
     /// The skipped displays as one resolved string, for the note's second
     /// line; nil when none was skipped.
-    var localizedSkipped: String? {
-        skipped.isEmpty ? nil : Self.joined(skipped)
+    func localizedSkipped(locale: Locale = .appLanguage) -> String? {
+        skipped.isEmpty ? nil : Self.joined(skipped, locale: locale)
     }
 
-    private static func joined(_ details: [Detail]) -> String {
-        details.map(\.localizedDescription).joined(separator: "; ")
+    private static func joined(_ details: [Detail], locale: Locale) -> String {
+        details.map { $0.localizedDescription(locale: locale) }.joined(separator: "; ")
     }
 }

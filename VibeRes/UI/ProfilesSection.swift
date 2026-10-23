@@ -34,14 +34,14 @@ struct ProfilesSection: View {
             switch self {
             // Already resolved through the String Catalog, so verbatim — a
             // second lookup would search for the translated sentence as a key.
-            case let .outcome(note): return Text(verbatim: note.localizedDescription)
+            case let .outcome(note): return Text(verbatim: note.localizedDescription())
             case let .message(key): return Text(key)
             }
         }
 
         /// The displays an apply skipped, on the note's second line.
         var detail: Text? {
-            guard case let .outcome(note) = self, let skipped = note.localizedSkipped else { return nil }
+            guard case let .outcome(note) = self, let skipped = note.localizedSkipped() else { return nil }
             return Text(verbatim: skipped)
         }
     }
