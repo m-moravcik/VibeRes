@@ -31,9 +31,9 @@ import UniformTypeIdentifiers
 @MainActor
 enum ProfileDemo {
     static let environmentKey = "VIBERES_PROFILE_DEMO"
-    /// `1` leaves the main display where it is: the second profile then only
-    /// changes a size. See `run`.
-    static let keepMainKey = "VIBERES_PROFILE_DEMO_KEEP_MAIN"
+    /// Removed on every exit, `fail` included: it holds this Mac's display
+    /// serials in `profiles.json`. Set once by `run`, before any sample.
+    nonisolated(unsafe) private static var scratch: URL?
 
     static var requestedOutput: URL? {
         guard let path = ProcessInfo.processInfo.environment[environmentKey], !path.isEmpty else {
@@ -79,12 +79,12 @@ enum ProfileDemo {
               targetMode.ioDisplayModeID != external.currentMode?.ioDisplayModeID
         else { fail("\(external.name) has no second size to switch to") }
 
-        let movesMain = ProcessInfo.processInfo.environment[keepMainKey] != "1"
         let world = DemoDisplays(real)
 
         // Profiles live in a scratch directory, never the user's catalog.
         let scratch = FileManager.default.temporaryDirectory
             .appendingPathComponent("VibeResProfileDemo-\(UUID().uuidString)", isDirectory: true)
+        Self.scratch = scratch
         let samples = scratch.appendingPathComponent("samples", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: samples, withIntermediateDirectories: true)
@@ -92,7 +92,7 @@ enum ProfileDemo {
             fail("\(error)")
         }
         let names = seed(ProfileStore(directory: scratch), displays: real, builtIn: builtIn,
-                         external: external, target: target, movesMain: movesMain, main: world.main)
+                         external: external, target: target, main: world.main)
 
         // Every take's `DisplayStore` registered a reconfiguration callback
         // that does not retain it, so none is released before the process
@@ -115,17 +115,17 @@ enum ProfileDemo {
             compose(recorded, scheme: scheme, into: dir)
             print("wrote \(dir.path)")
         }
-        try? FileManager.default.removeItem(at: scratch)
+        removeScratch()
         withExtendedLifetime(takes) { exit(0) }
     }
 
     /// The invented profiles, on this Mac's displays: A, every display as it
     /// is now (where the loop starts, so its pill is active); B, a second size
-    /// on the external and, unless `keepMainKey`, the other display as main;
+    /// on the external and the other display as main;
     /// and a third that is never clicked, so the strip reads like a real one.
     private static func seed(
         _ store: ProfileStore, displays: [DisplayInfo], builtIn: DisplayInfo, external: DisplayInfo,
-        target: ResolutionGroup, movesMain: Bool, main: CGDirectDisplayID
+        target: ResolutionGroup, main: CGDirectDisplayID
     ) -> [String] {
         let names = localizedNames
         guard let builtInMode = builtIn.currentMode else { fail("\(builtIn.name) reports no current mode") }
@@ -133,7 +133,7 @@ enum ProfileDemo {
         let a = Profile(
             name: names[0],
             entries: displays.compactMap { info in info.currentMode.map { entry(for: info, size: ($0.width, $0.height, $0.refreshHz, $0.isHiDPI)) } },
-            mainDisplay: movesMain ? matcher(for: main) : nil
+            mainDisplay: matcher(for: main)
         )
         let b = Profile(
             name: names[1],
@@ -141,7 +141,7 @@ enum ProfileDemo {
                 entry(for: builtIn, size: (builtInMode.width, builtInMode.height, builtInMode.refreshHz, builtInMode.isHiDPI)),
                 entry(for: external, size: (target.pointWidth, target.pointHeight, target.modesByRefresh.last?.hz, target.isHiDPI)),
             ],
-            mainDisplay: movesMain ? matcher(for: other.id) : nil
+            mainDisplay: matcher(for: other.id)
         )
         var profiles = [a, b]
         if let denser = group(on: builtIn, stepsFromCurrent: -1) ?? group(on: builtIn, stepsFromCurrent: 1) {
@@ -188,9 +188,14 @@ enum ProfileDemo {
         }
     }
 
-    fileprivate static func fail(_ message: String) -> Never {
+    nonisolated fileprivate static func fail(_ message: String) -> Never {
         FileHandle.standardError.write(Data("profile-demo: \(message)\n".utf8))
+        removeScratch()
         exit(1)
+    }
+
+    nonisolated private static func removeScratch() {
+        if let scratch { try? FileManager.default.removeItem(at: scratch) }
     }
 
     // MARK: Script
@@ -305,7 +310,7 @@ enum ProfileDemo {
         let displays = DisplayStore()
         let profiles: ProfileStore
         let animator: MenuBarIconAnimator
-        let window: DemoCaptureWindow
+        let window: NSWindow
         let hosting: NSHostingView<AnyView>
         let samplesDir: URL
         let names: [String]
@@ -352,7 +357,7 @@ enum ProfileDemo {
             hosting.appearance = appearance
             // The canvas is fixed; the window must not follow the content.
             hosting.sizingOptions = []
-            window = DemoCaptureWindow(
+            window = NSWindow(
                 contentRect: NSRect(origin: CGPoint(x: -20_000, y: -20_000), size: canvas),
                 styleMask: [.borderless], backing: .buffered, defer: false
             )
@@ -419,10 +424,9 @@ enum ProfileDemo {
         /// turned, so no timer, task or view update runs before the
         /// transaction returns, exactly as in the real app.
         private func blockUntilDisplaysReturn() {
-            let from = now
             let until = releaseTime + Script.Beat.blank
-            let frozen = capture(to: samplesDir.appendingPathComponent(String(format: "frozen_%.3f.png", from)))
-            blocked.append(Blocked(from: from, until: until, url: frozen.url, iconPhase: frozen.iconPhase))
+            let frozen = capture(to: samplesDir.appendingPathComponent(String(format: "frozen_%.3f.png", releaseTime)))
+            blocked.append(Blocked(from: releaseTime, until: until, url: frozen.url, iconPhase: frozen.iconPhase))
             Thread.sleep(forTimeInterval: max(0, until - now))
         }
 
@@ -662,10 +666,6 @@ enum ProfileDemo {
     }
 }
 
-/// A borderless window for the popover, off screen. Plain `NSWindow` would do
-/// for the clicks too; this one only exists so the harness can say what it is.
-final class DemoCaptureWindow: NSWindow {}
-
 /// The demo's display list: this Mac's displays, with the modes and the main
 /// display the demo has "applied". What `DisplayStore` reads on a refresh and
 /// `ProfileStore` reads as the live arrangement.
@@ -727,13 +727,11 @@ final class DemoDisplays {
 
 private func writePNG(_ image: CGImage, to url: URL) {
     guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
-        FileHandle.standardError.write(Data("profile-demo: could not write \(url.lastPathComponent)\n".utf8))
-        exit(1)
+        ProfileDemo.fail("could not write \(url.lastPathComponent)")
     }
     CGImageDestinationAddImage(destination, image, nil)
     guard CGImageDestinationFinalize(destination) else {
-        FileHandle.standardError.write(Data("profile-demo: could not write \(url.lastPathComponent)\n".utf8))
-        exit(1)
+        ProfileDemo.fail("could not write \(url.lastPathComponent)")
     }
 }
 

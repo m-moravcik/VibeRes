@@ -16,8 +16,6 @@
 # harness rigs the apply paths to a demo display list. The profiles are
 # invented and live in a scratch directory; preferences come from launch
 # arguments (argument domain, nothing written).
-#
-# VIBERES_PROFILE_DEMO_KEEP_MAIN=1 leaves the main display where it is.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
