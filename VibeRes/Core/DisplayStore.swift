@@ -2,9 +2,7 @@ import AppKit
 import CoreGraphics
 import Observation
 import SwiftUI
-import os.log
 
-private let displayLog = Logger(subsystem: "sk.moravcik.VibeRes", category: "display")
 
 /// Observable view-model the UI binds to. Refreshes the display list when the menu opens
 /// and whenever macOS posts a reconfiguration event (display added, removed, mode changed
@@ -184,7 +182,7 @@ final class DisplayStore {
         ) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                displayLog.notice("didWakeNotification: scheduling settled refresh, displaysBefore=\(self.displays.count)")
+                Log.display.info("didWakeNotification: scheduling settled refresh, displaysBefore=\(self.displays.count)")
                 self.scheduleWakeRefresh()
             }
         }
@@ -235,13 +233,13 @@ final class DisplayStore {
                 guard !Task.isCancelled else { return }
                 settledDisplays = DisplayManager.snapshot()
                 let sample = Self.currentModeSignatures(settledDisplays)
-                displayLog.notice("wakeRefresh sample \(index + 1): displaysNow=\(settledDisplays.count) previouslyCommitted=\(self.displays.count)")
+                Log.display.debug("wakeRefresh sample \(index + 1): displaysNow=\(settledDisplays.count) previouslyCommitted=\(self.displays.count)")
                 // Two consecutive identical samples mean the window server has
                 // settled. Sitting out the rest of the window costs the user
                 // 3 more seconds of a stale display list and an equally
                 // delayed auto-apply, for no extra certainty.
                 if Self.wakeSettled(previous: previousSample, now: sample) {
-                    displayLog.notice("wakeRefresh settled early at sample \(index + 1)")
+                    Log.display.info("wakeRefresh settled early at sample \(index + 1)")
                     break
                 }
                 previousSample = sample
@@ -257,12 +255,12 @@ final class DisplayStore {
             }
             if wakeEffect.shouldBumpAutoApplyToken {
                 self.autoApplyToken &+= 1
-                displayLog.notice("wakeRefresh auto-apply bump: token=\(self.autoApplyToken) displaysNow=\(self.displays.count)")
+                Log.display.info("wakeRefresh auto-apply bump: token=\(self.autoApplyToken) displaysNow=\(self.displays.count)")
             } else if !transition.setChanged {
-                displayLog.notice("wakeRefresh no-op: display set and current modes unchanged")
+                Log.display.info("wakeRefresh no-op: display set and current modes unchanged")
             }
             self.dismissStaleMenuBarPopover()
-            displayLog.notice("wakeRefresh committed: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) displaysNow=\(self.displays.count) token=\(self.setChangeToken)")
+            Log.display.info("wakeRefresh committed: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) displaysNow=\(self.displays.count) token=\(self.setChangeToken)")
 
             if self.displays.isEmpty {
                 self.scheduleInitialRetries(triggeredByCallback: true, stopWhenDisplayAppears: false)
@@ -295,7 +293,7 @@ final class DisplayStore {
             pendingRefresh = nil
         }
         guard decision.shouldScheduleDebouncedRefresh else {
-            displayLog.notice("scheduleRefresh deferred: wake refresh active")
+            Log.display.debug("scheduleRefresh deferred: wake refresh active")
             return
         }
 
@@ -347,12 +345,13 @@ final class DisplayStore {
         )
 
         if triggeredByCallback {
+            Log.display.debug("reconfiguration: \(Self.describe(displays))")
             if transition.shouldBumpSetChangeToken {
                 setChangeToken &+= 1
                 autoApplyToken &+= 1
-                displayLog.notice("applyRefresh bump: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) setToken=\(self.setChangeToken) autoApplyToken=\(self.autoApplyToken) ids=\(nowIDs.map { String($0) }.joined(separator: ","), privacy: .public)")
+                Log.display.info("applyRefresh bump: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) setToken=\(self.setChangeToken) autoApplyToken=\(self.autoApplyToken) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
             } else if transition.shouldDismissMenuBarPopover {
-                displayLog.notice("applyRefresh UI-only invalidation: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) ids=\(nowIDs.map { String($0) }.joined(separator: ","), privacy: .public)")
+                Log.display.info("applyRefresh UI-only invalidation: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
             }
             if transition.shouldClearRevertHistory {
                 // A captured `before` mode might reference a display that's
@@ -363,6 +362,15 @@ final class DisplayStore {
         }
         lastDisplayIDs = nowIDs
         return transition
+    }
+
+    /// One line per refresh worth reading in a bug report: name, size, rate. No
+    /// serial numbers; `DisplayInfo` does not carry any.
+    nonisolated static func describe(_ displays: [DisplayInfo]) -> String {
+        displays.map { d in
+            let mode = d.currentMode.map { "\($0.width)x\($0.height)@\($0.refreshHz ?? 0)Hz" } ?? "no mode"
+            return "\(d.name) \(mode)\(d.isMain ? " main" : "")"
+        }.joined(separator: "; ")
     }
 
     /// MenuBarExtra(.window) caches its NSPanel frame from when it was first shown.
@@ -437,6 +445,7 @@ final class DisplayStore {
             // to be unreadable *and* the app is somehow unable to revert, a
             // reboot still recovers. Made permanent by `confirmDisplayChange()`.
             try applyMode(mode, display, confirmFirst ? .forSession : .permanently)
+            Log.apply.info("apply: \(info?.name ?? "display \(display)") -> \(mode.width)x\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) changed=\(changed) confirmFirst=\(confirmFirst)")
             lastError = nil
             refresh()
             if changed {
@@ -446,6 +455,7 @@ final class DisplayStore {
                 armConfirmation(mode: mode, display: display)
             }
         } catch {
+            Log.apply.error("apply: display \(display) -> \(mode.width)x\(mode.height) failed: \(error)")
             lastError = error.asUserFacingProblem
         }
     }
@@ -460,6 +470,7 @@ final class DisplayStore {
         let live = liveArrangement()
         guard live.main != id, live.bounds[id] != nil else { return }
         guard !live.bounds.keys.contains(where: isInMirrorSet) else {
+            Log.apply.info("makeMain: refused, the arrangement is mirrored")
             lastError = .mirroredArrangement
             return
         }
@@ -467,9 +478,11 @@ final class DisplayStore {
         do {
             try applyOrigins(plan, .permanently)
         } catch {
+            Log.apply.error("makeMain: transaction failed: \(error)")
             lastError = error.asUserFacingProblem
             return
         }
+        Log.apply.info("makeMain: display \(live.main) -> \(id)")
         // Replaces prior history on purpose: Revert undoes the last action.
         revert.recordBatch([], beforeMain: live.main)
         let after = liveArrangement()
@@ -535,6 +548,7 @@ final class DisplayStore {
                 return
             }
         }
+        Log.apply.info("confirm: change kept")
         countdownTask?.cancel()
         countdown.confirm()
         confirmationSecondsRemaining = nil
@@ -550,6 +564,7 @@ final class DisplayStore {
     }
 
     private func revertUnconfirmedChange() {
+        Log.apply.info("confirm: window expired, reverting")
         countdownTask?.cancel()
         countdown.confirm()
         confirmationSecondsRemaining = nil
@@ -620,6 +635,7 @@ final class DisplayStore {
         if restoredModes > 0 {
             onModeSwitch?()
         }
+        Log.apply.info("revert: restored \(restored) of \(snapshot.entries.count + (snapshot.beforeMain == nil ? 0 : 1)), \(failed.count + (failedMain == nil ? 0 : 1)) failed")
         // Only what actually came back, so a caller cannot report a success
         // that did not happen.
         return restored
@@ -642,5 +658,6 @@ private func displayReconfigCallback(
     let store = Unmanaged<DisplayStore>.fromOpaque(userInfo).takeUnretainedValue()
     // The "after" notification is the safe one to act on — "begin" fires before the change lands.
     guard !flags.contains(.beginConfigurationFlag) else { return }
+    Log.display.debug("reconfiguration callback, flags=\(flags.rawValue)")
     Task { @MainActor in store.scheduleRefresh() }
 }

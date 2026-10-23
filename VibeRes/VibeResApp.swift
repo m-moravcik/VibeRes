@@ -20,6 +20,11 @@ struct VibeResApp: App {
             MotionDemo.run(into: output)
         }
         #endif
+        // First, so the debug log opt-in is in force before the stores below
+        // log their first refresh.
+        let prefs = Preferences()
+        let info = Bundle.main.infoDictionary
+        Log.app.info("launch: VibeRes \(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?")), macOS \(ProcessInfo.processInfo.operatingSystemVersionString), \(Diagnostics.hardwareModel())")
         Self.installDisplayNamer()
         // The menu bar icon reacts to every resolution switch that went
         // through, from the menu or from a profile, manual or automatic.
@@ -33,7 +38,6 @@ struct VibeResApp: App {
         _profileStore = State(initialValue: profiles)
         // Sparkle schedules its own checks; there is nothing to kick off here.
         _updater = State(initialValue: makeUpdaterController())
-        let prefs = Preferences()
         // Re-register if a stored "launch at login" intent no longer matches
         // what SMAppService reports. Without this the setting can quietly stop
         // working — a replaced or moved bundle invalidates the registration and

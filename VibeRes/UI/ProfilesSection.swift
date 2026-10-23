@@ -1,7 +1,5 @@
 import SwiftUI
-import os.log
 
-private let autoApplyLog = Logger(subsystem: "sk.moravcik.VibeRes", category: "autoApply")
 
 /// Compact profiles strip shown above the displays list. Each saved profile is one
 /// pill button; tap to apply, right-click for actions. "+" pill expands an inline
@@ -183,7 +181,7 @@ struct ProfilesSection: View {
             // don't bump the token, so they're ignored.
             EmptyView()
                 .onChange(of: displays.autoApplyToken) { _, newToken in
-                    autoApplyLog.notice("token onChange: new=\(newToken) lastObserved=\(lastObservedAutoApplyToken) autoApplyEnabled=\(preferences.autoApplyOnDisplayChange)")
+                    Log.autoApply.debug("token onChange: new=\(newToken) lastObserved=\(lastObservedAutoApplyToken) autoApplyEnabled=\(preferences.autoApplyOnDisplayChange)")
                     guard preferences.autoApplyOnDisplayChange else { return }
                     guard newToken != lastObservedAutoApplyToken else { return }
                     lastObservedAutoApplyToken = newToken
@@ -793,12 +791,12 @@ struct ProfilesSection: View {
     /// point announcing "applied" if nothing actually changed.
     private func autoApplyMatchingProfile() {
         guard let match = profiles.profileMatchingExactly(displays.displays) else {
-            autoApplyLog.notice("autoApply: no matching profile, skipping")
+            Log.autoApply.info("autoApply: no matching profile, skipping")
             return
         }
-        autoApplyLog.notice("autoApply: invoking applyDetailed for '\(match.name, privacy: .public)' across \(displays.displays.count) display(s)")
+        Log.autoApply.info("autoApply: invoking applyDetailed across \(displays.displays.count) display(s)", detail: "profile '\(match.name)'")
         let result = profiles.applyDetailed(match, displays: displays.displays)
-        autoApplyLog.notice("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
+        Log.autoApply.info("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
         if result.didChangeAnything {
             announce("Applied '\(match.name)' for the new display setup.", tone: .info)
         }

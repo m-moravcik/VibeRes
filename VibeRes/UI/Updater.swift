@@ -156,6 +156,7 @@ final class SparkleUpdaterController: NSObject, UpdaterProviding,
         immediateInstallationBlock immediateInstallHandler: @escaping () -> Void
     ) -> Bool {
         installHandler = InstallHandler(immediateInstallHandler)
+        Log.updates.info("update downloaded, queued for install on quit")
         apply(.queuedForInstallOnQuit)
         // Taking over the *timing* of the install. Sparkle still installs on
         // quit regardless — this is not a way to suppress its UI, which it
@@ -164,6 +165,8 @@ final class SparkleUpdaterController: NSObject, UpdaterProviding,
     }
 
     func updater(_ updater: SPUUpdater, failedToDownloadUpdate item: SUAppcastItem, error: Error) {
+        // Domain and code only: Sparkle's descriptions can carry URLs and paths.
+        Log.updates.error("update download failed (\((error as NSError).domain) \((error as NSError).code))")
         apply(.downloadFailed)
     }
 
@@ -172,6 +175,7 @@ final class SparkleUpdaterController: NSObject, UpdaterProviding,
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+        Log.updates.error("update aborted (\((error as NSError).domain) \((error as NSError).code))")
         apply(.aborted)
     }
 

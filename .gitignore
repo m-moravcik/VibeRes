@@ -71,3 +71,6 @@ docs/*audit*.md
 
 # Python bytecode from scripts/
 __pycache__/
+
+build-dd/
+build-dd-loc/
