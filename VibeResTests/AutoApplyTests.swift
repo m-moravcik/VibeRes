@@ -106,10 +106,8 @@ struct AutoApplyTests {
         )
         store.add(older)
         store.add(newer)
-        let result = store.profileMatchingExactly(
-            [info(id: 1, name: "External")],
-            entryMatchesDisplay: { _, _ in true }
-        )
+        store.displayMatches = { _, _ in true }
+        let result = store.profileMatchingExactly([info(id: 1, name: "External")])
         #expect(result?.id == newer.id)
     }
 
@@ -127,14 +125,12 @@ struct AutoApplyTests {
             )
         ])
         store.add(profile)
+        store.displayMatches = Self.identity
 
-        let result = store.profileMatchingExactly(
-            [
-                info(id: 1, name: "Built-in"),
-                info(id: 2, name: "Projector"),
-            ],
-            entryMatchesDisplay: { entry, display in entry.displayName == display.name }
-        )
+        let result = store.profileMatchingExactly([
+            info(id: 1, name: "Built-in"),
+            info(id: 2, name: "Projector"),
+        ])
 
         #expect(result == nil)
     }
@@ -175,6 +171,7 @@ struct AutoApplyTests {
         _ = store.add(Profile(name: "Presentation", entries: [
             entry(Self.builtIn, "Built-in"), entry(.anyExternal, "GN246HL"),
         ]))
+        store.displayMatches = Self.identity
         return store
     }
 
@@ -182,10 +179,7 @@ struct AutoApplyTests {
     func flexibleSkipsKnownMonitor() {
         let store = reportedSetup()
 
-        let result = store.profileForAutoApply(
-            [info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")],
-            matches: Self.identity
-        )
+        let result = store.profileForAutoApply([info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")])
 
         #expect(result == nil, "auto-apply gave the LG the flexible profile's mode")
     }
@@ -194,10 +188,7 @@ struct AutoApplyTests {
     func flexibleTakesUnknownMonitor() {
         let store = reportedSetup()
 
-        let result = store.profileForAutoApply(
-            [info(id: 1, name: "Built-in"), info(id: 3, name: "Projector")],
-            matches: Self.identity
-        )
+        let result = store.profileForAutoApply([info(id: 1, name: "Built-in"), info(id: 3, name: "Projector")])
 
         #expect(result?.name == "Presentation")
     }
@@ -209,12 +200,90 @@ struct AutoApplyTests {
             entry(Self.builtIn, "Built-in"), entry(Self.lg, "LG UltraFine"),
         ]))
 
-        let result = store.profileForAutoApply(
-            [info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")],
-            matches: Self.identity
-        )
+        let result = store.profileForAutoApply([info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")])
 
         #expect(result?.name == "LG desk")
+    }
+
+    // MARK: - One display, one entry
+    //
+    // A profile may hold an "any external" row next to specific ones. The
+    // flexible row is for the externals the specific rows do not name; it
+    // must never also reach the LG, or the LG gets two modes in one
+    // transaction and the last one wins.
+
+    /// `CGDisplayMode` has no public initialiser, so the modes come from the
+    /// real main display. Nothing is applied to it; the apply is injected.
+    private func twoSizes() throws -> (lg: CGDisplayMode, flexible: CGDisplayMode, all: [CGDisplayMode]) {
+        let modes = CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode]
+        let all = try #require(modes, "no display modes available on this machine")
+        let lg = try #require(all.first)
+        let flexible = try #require(all.first { $0.width != lg.width || $0.height != lg.height },
+                                    "need two differently-sized modes")
+        return (lg, flexible, all)
+    }
+
+    private func sized(_ matcher: DisplayMatcher, _ name: String, _ mode: CGDisplayMode) -> Profile.Entry {
+        Profile.Entry(matcher: matcher, displayName: name, pointWidth: mode.width, pointHeight: mode.height,
+                      refreshHz: nil, isHiDPI: mode.isHiDPI)
+    }
+
+    /// Built-in + LG + a projector nobody saved, all with no current mode so
+    /// every bound display is staged.
+    private func mixedDesk() throws -> (store: ProfileStore, desk: Profile, displays: [DisplayInfo],
+                                        staged: () -> [ResolutionSwitcher.BatchChange],
+                                        lg: CGDisplayMode, flexible: CGDisplayMode) {
+        let sizes = try twoSizes()
+        let store = makeStore()
+        store.displayMatches = Self.identity
+        var staged: [ResolutionSwitcher.BatchChange] = []
+        store.applyBatch = { changes, _ in
+            staged.append(contentsOf: changes)
+            return ResolutionSwitcher.BatchOutcome(applied: Set(changes.map(\.display)), rejected: [:])
+        }
+        let desk = Profile(name: "Desk", entries: [
+            sized(Self.builtIn, "Built-in", sizes.lg),
+            sized(Self.lg, "LG UltraFine", sizes.lg),
+            sized(.anyExternal, "Any external", sizes.flexible),
+        ])
+        _ = store.add(desk)
+        let displays = [(1, "Built-in"), (2, "LG UltraFine"), (3, "Projector")].map {
+            DisplayInfo(id: CGDirectDisplayID($0.0), name: $0.1, isMain: false,
+                        modes: sizes.all, currentMode: nil, groups: [])
+        }
+        return (store, desk, displays, { staged }, sizes.lg, sizes.flexible)
+    }
+
+    private func expectOwnModes(_ staged: [ResolutionSwitcher.BatchChange],
+                                lg: CGDisplayMode, flexible: CGDisplayMode) {
+        let toLG = staged.filter { $0.display == 2 }
+        let toProjector = staged.filter { $0.display == 3 }
+        #expect(toLG.count == 1, "the LG was given more than one entry's mode")
+        #expect(toLG.allSatisfy { $0.mode.width == lg.width && $0.mode.height == lg.height })
+        #expect(toProjector.count == 1)
+        #expect(toProjector.allSatisfy { $0.mode.width == flexible.width && $0.mode.height == flexible.height })
+    }
+
+    @Test("Auto-apply gives the LG its own mode and the flexible mode only to the unsaved monitor")
+    func autoApplyMixedProfile() throws {
+        let desk = try mixedDesk()
+
+        let result = desk.store.autoApply(to: desk.displays)
+
+        #expect(result != nil, "the mixed profile covers every connected display")
+        expectOwnModes(desk.staged(), lg: desk.lg, flexible: desk.flexible)
+    }
+
+    @Test("A manual apply gives the LG its own mode and the flexible mode only to the unsaved monitor")
+    func manualApplyMixedProfile() throws {
+        let desk = try mixedDesk()
+
+        let result = desk.store.applyDetailed(desk.desk, displays: desk.displays)
+        let preview = desk.store.previewApply(desk.desk, against: desk.displays)
+
+        expectOwnModes(desk.staged(), lg: desk.lg, flexible: desk.flexible)
+        #expect(result.outcomes.filter { $0.displayName == "LG UltraFine" }.count == 1)
+        #expect(preview.rows.filter { $0.displayName == "LG UltraFine" }.count == 1)
     }
 
     // MARK: - Where auto-apply runs

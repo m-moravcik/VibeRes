@@ -649,6 +649,44 @@ final class ProfileStore {
     @ObservationIgnored
     var isInMirrorSet: (CGDirectDisplayID) -> Bool = { CGDisplayIsInMirrorSet($0) != 0 }
 
+    /// Whether a matcher names a live display. Injectable so tests can fake
+    /// display identity.
+    @ObservationIgnored
+    var displayMatches: (DisplayMatcher, CGDirectDisplayID) -> Bool = { $0.matches($1) }
+
+    /// The live displays each entry of `profile` binds to, in entry order.
+    /// An "any external" entry never binds a display that a specific entry
+    /// of the same profile names, so one display never gets two entries'
+    /// modes, nor one in `excludedFromAnyExternal`.
+    func bindings(
+        of profile: Profile,
+        to displays: [DisplayInfo],
+        excludingFromAnyExternal excludedFromAnyExternal: Set<CGDirectDisplayID> = []
+    ) -> [(entry: Profile.Entry, displays: [DisplayInfo])] {
+        let named = Self.externalsNamed(by: profile.entries, in: displays, matches: displayMatches)
+        let excluded = excludedFromAnyExternal.union(named)
+        return profile.entries.map { entry in
+            (entry, displays.filter { display in
+                guard displayMatches(entry.matcher, display.id) else { return false }
+                if case .anyExternal = entry.matcher { return !excluded.contains(display.id) }
+                return true
+            })
+        }
+    }
+
+    /// Live displays that one of `entries` names with an `.edid` matcher.
+    private static func externalsNamed(
+        by entries: [Profile.Entry],
+        in displays: [DisplayInfo],
+        matches: (DisplayMatcher, CGDirectDisplayID) -> Bool
+    ) -> Set<CGDirectDisplayID> {
+        let named = entries.filter {
+            if case .edid = $0.matcher { return true }
+            return false
+        }
+        return Set(displays.map(\.id).filter { id in named.contains { matches($0.matcher, id) } })
+    }
+
     /// Apply every entry of the profile to its matching live display, picking the
     /// best mode via the same scoring used by SetResolutionIntent. Returns a
     /// per-entry outcome so the UI can distinguish between success, fallback,
@@ -661,6 +699,7 @@ final class ProfileStore {
     func applyDetailed(
         _ profile: Profile,
         displays: [DisplayInfo],
+        excludingFromAnyExternal excludedFromAnyExternal: Set<CGDirectDisplayID> = [],
         revert: RevertHistory? = nil
     ) -> ProfileApplyResult {
         var outcomes: [ApplyOutcome] = []
@@ -672,12 +711,12 @@ final class ProfileStore {
         // every entry of the profile has been scored.
         var planned: [PlannedChange] = []
 
-        for entry in profile.entries {
+        for (entry, matches) in bindings(of: profile, to: displays,
+                                         excludingFromAnyExternal: excludedFromAnyExternal) {
             let mk: ApplyOutcome.MatcherKind = {
                 if case .anyExternal = entry.matcher { return .anyExternal }
                 return .specific
             }()
-            let matches = displays.filter { entry.matcher.matches($0.id) }
             if matches.isEmpty {
                 outcomes.append(ApplyOutcome(
                     displayName: entry.displayName,
@@ -903,15 +942,9 @@ final class ProfileStore {
     /// same setup, the user's intent is "Work — that's *my* desk". Picking
     /// the flexible variant would override their precise saved layout with
     /// a generic fallback.
-    func profileMatchingExactly(_ liveDisplays: [DisplayInfo]) -> Profile? {
-        profileMatchingExactly(liveDisplays) { entry, display in
-            entry.matcher.matches(display.id)
-        }
-    }
-
     func profileMatchingExactly(
         _ liveDisplays: [DisplayInfo],
-        entryMatchesDisplay: (Profile.Entry, DisplayInfo) -> Bool
+        excludingFromAnyExternal excludedFromAnyExternal: Set<CGDirectDisplayID> = []
     ) -> Profile? {
         let liveIDs = Set(liveDisplays.map(\.id))
         let scored: [(Profile, Int)] = profiles.compactMap { profile in
@@ -922,8 +955,8 @@ final class ProfileStore {
             // Every entry must bind to at least one live display, and every
             // live display must be covered. Auto-apply must not run a profile
             // that would leave extra monitors untouched.
-            for entry in profile.entries {
-                let matches = liveDisplays.filter { entryMatchesDisplay(entry, $0) }
+            for (_, matches) in bindings(of: profile, to: liveDisplays,
+                                         excludingFromAnyExternal: excludedFromAnyExternal) {
                 guard !matches.isEmpty else { return nil }
                 matchedIDs.formUnion(matches.map(\.id))
             }
@@ -962,7 +995,8 @@ final class ProfileStore {
             return nil
         }
         Log.autoApply.info("autoApply: invoking applyDetailed across \(displays.count) display(s)", detail: "profile '\(match.name)'")
-        let result = applyDetailed(match, displays: displays)
+        let result = applyDetailed(match, displays: displays,
+                                   excludingFromAnyExternal: knownExternals(in: displays))
         Log.autoApply.info("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
         if result.didChangeAnything {
             lastAutoApply = AutoApplyRecord(profileName: match.name, date: now)
@@ -979,23 +1013,14 @@ final class ProfileStore {
     /// monitors: with the built-in and only the LG of a three-display desk
     /// connected, 'Presentation' (saved with an Acer) gave the LG the Acer's
     /// 1920x1080. Applying a flexible profile by hand still works on any
-    /// external. `matches` is injectable so tests can fake display identity.
-    func profileForAutoApply(
-        _ liveDisplays: [DisplayInfo],
-        matches: (DisplayMatcher, CGDirectDisplayID) -> Bool = { $0.matches($1) }
-    ) -> Profile? {
-        let namedEntries = profiles.flatMap(\.entries).filter {
-            if case .edid = $0.matcher { return true }
-            return false
-        }
-        let known = Set(liveDisplays.map(\.id).filter { id in
-            namedEntries.contains { matches($0.matcher, id) }
-        })
-        return profileMatchingExactly(liveDisplays) { entry, display in
-            guard matches(entry.matcher, display.id) else { return false }
-            if case .anyExternal = entry.matcher { return !known.contains(display.id) }
-            return true
-        }
+    /// external that profile does not name itself.
+    func profileForAutoApply(_ liveDisplays: [DisplayInfo]) -> Profile? {
+        profileMatchingExactly(liveDisplays, excludingFromAnyExternal: knownExternals(in: liveDisplays))
+    }
+
+    /// Live displays that a saved profile names as a specific monitor.
+    private func knownExternals(in displays: [DisplayInfo]) -> Set<CGDirectDisplayID> {
+        Self.externalsNamed(by: profiles.flatMap(\.entries), in: displays, matches: displayMatches)
     }
 
     /// Per-entry specificity weight. Exposed for tests.
@@ -1016,8 +1041,7 @@ final class ProfileStore {
     func isCurrentState(_ profile: Profile, displays: [DisplayInfo]) -> Bool {
         guard !profile.entries.isEmpty else { return false }
 
-        for entry in profile.entries {
-            let matches = displays.filter { entry.matcher.matches($0.id) }
+        for (entry, matches) in bindings(of: profile, to: displays) {
             guard !matches.isEmpty else { return false }
             for info in matches {
                 guard let current = info.currentMode,
@@ -1046,8 +1070,7 @@ final class ProfileStore {
         var rows: [ProfileApplyPreview.Row] = []
         var touchedIDs: Set<CGDirectDisplayID> = []
 
-        for entry in profile.entries {
-            let matches = displays.filter { entry.matcher.matches($0.id) }
+        for (entry, matches) in bindings(of: profile, to: displays) {
             if matches.isEmpty {
                 rows.append(ProfileApplyPreview.Row(
                     id: UUID(),
