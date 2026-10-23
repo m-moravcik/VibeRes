@@ -394,6 +394,7 @@ private enum DemoProfiles {
         }
     }
 }
+
 /// The three tones of the note under the profile pills, with real copy built
 /// from invented outcomes, so a change to their colours or a long translation
 /// can be checked without applying anything.
@@ -438,6 +439,4 @@ private struct NoteGallery: View {
         .padding(.vertical, Design.Spacing.m)
     }
 }
-
-
 #endif

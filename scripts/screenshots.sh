@@ -5,9 +5,10 @@
 #   scripts/screenshots.sh        # English, into build/screenshots/en
 #   scripts/screenshots.sh sk     # Slovak, for the web.pexelo portfolio
 #
-# Writes root, detail, save, revert, hero (popover under the menu bar) and
-# banner (1920x1080) in -light and -dark, plus icon.png. The displays are this
-# Mac's; the profiles are invented. Copy what you need into docs/screenshots.
+# Writes root, detail, save, revert, notes (the outcome note's three tones),
+# hero (popover under the menu bar) and banner (1920x1080) in -light and -dark,
+# plus icon.png. The displays are this Mac's; the profiles are invented. Copy
+# what you need into docs/screenshots.
 #
 # The preferences are passed as launch arguments. UserDefaults serves those
 # from the argument domain and writes nothing, so the result does not depend on
