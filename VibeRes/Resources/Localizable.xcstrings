@@ -187,6 +187,12 @@
     "%lld Hz VRR": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Hz VRR"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -194,6 +200,18 @@
           }
         },
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Hz VRR"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Hz VRR"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld Hz VRR"
@@ -1375,6 +1393,12 @@
     "Copied": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkopírováno"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1385,6 +1409,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copied"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copié"
           }
         },
         "sk": {
@@ -1398,6 +1434,12 @@
     "Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths.": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkopíruje verze, model Macu, tato nastavení, displeje a poslední řádky záznamu pro hlášení chyby. Bez sériových čísel a cest k souborům."
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1408,6 +1450,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia las versiones, el modelo de Mac, estos ajustes, las pantallas y las últimas líneas del registro para un informe de error. Sin números de serie ni rutas de archivos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copie les versions, le modèle de Mac, ces réglages, les écrans et les dernières lignes du journal pour un rapport de bug. Sans numéros de série ni chemins de fichiers."
           }
         },
         "sk": {
@@ -1421,6 +1475,12 @@
     "Copy diagnostics": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopírovat diagnostiku"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1431,6 +1491,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copy diagnostics"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar diagnóstico"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier le diagnostic"
           }
         },
         "sk": {
@@ -1611,6 +1683,12 @@
     "Debug": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladění"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1621,6 +1699,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Debug"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuración"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Débogage"
           }
         },
         "sk": {
@@ -1634,6 +1724,12 @@
     "Debug log": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladicí záznam"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1644,6 +1740,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Debug log"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registro de depuración"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal de débogage"
           }
         },
         "sk": {
@@ -1782,6 +1890,12 @@
     "Detail level": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Úroveň podrobností"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1792,6 +1906,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Detail level"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nivel de detalle"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niveau de détail"
           }
         },
         "sk": {
@@ -1805,6 +1931,12 @@
     "Diagnostics": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostika"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -1815,6 +1947,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Diagnostics"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnóstico"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostic"
           }
         },
         "sk": {
@@ -2200,6 +2344,12 @@
     "Errors only": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jen chyby"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -2210,6 +2360,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Errors only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo errores"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erreurs uniquement"
           }
         },
         "sk": {
@@ -2223,6 +2385,12 @@
     "Everything": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vše"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -2233,6 +2401,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Everything"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout"
           }
         },
         "sk": {
@@ -3645,6 +3825,12 @@
     "Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent.": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ve výchozím stavu vypnuto. Zaznamenává změny displejů a jejich výsledky do ~/Library/Logs/VibeRes, nejvýše asi 1 MB. Nic se neodesílá."
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -3655,6 +3841,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivado de forma predeterminada. Registra los cambios de pantalla y sus resultados en ~/Library/Logs/VibeRes, hasta aproximadamente 1 MB. No se envía nada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé par défaut. Enregistre les changements d’écran et leurs résultats dans ~/Library/Logs/VibeRes, jusqu’à 1 Mo environ. Rien n’est envoyé."
           }
         },
         "sk": {
@@ -3832,6 +4030,12 @@
     "Open log file": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít soubor se záznamem"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -3842,6 +4046,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open log file"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir archivo de registro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir le fichier journal"
           }
         },
         "sk": {
@@ -5698,6 +5914,12 @@
     "Standard": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardní"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -5705,6 +5927,18 @@
           }
         },
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estándar"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Standard"
@@ -6256,6 +6490,12 @@
     "VRR": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRR"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -6263,6 +6503,18 @@
           }
         },
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRR"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VRR"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "VRR"
@@ -6279,6 +6531,12 @@
     "Variable Refresh Rate": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proměnná obnovovací frekvence"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -6289,6 +6547,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Variable Refresh Rate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frecuencia de actualización variable"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fréquence de rafraîchissement variable"
           }
         },
         "sk": {
@@ -6302,6 +6572,12 @@
     "Variable refresh rate, up to %lld Hz": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proměnná obnovovací frekvence, až %lld Hz"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -6312,6 +6588,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Variable refresh rate, up to %lld Hz"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frecuencia de actualización variable, hasta %lld Hz"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fréquence de rafraîchissement variable, jusqu’à %lld Hz"
           }
         },
         "sk": {
@@ -6448,6 +6736,12 @@
     "When the display offers a variable refresh rate (Adaptive Sync) next to a fixed one at the same rate, use the variable one.": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokud displej kromě pevné obnovovací frekvence nabízí i proměnnou (Adaptive Sync) se stejnou hodnotou, použije se proměnná."
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -6458,6 +6752,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "When the display offers a variable refresh rate (Adaptive Sync) next to a fixed one at the same rate, use the variable one."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si la pantalla ofrece una frecuencia de actualización variable (Adaptive Sync) junto a una fija con el mismo valor, se usa la variable."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lorsque l’écran propose une fréquence de rafraîchissement variable (Adaptive Sync) en plus d’une fréquence fixe de même valeur, la variable est utilisée."
           }
         },
         "sk": {
@@ -6677,6 +6983,12 @@
     "Write debug log to file": {
       "extractionState": "manual",
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisovat ladicí záznam do souboru"
+          }
+        },
         "de": {
           "stringUnit": {
             "state": "translated",
@@ -6687,6 +6999,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Write debug log to file"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribir el registro de depuración en un archivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Écrire le journal de débogage dans un fichier"
           }
         },
         "sk": {
