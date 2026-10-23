@@ -942,6 +942,62 @@ final class ProfileStore {
         }.first?.0
     }
 
+    /// An auto-apply that changed something, for the popover's note.
+    struct AutoApplyRecord: Equatable {
+        let profileName: String
+        let date: Date
+    }
+
+    /// The last auto-apply that changed something; the popover says so if it
+    /// opens soon after.
+    private(set) var lastAutoApply: AutoApplyRecord?
+
+    /// Applies the profile `profileForAutoApply` picks for `displays`, if
+    /// any. Called by the app when the display set changes or a wake settles
+    /// (`DisplayStore.onAutoApplyNeeded`), never from a view.
+    @discardableResult
+    func autoApply(to displays: [DisplayInfo], now: Date = Date()) -> ProfileApplyResult? {
+        guard let match = profileForAutoApply(displays) else {
+            Log.autoApply.info("autoApply: no matching profile, skipping")
+            return nil
+        }
+        Log.autoApply.info("autoApply: invoking applyDetailed across \(displays.count) display(s)", detail: "profile '\(match.name)'")
+        let result = applyDetailed(match, displays: displays)
+        Log.autoApply.info("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
+        if result.didChangeAnything {
+            lastAutoApply = AutoApplyRecord(profileName: match.name, date: now)
+        }
+        return result
+    }
+
+    /// The profile auto-apply picks when the display set changes: an exact
+    /// match, in which a flexible ("any external") entry stands in only for
+    /// an external that no saved profile names as a specific monitor.
+    ///
+    /// A flexible profile is for a monitor nobody saved, such as a projector
+    /// or a meeting-room TV. Without this rule it also took over known
+    /// monitors: with the built-in and only the LG of a three-display desk
+    /// connected, 'Presentation' (saved with an Acer) gave the LG the Acer's
+    /// 1920x1080. Applying a flexible profile by hand still works on any
+    /// external. `matches` is injectable so tests can fake display identity.
+    func profileForAutoApply(
+        _ liveDisplays: [DisplayInfo],
+        matches: (DisplayMatcher, CGDirectDisplayID) -> Bool = { $0.matches($1) }
+    ) -> Profile? {
+        let namedEntries = profiles.flatMap(\.entries).filter {
+            if case .edid = $0.matcher { return true }
+            return false
+        }
+        let known = Set(liveDisplays.map(\.id).filter { id in
+            namedEntries.contains { matches($0.matcher, id) }
+        })
+        return profileMatchingExactly(liveDisplays) { entry, display in
+            guard matches(entry.matcher, display.id) else { return false }
+            if case .anyExternal = entry.matcher { return !known.contains(display.id) }
+            return true
+        }
+    }
+
     /// Per-entry specificity weight. Exposed for tests.
     static func specificity(of matcher: DisplayMatcher) -> Int {
         switch matcher {

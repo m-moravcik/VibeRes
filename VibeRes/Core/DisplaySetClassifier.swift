@@ -7,7 +7,7 @@ import Foundation
 /// happen" without committing the change.
 ///
 /// Auto-apply (display-change event) bypasses classification — it only fires
-/// when `profileMatchingExactly()` already found a clean fit.
+/// when `profileForAutoApply()` already found a clean fit.
 enum DisplaySetClassifier {
 
     /// Outcome of comparing a Profile's entries against the live display set.
@@ -79,7 +79,7 @@ enum DisplaySetClassifier {
     }
 
     /// True when applying the profile is safe to do silently (no surprises).
-    /// Auto-apply already only fires on `profileMatchingExactly()`, so this
+    /// Auto-apply already only fires on `profileForAutoApply()`, so this
     /// is primarily used by the UI to decide whether to short-circuit the
     /// confirmation panel for a manual apply.
     static func isCleanApply(_ classification: Classification) -> Bool {

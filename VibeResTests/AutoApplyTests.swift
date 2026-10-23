@@ -138,4 +138,106 @@ struct AutoApplyTests {
 
         #expect(result == nil)
     }
+
+    // MARK: - Flexible profiles and known monitors
+    //
+    // Reported on 2026-10-23: with the built-in and only the LG UltraFine of a
+    // three-display desk connected, auto-apply picked 'Presentation', a
+    // flexible profile saved with an Acer GN246HL, and gave the LG the Acer's
+    // 1920x1080. The LG is a known monitor: 'Home Office' names it. A flexible
+    // entry is for a monitor no profile knows (a projector, a TV), so it must
+    // not stand in for one that a profile names.
+
+    private static let builtIn = DisplayMatcher.builtIn(vendor: 1, model: 2, serial: 3)
+    private static let lg = DisplayMatcher.edid(vendor: 10, model: 11, serial: 12)
+    private static let acer = DisplayMatcher.edid(vendor: 20, model: 21, serial: 22)
+
+    /// Display 1 is the built-in, 2 the LG, 3 a projector nobody saved.
+    private static func identity(_ matcher: DisplayMatcher, _ id: CGDirectDisplayID) -> Bool {
+        switch (matcher, id) {
+        case (.builtIn, 1): return true
+        case (.anyExternal, 2), (.anyExternal, 3): return true
+        case (.edid(10, 11, 12), 2): return true
+        default: return false
+        }
+    }
+
+    private func entry(_ matcher: DisplayMatcher, _ name: String) -> Profile.Entry {
+        Profile.Entry(matcher: matcher, displayName: name, pointWidth: 1920, pointHeight: 1080,
+                      refreshHz: 60, isHiDPI: false)
+    }
+
+    private func reportedSetup() -> ProfileStore {
+        let store = makeStore()
+        _ = store.add(Profile(name: "Home Office", entries: [
+            entry(Self.builtIn, "Built-in"), entry(Self.acer, "GN246HL"), entry(Self.lg, "LG UltraFine"),
+        ]))
+        _ = store.add(Profile(name: "Presentation", entries: [
+            entry(Self.builtIn, "Built-in"), entry(.anyExternal, "GN246HL"),
+        ]))
+        return store
+    }
+
+    @Test("A flexible profile does not take over a monitor another profile names")
+    func flexibleSkipsKnownMonitor() {
+        let store = reportedSetup()
+
+        let result = store.profileForAutoApply(
+            [info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")],
+            matches: Self.identity
+        )
+
+        #expect(result == nil, "auto-apply gave the LG the flexible profile's mode")
+    }
+
+    @Test("A flexible profile still applies to a monitor no profile knows")
+    func flexibleTakesUnknownMonitor() {
+        let store = reportedSetup()
+
+        let result = store.profileForAutoApply(
+            [info(id: 1, name: "Built-in"), info(id: 3, name: "Projector")],
+            matches: Self.identity
+        )
+
+        #expect(result?.name == "Presentation")
+    }
+
+    @Test("A specific profile for exactly what is connected still applies")
+    func specificProfileApplies() {
+        let store = reportedSetup()
+        _ = store.add(Profile(name: "LG desk", entries: [
+            entry(Self.builtIn, "Built-in"), entry(Self.lg, "LG UltraFine"),
+        ]))
+
+        let result = store.profileForAutoApply(
+            [info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")],
+            matches: Self.identity
+        )
+
+        #expect(result?.name == "LG desk")
+    }
+
+    // MARK: - Where auto-apply runs
+
+    @Test("A display change asks for auto-apply from the store, not from a view")
+    func tokenBumpAsksForAutoApply() {
+        let displays = DisplayStore()
+        var asked = 0
+        displays.onAutoApplyNeeded = { asked += 1 }
+
+        displays.bumpAutoApplyToken()
+
+        #expect(asked == 1)
+    }
+
+    @Test("An auto-apply that finds no profile records nothing for the popover")
+    func noMatchRecordsNothing() {
+        let store = reportedSetup()
+
+        let result = store.autoApply(to: [info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")])
+
+        #expect(result == nil)
+        #expect(store.lastAutoApply == nil)
+    }
 }
+
