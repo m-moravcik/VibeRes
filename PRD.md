@@ -122,10 +122,13 @@ against the code. "Evidence" names where it lives.
 - Modes not usable for the desktop are filtered out.
 - NTSC drop-frame refresh rates (59.94, 47.95) are deduplicated against their
   integer counterparts, preferring whichever is closer to a whole number.
+- A variable refresh (VRR) mode is never merged with a fixed mode at the same
+  rate; the NTSC dedup runs within each kind. If the private SkyLight check is
+  unavailable, every mode is treated as fixed.
 - Enumeration is bounded: at most 32 active displays.
 
 *Evidence:* `Core/DisplayManager.swift`, `Core/ResolutionGroup.swift`,
-`Core/DisplayNamer.swift`.
+`Core/VariableRefresh.swift`, `Core/DisplayNamer.swift`.
 
 ### 4.2 Switching
 
@@ -143,7 +146,9 @@ against the code. "Evidence" names where it lives.
 
 - Sizes are one row each; refresh rates are a segmented control on the row.
 - **Simple Mode** (default) hides the per-rate control: a click takes the
-  highest rate available for that size.
+  highest rate available for that size, the fixed one when a rate is offered
+  both fixed and variable. A display currently on a variable mode stays on
+  the variable option.
 - Sizes below 60% of the widest are collapsed behind a disclosure, except the
   current one, which is never hidden.
 - **Every row is a button.** Applying a resolution must be reachable by
@@ -352,7 +357,7 @@ Hard-won, and easy to rediscover the expensive way.
   gate, the screen-recording permission machine, store limits, name
   resolution, form validity — is covered. Anything that would reconfigure a
   real display is injected through a seam, so a test never changes the
-  machine. Currently 299 tests in 47 suites.
+  machine.
 - **The CLI is tested as a binary**, not as a copy of its logic: the tests run
   `viberes` with `VIBERES_PROFILE_DIR` pointed at a temporary directory and
   assert on exit codes and output.

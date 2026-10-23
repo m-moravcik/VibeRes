@@ -19,11 +19,14 @@ struct ApplyOutcomeNote: Equatable {
     /// One line of the note. Carries values, not prose, so the view can render
     /// it through a String Catalog entry in any language.
     enum Detail: Equatable {
-        case applied(display: String, width: Int, height: Int, hz: Int?)
+        /// `vrr`, `wantedVRR` and `usedVRR` append "VRR" to the rate; see
+        /// `ProfileStore.ApplyOutcome.requestedVRR` for when that is said.
+        case applied(display: String, width: Int, height: Int, hz: Int?, vrr: Bool = false)
         case fallback(
             display: String,
             wantedWidth: Int, wantedHeight: Int, wantedHz: Int?,
-            usedWidth: Int, usedHeight: Int, usedHz: Int?
+            usedWidth: Int, usedHeight: Int, usedHz: Int?,
+            wantedVRR: Bool = false, usedVRR: Bool = false
         )
         case notConnected(display: String)
         case noExternalConnected
@@ -177,10 +180,12 @@ struct ApplyOutcomeNote: Equatable {
     /// A display mode rendered as digits only, for use as an argument inside a
     /// localised sentence. Deliberately free of words so no translation of it
     /// is ever needed.
-    static func modeString(width: Int, height: Int, hz: Int?) -> String {
+    ///
+    /// "VRR" is an acronym like "Hz" and stays as it is in every language.
+    static func modeString(width: Int, height: Int, hz: Int?, vrr: Bool = false) -> String {
         let size = "\(width)×\(height)"
         guard let hz else { return size }
-        return "\(size) @\(hz)Hz"
+        return "\(size) @\(hz)Hz" + (vrr ? " VRR" : "")
     }
 
     private static func detail(for outcome: ProfileStore.ApplyOutcome) -> Detail {
@@ -194,7 +199,8 @@ struct ApplyOutcomeNote: Equatable {
                 display: outcome.displayName,
                 width: size.width,
                 height: size.height,
-                hz: outcome.appliedHz
+                hz: outcome.appliedHz,
+                vrr: outcome.appliedVRR
             )
         case .appliedWithFallback:
             return .fallback(
@@ -204,7 +210,9 @@ struct ApplyOutcomeNote: Equatable {
                 wantedHz: outcome.requestedHz,
                 usedWidth: size.width,
                 usedHeight: size.height,
-                usedHz: outcome.appliedHz
+                usedHz: outcome.appliedHz,
+                wantedVRR: outcome.requestedVRR,
+                usedVRR: outcome.appliedVRR
             )
         case .skippedNoMatch:
             // A flexible profile that found no external monitor must not name
@@ -242,17 +250,17 @@ struct ApplyOutcomeNote: Equatable {
 extension ApplyOutcomeNote.Detail {
     var localizedDescription: String {
         switch self {
-        case let .applied(display, width, height, hz):
-            let mode = ApplyOutcomeNote.modeString(width: width, height: height, hz: hz)
+        case let .applied(display, width, height, hz, vrr):
+            let mode = ApplyOutcomeNote.modeString(width: width, height: height, hz: hz, vrr: vrr)
             return String(localized: LocalizedStringResource(
                 "note.detail.applied",
                 defaultValue: "\(display) \u{2192} \(mode)",
                 comment: "Display was set to a mode. 1: display name, 2: mode e.g. 2560x1440 @60Hz"
             ))
 
-        case let .fallback(display, wantedWidth, wantedHeight, wantedHz, usedWidth, usedHeight, usedHz):
-            let wanted = ApplyOutcomeNote.modeString(width: wantedWidth, height: wantedHeight, hz: wantedHz)
-            let used = ApplyOutcomeNote.modeString(width: usedWidth, height: usedHeight, hz: usedHz)
+        case let .fallback(display, wantedWidth, wantedHeight, wantedHz, usedWidth, usedHeight, usedHz, wantedVRR, usedVRR):
+            let wanted = ApplyOutcomeNote.modeString(width: wantedWidth, height: wantedHeight, hz: wantedHz, vrr: wantedVRR)
+            let used = ApplyOutcomeNote.modeString(width: usedWidth, height: usedHeight, hz: usedHz, vrr: usedVRR)
             return String(localized: LocalizedStringResource(
                 "note.detail.fallback",
                 defaultValue: "\(display): wanted \(wanted), used \(used) (closest available)",

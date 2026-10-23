@@ -52,8 +52,19 @@ struct ProfileFormLogicTests {
         )
     }
 
-    private func mode(_ w: Int, _ h: Int, _ hz: Int?, hiDPI: Bool = false) -> ProfilesSection.LiveMode {
-        ProfilesSection.LiveMode(pointWidth: w, pointHeight: h, refreshHz: hz, isHiDPI: hiDPI)
+    private func mode(_ w: Int, _ h: Int, _ hz: Int?, hiDPI: Bool = false, vrr: Bool = false) -> ProfilesSection.LiveMode {
+        ProfilesSection.LiveMode(pointWidth: w, pointHeight: h, refreshHz: hz, isHiDPI: hiDPI, isVariable: vrr)
+    }
+
+    /// The rates of one size as (Hz, variable) pairs, for compact expectations.
+    private func rates(
+        _ modes: [ProfilesSection.LiveMode],
+        _ w: Int, _ h: Int, hiDPI: Bool = false
+    ) -> [ProfilesSection.LiveMode.RateChoice] {
+        ProfilesSection.LiveMode.rateChoices(
+            in: modes,
+            bucket: ProfilesSection.LiveMode.Bucket(pointWidth: w, pointHeight: h, isHiDPI: hiDPI)
+        )
     }
 
     // MARK: Save form
@@ -165,24 +176,20 @@ struct ProfileFormLogicTests {
             mode(2560, 1440, 60),
             mode(1920, 1080, 144),
         ]
-        let bucket = ProfilesSection.LiveMode.Bucket(pointWidth: 2560, pointHeight: 1440, isHiDPI: false)
-        #expect(ProfilesSection.LiveMode.refreshOptions(in: modes, bucket: bucket) == [60, 120])
+        #expect(rates(modes, 2560, 1440).map(\.hz) == [60, 120])
     }
 
     @Test("A size that reports no rate sorts first rather than disappearing")
     func refreshOptionsKeepTheUnknownRate() {
         let modes = [mode(1920, 1080, nil), mode(1920, 1080, 60)]
-        let bucket = ProfilesSection.LiveMode.Bucket(pointWidth: 1920, pointHeight: 1080, isHiDPI: false)
-        #expect(ProfilesSection.LiveMode.refreshOptions(in: modes, bucket: bucket) == [nil, 60])
+        #expect(rates(modes, 1920, 1080).map(\.hz) == [nil, 60])
     }
 
     @Test("HiDPI and native at the same size are different buckets")
     func refreshOptionsDistinguishScaling() {
         let modes = [mode(2560, 1440, 60, hiDPI: true), mode(2560, 1440, 120)]
-        let hidpi = ProfilesSection.LiveMode.Bucket(pointWidth: 2560, pointHeight: 1440, isHiDPI: true)
-        let native = ProfilesSection.LiveMode.Bucket(pointWidth: 2560, pointHeight: 1440, isHiDPI: false)
-        #expect(ProfilesSection.LiveMode.refreshOptions(in: modes, bucket: hidpi) == [60])
-        #expect(ProfilesSection.LiveMode.refreshOptions(in: modes, bucket: native) == [120])
+        #expect(rates(modes, 2560, 1440, hiDPI: true).map(\.hz) == [60])
+        #expect(rates(modes, 2560, 1440).map(\.hz) == [120])
     }
 
     @Test("An entry reports the bucket it currently points at")
@@ -191,5 +198,71 @@ struct ProfileFormLogicTests {
         #expect(row.bucket == ProfilesSection.LiveMode.Bucket(
             pointWidth: 2560, pointHeight: 1440, isHiDPI: true
         ))
+    }
+
+    // MARK: Variable refresh
+
+    @Test("A VRR twin is its own rate choice, right after its fixed rate")
+    func vrrTwinIsAChoice() {
+        let modes = [
+            mode(2560, 1440, 160, vrr: true),
+            mode(2560, 1440, 60),
+            mode(2560, 1440, 160),
+            mode(2560, 1440, 144),
+        ]
+        let choices = rates(modes, 2560, 1440)
+        #expect(choices.map(\.hz) == [60, 144, 160, 160])
+        #expect(choices.map(\.isVariable) == [false, false, false, true])
+        #expect(choices.map(\.isVRRTwin) == [false, false, false, true])
+    }
+
+    @Test("ProMotion's variable-only 120 Hz is a plain rate, not labelled VRR")
+    func twinlessVariableIsPlain() {
+        let choices = rates([mode(1800, 1169, 60), mode(1800, 1169, 120, vrr: true)], 1800, 1169)
+        #expect(choices.map(\.hz) == [60, 120])
+        #expect(choices.last?.isVariable == true)
+        #expect(choices.last?.isVRRTwin == false)
+    }
+
+    @Test("A saved VRR entry points at the VRR choice, a fixed one at the fixed twin")
+    func selectionHonoursKind() {
+        let choices = rates([mode(2560, 1440, 160), mode(2560, 1440, 160, vrr: true)], 2560, 1440)
+        var row = entry(width: 2560, height: 1440, hz: 160)
+        #expect(row.selectedRate(in: choices)?.isVariable == false)
+        row.isVariableRefresh = true
+        #expect(row.selectedRate(in: choices)?.isVariable == true)
+    }
+
+    @Test("An entry saved before VRR support still selects ProMotion's 120 Hz")
+    func legacyEntryFindsVariableOnlyRate() {
+        let choices = rates([mode(1800, 1169, 60), mode(1800, 1169, 120, vrr: true)], 1800, 1169)
+        let row = entry(width: 1800, height: 1169, hz: 120)
+        #expect(row.selectedRate(in: choices) == choices.last)
+    }
+
+    @Test("A size change keeps a VRR entry variable where the new size offers it")
+    func sizeChangeKeepsKind() {
+        let choices = rates([
+            mode(2560, 1440, 60), mode(2560, 1440, 160), mode(2560, 1440, 160, vrr: true),
+        ], 2560, 1440)
+        let fixed = ProfilesSection.LiveMode.preferredRate(in: choices, stayVariable: false)
+        let variable = ProfilesSection.LiveMode.preferredRate(in: choices, stayVariable: true)
+        #expect(fixed?.hz == 160 && fixed?.isVariable == false)
+        #expect(variable?.hz == 160 && variable?.isVariable == true)
+    }
+
+    @Test("A size that reports no rate at all still lands on its only choice")
+    func sizeChangeWithoutRates() {
+        let choices = rates([mode(1024, 768, nil)], 1024, 768)
+        #expect(ProfilesSection.LiveMode.preferredRate(in: choices, stayVariable: false)?.hz == nil)
+        #expect(ProfilesSection.LiveMode.preferredRate(in: choices, stayVariable: false) != nil)
+    }
+
+    @Test("A disconnected VRR entry says so in its saved mode")
+    func savedModeSaysVRR() {
+        var row = entry(width: 2560, height: 1440, hz: 160)
+        #expect(row.savedModeDescription == "2560×1440 · 160 Hz")
+        row.isVariableRefresh = true
+        #expect(row.savedModeDescription == "2560×1440 · 160 Hz VRR")
     }
 }

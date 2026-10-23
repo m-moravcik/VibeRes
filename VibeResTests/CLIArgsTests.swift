@@ -1,43 +1,15 @@
 import Testing
 @testable import VibeRes
 
-/// The CLI lives in its own target, so we reproduce its parser here as a small
-/// pure-function copy and lock down the contract. If the CLI's parser drifts,
-/// these tests will not catch it directly — they pin the spec language itself.
+/// The grammar `viberes set` accepts. The parser used to live in the CLI
+/// target with a hand-copied mirror here; it is in Core now, so these pin the
+/// code that actually runs.
 @Suite("CLI ResolutionSpec parsing contract")
 struct CLIArgsTests {
-    /// Mirrors VibeResCLI/main.swift: ResolutionSpec.parse.
-    private struct Spec: Equatable {
-        var width: Int
-        var height: Int
-        var refreshHz: Int?
-        var preferHiDPI: Bool
-    }
+    private typealias Spec = ResolutionSpec
 
     private func parse(_ s: String) -> Spec? {
-        var spec = Spec(width: 0, height: 0, refreshHz: nil, preferHiDPI: true)
-        var rest = s.lowercased()
-
-        if rest.hasSuffix("-native") {
-            spec.preferHiDPI = false
-            rest.removeLast("-native".count)
-        } else if rest.hasSuffix("-hidpi") {
-            spec.preferHiDPI = true
-            rest.removeLast("-hidpi".count)
-        }
-
-        let parts = rest.split(separator: "@", maxSplits: 1).map(String.init)
-        guard let dim = parts.first else { return nil }
-        let dims = dim.split(separator: "x", maxSplits: 1).map(String.init)
-        guard dims.count == 2, let w = Int(dims[0]), let h = Int(dims[1]) else { return nil }
-        spec.width = w
-        spec.height = h
-
-        if parts.count == 2 {
-            let hz = parts[1].replacingOccurrences(of: "hz", with: "")
-            spec.refreshHz = Int(hz)
-        }
-        return spec
+        ResolutionSpec.parse(s)
     }
 
     @Test("Bare WxH parses with default HiDPI preference")
@@ -92,5 +64,40 @@ struct CLIArgsTests {
         #expect(s1?.width == 1920)
         #expect(s2?.refreshHz == 60)
         #expect(s3?.preferHiDPI == false)
+    }
+
+    // MARK: Variable refresh
+
+    @Test("vrr after the rate asks for the variable refresh mode at that rate")
+    func vrrAfterRate() {
+        let spec = parse("2560x1440@160vrr")
+        #expect(spec == Spec(width: 2560, height: 1440, refreshHz: 160, preferHiDPI: true, preferVariable: true))
+    }
+
+    @Test("@vrr alone asks for the variable mode at the highest rate")
+    func bareVRR() {
+        let spec = parse("2560x1440@vrr")
+        #expect(spec == Spec(width: 2560, height: 1440, refreshHz: nil, preferHiDPI: true, preferVariable: true))
+    }
+
+    @Test("vrr combines with the hz unit, the scale suffix and any case")
+    func vrrCombinations() {
+        #expect(parse("2560x1440@160hzvrr")?.preferVariable == true)
+        #expect(parse("2560x1440@160HzVRR")?.refreshHz == 160)
+        let native = parse("2560x1440@160vrr-native")
+        #expect(native?.preferVariable == true)
+        #expect(native?.preferHiDPI == false)
+    }
+
+    @Test("Without vrr the fixed mode is preferred, as before")
+    func fixedByDefault() {
+        #expect(parse("2560x1440@160")?.preferVariable == false)
+        #expect(parse("2560x1440")?.preferVariable == false)
+    }
+
+    @Test("vrr is only a rate suffix: a stray or misplaced one is rejected")
+    func vrrMisplaced() {
+        #expect(parse("2560x1440vrr") == nil)
+        #expect(parse("2560x1440@vrr160") == nil)
     }
 }

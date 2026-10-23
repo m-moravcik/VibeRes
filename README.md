@@ -72,6 +72,8 @@ Click a display card to drill in. Each row is one logical size; refresh rates ap
 
 VibeRes deduplicates NTSC drop-frame variants (59.94, 47.95) against their integer counterparts (60, 48) automatically.
 
+Variable refresh rate (Adaptive Sync, FreeSync, ProMotion) is supported: a monitor that offers both a variable and a fixed mode at the same rate gets a separate **VRR** chip, and a row click keeps a display that runs VRR on VRR.
+
 ### Preview on hover
 
 Hover any row other than the current one and a small sketch appears in the top-right corner of the list: the thin outline is the mode you're on, the filled rectangle inside it is the mode you're about to pick, both drawn at the same scale — so shrinking and growing read the same way. It sits in a fixed corner instead of following the cursor, which is deliberate: a popover anchored to the hovered row kept eating the first click and lagging behind fast pointer movement.
@@ -124,6 +126,7 @@ viberes modes <display>                   Show available modes
 viberes current [<display>]               Print current mode (one or all)
 viberes set <display> <WxH[@Hz][-hidpi|-native]>
                                           Switch to closest matching mode
+                                          (@160vrr or @vrr: the variable refresh mode)
 
 viberes profile list
 viberes profile show <name>
@@ -140,6 +143,7 @@ viberes profile delete <name>
 ```bash
 viberes set "Built-in" 1800x1169@120
 viberes set LG 2560x1440-native
+viberes set LG 2560x1440@160vrr            # Adaptive Sync instead of fixed 160 Hz
 viberes profile save Presentation --any-external
 viberes profile save Code --only Built-in
 viberes profile apply Presentation
@@ -147,6 +151,8 @@ viberes profile apply Presentation
 #   ✓ Built-in Retina Display → 1280×800 @60Hz
 #   ~ LG UltraFine: wanted 1920×1080 @60Hz, used 1920×1080 @60Hz (closest available)
 ```
+
+`list`, `current`, `set` and `profile show` print `VRR` after the rate of a variable refresh mode, and `modes` lists it as `160vrr`, the spelling `set` accepts.
 
 Set `VIBERES_PROFILE_DIR` to read and write profiles somewhere other than
 `~/Library/Application Support/VibeRes` — useful for scripting against a
@@ -160,8 +166,10 @@ Exit code is `0` for full success, `2` if anything fell back or was skipped. Eas
 
 Two AppIntents auto-register with Shortcuts, Spotlight, and Siri:
 
-- **Set Display Resolution** — pick a display + width + height (+ optional refresh and HiDPI preference). Closest-match scoring.
+- **Set Display Resolution** — pick a display + width + height (+ optional refresh, HiDPI and variable refresh preference). Closest-match scoring.
 - **Get Current Resolution** — for conditional workflows ("if my MacBook is at 1800×1169, switch to 1280×800").
+
+Both actions return the resolution as text like `2560 × 1440 @ 160 Hz`. When a display that offers both a variable and a fixed mode at that rate runs the variable one, the text reads `2560 × 1440 @ 160 Hz VRR`, so a Shortcut comparing the text can tell Variable from fixed. A variable mode without a fixed twin, such as ProMotion's 120 Hz, keeps the plain `@ 120 Hz`.
 
 Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings — pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
 

@@ -16,7 +16,7 @@ extension ProfileApplyPreview.Row {
     /// The saved mode, as digits and units only.
     private var savedMode: String {
         var text = "\(savedWidth)×\(savedHeight)"
-        if let savedHz { text += " @ \(savedHz)Hz" }
+        if let savedHz { text += " @ \(savedHz)Hz" + (savedVRR ? " VRR" : "") }
         if savedIsHiDPI { text += " HiDPI" }
         return text
     }
@@ -29,6 +29,9 @@ extension ProfileApplyPreview.Row {
             && height == savedHeight
             && (savedHz == nil || savedHz == hz)
             && isHiDPI == savedIsHiDPI
+            // A VRR entry sitting on the fixed twin is at the closest
+            // available, not at what was saved.
+            && savedVRR == targetVRR
     }
 
     /// What applying the profile would do to this display.
@@ -42,7 +45,7 @@ extension ProfileApplyPreview.Row {
             ))
 
         case let .willApplyFallback(width, height, hz):
-            let used = "\(width)×\(height)" + (hz.map { " @ \($0)Hz" } ?? "")
+            let used = "\(width)×\(height)" + (hz.map { " @ \($0)Hz" + (targetVRR ? " VRR" : "") } ?? "")
             return String(localized: LocalizedStringResource(
                 "preview.row.willApplyFallback",
                 defaultValue: "wanted \(savedMode), will use \(used)",
@@ -61,7 +64,7 @@ extension ProfileApplyPreview.Row {
             // an `.anyExternal` entry saved from a 4K panel lands on 1920×1080
             // on a 1080p one, and "already at 2880×1620" would be a lie.
             var current = "\(width)×\(height)"
-            if let hz { current += " @ \(hz)Hz" }
+            if let hz { current += " @ \(hz)Hz" + (targetVRR ? " VRR" : "") }
             if isHiDPI { current += " HiDPI" }
             return String(localized: LocalizedStringResource(
                 "preview.row.alreadyAtClosest",

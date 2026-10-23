@@ -10,11 +10,44 @@ struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
     /// Pre-computed bucketed groups so the UI doesn't re-bucket on every render.
     /// Built once during snapshot, stable across body recomputations.
     let groups: [ResolutionGroup]
+    /// IDs of the modes (listed and current) that are variable refresh. Asked
+    /// of SkyLight once per snapshot, which is also the cache: every later
+    /// question about a mode's kind is a set lookup. Empty means all fixed,
+    /// which is what a test that builds a `DisplayInfo` by hand gets.
+    var variableModeIDs: Set<Int32> = []
 
     static func == (lhs: DisplayInfo, rhs: DisplayInfo) -> Bool {
         lhs.id == rhs.id
             && lhs.currentMode?.ioDisplayModeID == rhs.currentMode?.ioDisplayModeID
             && lhs.modes.map(\.ioDisplayModeID) == rhs.modes.map(\.ioDisplayModeID)
+            && lhs.variableModeIDs == rhs.variableModeIDs
+    }
+
+    func isVariable(_ mode: CGDisplayMode) -> Bool {
+        variableModeIDs.contains(mode.ioDisplayModeID)
+    }
+
+    /// This display also lists a mode of the other kind at the same size,
+    /// scale and rate as `mode`.
+    func hasTwin(_ mode: CGDisplayMode) -> Bool {
+        VariableRefresh.hasTwin(mode, in: modes, isVariable: isVariable)
+    }
+
+    /// Variable, and this display also lists a fixed mode at the same size,
+    /// scale and rate: the case where "VRR" has to be said out loud.
+    func isVRRTwin(_ mode: CGDisplayMode) -> Bool {
+        isVariable(mode) && hasTwin(mode)
+    }
+
+    /// Whether this display lists both a variable and a fixed mode at the
+    /// given size, scale and rate. Used to decide whether a saved "VRR" is
+    /// worth saying.
+    func offersBothKinds(width: Int, height: Int, isHiDPI: Bool, refreshHz: Int?) -> Bool {
+        let atRate = modes.filter {
+            $0.width == width && $0.height == height
+                && $0.isHiDPI == isHiDPI && $0.refreshHz == refreshHz
+        }
+        return atRate.contains(where: isVariable) && atRate.contains { !isVariable($0) }
     }
 
     func hash(into hasher: inout Hasher) {
@@ -42,13 +75,20 @@ enum DisplayManager {
         let mainID = CGMainDisplayID()
         return ids.map { id in
             let modes = usableModes(for: id)
+            let current = CGDisplayCopyDisplayMode(id)
+            // The current mode is asked about too: it is not guaranteed to be
+            // one of the usable-for-desktop modes listed.
+            let variableIDs = Set((modes + (current.map { [$0] } ?? []))
+                .map(\.ioDisplayModeID)
+                .filter { VariableRefresh.isVariable(display: id, modeID: $0) })
             return DisplayInfo(
                 id: id,
                 name: name(for: id),
                 isMain: id == mainID,
                 modes: modes,
-                currentMode: CGDisplayCopyDisplayMode(id),
-                groups: ResolutionGroup.build(from: modes)
+                currentMode: current,
+                groups: ResolutionGroup.build(from: modes) { variableIDs.contains($0.ioDisplayModeID) },
+                variableModeIDs: variableIDs
             )
         }
     }

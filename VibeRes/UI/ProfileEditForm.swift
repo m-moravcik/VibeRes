@@ -154,14 +154,14 @@ struct ProfileEditForm: View {
                 .pickerStyle(.menu)
                 .controlSize(.mini)
 
-                let rates = ProfilesSection.LiveMode.refreshOptions(
+                let rates = ProfilesSection.LiveMode.rateChoices(
                     in: value.availableModes,
                     bucket: value.bucket
                 )
                 if !rates.isEmpty {
-                    Picker("Hz", selection: entry.refreshHz) {
-                        ForEach(rates, id: \.self) { hz in
-                            Text(hz.map { "\($0) Hz" } ?? "—").tag(hz)
+                    Picker("Hz", selection: rateBinding(entry, choices: rates)) {
+                        ForEach(rates, id: \.self) { rate in
+                            rateLabel(rate).tag(Optional(rate))
                         }
                     }
                     .labelsHidden()
@@ -195,8 +195,40 @@ struct ProfileEditForm: View {
         )
     }
 
+    /// A rate is a (Hz, kind) pair now, so "160 Hz" and "160 Hz VRR" are two
+    /// picks. The getter maps the saved pair onto what is on offer, so an
+    /// entry saved before VRR support still shows its 120 Hz on ProMotion.
+    private func rateBinding(
+        _ entry: Binding<ProfilesSection.EntryEdit>,
+        choices: [ProfilesSection.LiveMode.RateChoice]
+    ) -> Binding<ProfilesSection.LiveMode.RateChoice?> {
+        Binding(
+            get: { entry.wrappedValue.selectedRate(in: choices) },
+            set: { choice in
+                guard let choice else { return }
+                entry.wrappedValue.refreshHz = choice.hz
+                entry.wrappedValue.isVariableRefresh = choice.isVariable
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func rateLabel(_ rate: ProfilesSection.LiveMode.RateChoice) -> some View {
+        if let hz = rate.hz {
+            if rate.isVRRTwin {
+                Text("\(hz) Hz VRR")
+            } else {
+                Text("\(hz) Hz")
+            }
+        } else {
+            Text(verbatim: "—")
+        }
+    }
+
     /// Changing the size has to re-pick the rate: the old one is very often
     /// not offered at the new size, and a stale value would be saved as-is.
+    /// Picked by the same rule as a one-click apply, so a VRR entry stays VRR
+    /// where the new size offers it.
     private func sizeBinding(_ entry: Binding<ProfilesSection.EntryEdit>) -> Binding<ProfilesSection.LiveMode.Bucket> {
         Binding(
             get: { entry.wrappedValue.bucket },
@@ -204,11 +236,16 @@ struct ProfileEditForm: View {
                 entry.wrappedValue.pointWidth = bucket.pointWidth
                 entry.wrappedValue.pointHeight = bucket.pointHeight
                 entry.wrappedValue.isHiDPI = bucket.isHiDPI
-                let rates = ProfilesSection.LiveMode.refreshOptions(
+                let rates = ProfilesSection.LiveMode.rateChoices(
                     in: entry.wrappedValue.availableModes,
                     bucket: bucket
                 )
-                entry.wrappedValue.refreshHz = rates.compactMap { $0 }.max() ?? rates.first ?? nil
+                let picked = ProfilesSection.LiveMode.preferredRate(
+                    in: rates,
+                    stayVariable: entry.wrappedValue.isVariableRefresh
+                )
+                entry.wrappedValue.refreshHz = picked?.hz
+                entry.wrappedValue.isVariableRefresh = picked?.isVariable ?? false
             }
         )
     }
@@ -271,11 +308,23 @@ extension ProfilesSection.EntryEdit {
         matcherKind == .anyExternal ? "Any external" : displayName
     }
 
+    /// The saved mode as text, for a row whose display is not connected. It
+    /// says VRR whenever the entry is variable: with nothing attached there
+    /// is no fixed twin to check for.
     var savedModeDescription: String {
         var parts = ["\(pointWidth)×\(pointHeight)"]
-        if let refreshHz { parts.append("\(refreshHz) Hz") }
+        if let refreshHz { parts.append(isVariableRefresh ? "\(refreshHz) Hz VRR" : "\(refreshHz) Hz") }
         if isHiDPI { parts.append("HiDPI") }
         return parts.joined(separator: " · ")
+    }
+
+    /// The rate a row points at, among `choices`: the saved (Hz, kind) pair
+    /// when it is on offer, otherwise the same Hz of the other kind. The
+    /// fallback is what keeps a profile saved before VRR support (always
+    /// "fixed") pointing at ProMotion's variable-only 120 Hz.
+    func selectedRate(in choices: [ProfilesSection.LiveMode.RateChoice]) -> ProfilesSection.LiveMode.RateChoice? {
+        choices.first { $0.hz == refreshHz && $0.isVariable == isVariableRefresh }
+            ?? choices.first { $0.hz == refreshHz }
     }
 }
 
@@ -311,24 +360,52 @@ extension ProfilesSection.LiveMode {
         }
     }
 
-    /// The refresh rates available at one size, ascending, with "no rate
-    /// reported" first.
-    static func refreshOptions(
+    /// One entry in the rate picker: a rate and its refresh kind.
+    struct RateChoice: Hashable {
+        let hz: Int?
+        let isVariable: Bool
+        /// Variable, and the same size offers this rate fixed too: the only
+        /// case the picker labels it "VRR".
+        let isVRRTwin: Bool
+    }
+
+    /// The rates available at one size as picker choices: ascending, "no rate
+    /// reported" first, and a VRR twin right after its fixed rate.
+    static func rateChoices(
         in modes: [ProfilesSection.LiveMode],
         bucket: Bucket
-    ) -> [Int?] {
+    ) -> [RateChoice] {
         let matching = modes.filter {
             $0.pointWidth == bucket.pointWidth
                 && $0.pointHeight == bucket.pointHeight
                 && $0.isHiDPI == bucket.isHiDPI
         }
-        return Set(matching.map(\.refreshHz)).sorted { a, b in
-            switch (a, b) {
-            case (nil, nil): return false
+        let fixedRates = Set(matching.filter { !$0.isVariable }.map(\.refreshHz))
+        let choices = Set(matching.map {
+            RateChoice(
+                hz: $0.refreshHz,
+                isVariable: $0.isVariable,
+                isVRRTwin: $0.isVariable && fixedRates.contains($0.refreshHz)
+            )
+        })
+        return choices.sorted { a, b in
+            switch (a.hz, b.hz) {
+            case (nil, nil): return !a.isVariable && b.isVariable
             case (nil, _): return true
             case (_, nil): return false
-            case let (.some(x), .some(y)): return x < y
+            case let (.some(x), .some(y)):
+                return x != y ? x < y : (!a.isVariable && b.isVariable)
             }
         }
+    }
+
+    /// The choice a size change lands on. See `VariableRefresh.preferredIndex`.
+    static func preferredRate(in choices: [RateChoice], stayVariable: Bool) -> RateChoice? {
+        let rated = choices.filter { $0.hz != nil }
+        guard let index = VariableRefresh.preferredIndex(
+            rated.map { (hz: $0.hz ?? 0, isVariable: $0.isVariable) },
+            stayVariable: stayVariable
+        ) else { return choices.first }
+        return rated[index]
     }
 }

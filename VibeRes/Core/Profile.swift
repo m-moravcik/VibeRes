@@ -114,11 +114,17 @@ struct Profile: Identifiable, Codable, Hashable {
         var pointHeight: Int
         var refreshHz: Int?
         var isHiDPI: Bool
+        /// Saved from a variable refresh (VRR) mode. `false` is "fixed or
+        /// unknown": every entry written before VRR support decodes to it,
+        /// and `VariableRefresh.honoursKind` treats it accordingly, so those
+        /// profiles behave exactly as they did.
+        var isVariableRefresh: Bool
 
         // Backward compatibility: old JSON had displayVendor/Model/Serial as
         // top-level fields and no `matcher`. Detect that shape and rebuild.
         private enum CodingKeys: String, CodingKey {
             case matcher, displayName, pointWidth, pointHeight, refreshHz, isHiDPI
+            case variableRefresh
             // Legacy keys:
             case displayVendor, displayModel, displaySerial
         }
@@ -129,7 +135,8 @@ struct Profile: Identifiable, Codable, Hashable {
             pointWidth: Int,
             pointHeight: Int,
             refreshHz: Int?,
-            isHiDPI: Bool
+            isHiDPI: Bool,
+            isVariableRefresh: Bool = false
         ) {
             self.matcher = matcher
             self.displayName = displayName
@@ -137,6 +144,7 @@ struct Profile: Identifiable, Codable, Hashable {
             self.pointHeight = pointHeight
             self.refreshHz = refreshHz
             self.isHiDPI = isHiDPI
+            self.isVariableRefresh = isVariableRefresh
         }
 
         init(from decoder: Decoder) throws {
@@ -153,6 +161,7 @@ struct Profile: Identifiable, Codable, Hashable {
             self.pointHeight = max(1, min(h, 16384))
             self.refreshHz = try c.decodeIfPresent(Int.self, forKey: .refreshHz).map { max(1, min($0, 1000)) }
             self.isHiDPI = try c.decode(Bool.self, forKey: .isHiDPI)
+            self.isVariableRefresh = try c.decodeIfPresent(Bool.self, forKey: .variableRefresh) ?? false
 
             if let m = try c.decodeIfPresent(DisplayMatcher.self, forKey: .matcher) {
                 self.matcher = m
@@ -173,6 +182,11 @@ struct Profile: Identifiable, Codable, Hashable {
             try c.encode(pointHeight, forKey: .pointHeight)
             try c.encodeIfPresent(refreshHz, forKey: .refreshHz)
             try c.encode(isHiDPI, forKey: .isHiDPI)
+            // Written only when true, so a fixed entry stays byte-for-byte the
+            // JSON every earlier version reads and writes.
+            if isVariableRefresh {
+                try c.encode(true, forKey: .variableRefresh)
+            }
         }
 
         /// The refresh rate to ask of one live display, given the rate it

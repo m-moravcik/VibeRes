@@ -120,6 +120,10 @@ struct ProfileApplyPreview: Equatable {
         let savedHeight: Int
         let savedHz: Int?
         let savedIsHiDPI: Bool
+        /// Say "VRR" after the saved rate, and after the rate the display
+        /// will use or already uses. Same rule as `ApplyOutcome.requestedVRR`.
+        var savedVRR = false
+        var targetVRR = false
     }
 
     let rows: [Row]
