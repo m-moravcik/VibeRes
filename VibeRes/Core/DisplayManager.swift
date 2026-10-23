@@ -62,6 +62,26 @@ struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
     }
 }
 
+extension Array where Element == DisplayInfo {
+    /// The order the popover lists displays in: the built-in first, then the
+    /// externals by display ID.
+    ///
+    /// Not the system's order, which puts the main display first: moving the
+    /// menu bar to another display then swapped the two cards, and they slid
+    /// through each other, text over text, while the MAIN badge floated in
+    /// between. In a stable order only the badge moves. `isBuiltIn` is
+    /// injectable for tests.
+    func inCardOrder(
+        isBuiltIn: (CGDirectDisplayID) -> Bool = { CGDisplayIsBuiltin($0) != 0 }
+    ) -> [DisplayInfo] {
+        sorted { lhs, rhs in
+            let l = isBuiltIn(lhs.id), r = isBuiltIn(rhs.id)
+            if l != r { return l }
+            return lhs.id < rhs.id
+        }
+    }
+}
+
 enum DisplayManager {
     /// Cap on simultaneously-active displays we'll honour. macOS supports more in theory,
     /// but a sane upper bound prevents pathological allocations if `CGGetActiveDisplayList`

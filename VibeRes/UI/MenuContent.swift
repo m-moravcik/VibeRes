@@ -129,7 +129,7 @@ struct RootView: View {
                             // to find the Refresh button.
                             .onAppear { store.refresh() }
                     } else {
-                        ForEach(store.displays) { display in
+                        ForEach(store.displays.inCardOrder()) { display in
                             DisplayCard(display: display, mainBadge: mainBadge) {
                                 path.append(display.id)
                             }
@@ -235,9 +235,15 @@ private struct DisplayCard: View {
 
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: Design.Spacing.s) {
+                        // Shrinks a little before it truncates: next to its
+                        // MAIN badge, "Vstavaný Retina displej" (Slovak) and
+                        // "Integriertes Retina-Display" (German) were cut. A
+                        // second line was tried and left the badge floating
+                        // after the first word.
                         Text(display.name)
                             .font(Design.Typography.cardTitle)
                             .lineLimit(1)
+                            .minimumScaleFactor(Design.Layout.cardTitleMinimumScale)
                         if display.isMain {
                             Text("MAIN")
                                 .font(Design.Typography.badge)
