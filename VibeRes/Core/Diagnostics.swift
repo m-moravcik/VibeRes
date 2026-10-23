@@ -122,6 +122,10 @@ extension Diagnostics.Report {
                 ? "(none yet)"
                 : "(debug log is off; turn on Settings > Debug > Write debug log to file, reproduce the problem and copy again)")
         } else {
+            if !logEnabled {
+                let newest = logLines.last?.split(separator: " ").first.map(String.init) ?? "unknown"
+                out.append("Debug log is off now. Lines below are from when it was on (last: \(newest)).")
+            }
             out.append(contentsOf: logLines)
         }
         return Diagnostics.scrub(out.joined(separator: "\n")) + "\n"

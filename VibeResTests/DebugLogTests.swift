@@ -276,6 +276,19 @@ struct DiagnosticsTests {
         #expect(report(logLines: [], logEnabled: true).render().contains("(none yet)"))
     }
 
+    @Test("Old lines from a log that is now off are labelled with the newest timestamp")
+    func offWithOldLines() {
+        let lines = [
+            "2026-01-01T09:00:00Z INFO display x",
+            "2026-01-02T10:30:00Z ERROR apply y",
+        ]
+        let text = report(logLines: lines, logEnabled: false).render()
+        let label = "Debug log is off now. Lines below are from when it was on (last: 2026-01-02T10:30:00Z)."
+        #expect(text.contains(label + "\n" + lines[0] + "\n" + lines[1]))
+        #expect(!text.contains("(debug log is off;"))
+        #expect(!report(logLines: lines, logEnabled: true).render().contains("Debug log is off now"))
+    }
+
     @Test("The real hardware model is a non-empty identifier, not a serial")
     func hardwareModel() {
         let model = Diagnostics.hardwareModel()
