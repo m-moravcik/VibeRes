@@ -1075,7 +1075,7 @@ final class ProfileStore {
 
     /// The picked mode is what the entry asked for: size, rate, scale and
     /// refresh kind.
-    private static func isExact(
+    static func isExact(
         _ mode: CGDisplayMode,
         for entry: Profile.Entry,
         refreshHz hz: Int?,

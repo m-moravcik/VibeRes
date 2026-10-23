@@ -458,6 +458,32 @@ struct VariableRefreshProfileApplyTests {
         #expect(!store.isCurrentState(vrrProfile, displays: [onFixed]))
     }
 
+    @Test("A variable entry on the fixed twin of a display offering both kinds is a fallback, not active")
+    func variableEntryOnFixedTwinIsFallback() throws {
+        let set = try #require(RealTwins.find())
+        let (variable, fixed) = (set.first, set.second)
+        let display = info(set, current: fixed, variable: [variable])
+        let vrr = entry(for: variable, variable: true)
+        let profile = Profile(name: "VRR", entries: [vrr])
+        let store = makeStore()
+
+        // What `applyDetailed` reports as `.appliedWithFallback` when it lands here.
+        #expect(!ProfileStore.isExact(fixed, for: vrr, refreshHz: vrr.refreshHz, on: display))
+        #expect(ProfileStore.isExact(variable, for: vrr, refreshHz: vrr.refreshHz, on: display))
+        #expect(!store.isCurrentState(profile, displays: [display]))
+
+        // Scoring never leaves it there: apply moves it to the VRR twin.
+        let row = try #require(store.previewApply(profile, against: [display]).rows.first)
+        if case .willApplyExact = row.action {} else {
+            Issue.record("expected a switch to the VRR twin, got \(row.action)")
+        }
+        let staged = capturing(store)
+        let outcome = store.applyDetailed(profile, displays: [display]).outcomes.first
+        #expect(staged() == [variable.ioDisplayModeID])
+        #expect(outcome?.status == .applied)
+        #expect(outcome?.appliedVRR == true)
+    }
+
     @Test("A legacy entry on a variable-only rate (ProMotion) is active and applies cleanly")
     func legacyEntryOnVariableOnlyRate() throws {
         let set = try #require(RealTwins.find())
