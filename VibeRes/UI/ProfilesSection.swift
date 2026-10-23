@@ -394,7 +394,7 @@ struct ProfilesSection: View {
             DisplayChoice(
                 displayID: d.id,
                 displayName: d.name,
-                isBuiltIn: d.isMain || CGDisplayIsBuiltin(d.id) != 0,
+                isBuiltIn: CGDisplayIsBuiltin(d.id) != 0,
                 currentModeDescription: d.currentMode.map { currentModeDescription($0, on: d) } ?? "",
                 isIncluded: true,
                 matchAnyExternal: false

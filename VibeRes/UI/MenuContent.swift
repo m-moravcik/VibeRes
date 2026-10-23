@@ -184,7 +184,8 @@ struct RootView: View {
                    value: store.confirmationSecondsRemaining == nil)
         .animation(Design.Motion.rows(arriving: store.revert.canRevert, reduceMotion: reduceMotion),
                    value: store.revert.canRevert)
-        // The MAIN badge travels to the display that became main.
+        // The MAIN badge travels to the display that became main; under
+        // Reduce Motion it fades out on one card and in on the other.
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.badge,
                    value: store.displays.first(where: \.isMain)?.id)
     }
@@ -243,7 +244,8 @@ private struct DisplayCard: View {
                                 .padding(.vertical, 1)
                                 .background(.secondary.opacity(0.22), in: Capsule())
                                 .foregroundStyle(.secondary)
-                                .matchedGeometryEffect(id: "main", in: mainBadge)
+                                .matchedGeometryEffect(id: reduceMotion ? AnyHashable(display.id) : "main",
+                                                       in: mainBadge)
                         }
                     }
                     if let cur = display.currentMode {
@@ -1109,6 +1111,8 @@ private struct CompactResolutionRow: View {
             .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
             .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
             .frame(minWidth: 100, alignment: .leading)
+            // Fades to the accent rather than cutting to it when this becomes
+            // the current size; nothing moves.
             .animation(Design.Motion.quick, value: isCurrentSize)
             .accessibilityHidden(true)
     }
@@ -1176,7 +1180,7 @@ private struct CompactResolutionRow: View {
                             .frame(minWidth: compact ? 20 : 22)
                             .padding(.vertical, 3)
                             .padding(.horizontal, compact ? 4 : 6)
-                            .background(chipBackground(active: isActive))
+                            .background(chipBackground(active: isActive, modeID: entry.mode.ioDisplayModeID))
                     }
                     .buttonStyle(.plain)
                     .modifier(VariableRateHint(option: entry))
@@ -1209,11 +1213,14 @@ private struct CompactResolutionRow: View {
 
     /// Avoids `AnyView` type-erasure (which defeats SwiftUI's diffing) by using
     /// `@ViewBuilder` with both branches typed as concrete shapes.
+    ///
+    /// The highlight slides from chip to chip; under Reduce Motion each chip
+    /// keeps its own, so the old one fades out and the new one fades in.
     @ViewBuilder
-    private func chipBackground(active: Bool) -> some View {
+    private func chipBackground(active: Bool, modeID: Int32) -> some View {
         if active {
             Capsule().fill(Color.accentColor)
-                .matchedGeometryEffect(id: "rate", in: rateHighlight)
+                .matchedGeometryEffect(id: reduceMotion ? AnyHashable(modeID) : "rate", in: rateHighlight)
         } else {
             Color.clear
         }
