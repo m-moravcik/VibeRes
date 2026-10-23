@@ -11,7 +11,7 @@ Available in six languages: English, Slovak, Czech, German, Spanish and French.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.gif">
-    <img src="docs/hero.gif" alt="A demo desktop with the VibeRes popover open under the menu bar and the Desk profile active. The pointer clicks the Presentation pill and the screens go dark for a moment. A note drops in under the pills, the LG UltraFine card rolls from 2560 × 1440 to 2048 × 1152 and glows, the display cards trade places as the MAIN badge moves to the LG UltraFine, and the Presentation checkmark bounces while the menu bar icon, enlarged in a loupe at the top left, plays its switch animation. Then the pointer clicks Desk and everything goes back.">
+    <img src="docs/hero.gif" alt="A demo desktop with the VibeRes popover open under the menu bar and the Desk profile active. The pointer clicks the Presentation pill and the screens go dark for a moment. A note drops in under the pills, the LG UltraFine card rolls from 2560 × 1440 to 2048 × 1152 and glows, the MAIN badge moves to the LG UltraFine, and the Presentation checkmark bounces while the menu bar icon, enlarged in a loupe at the top left, plays its switch animation. Then the pointer clicks Desk and everything goes back.">
   </picture>
 </p>
 
