@@ -16,8 +16,14 @@ struct DisplayInfo: Identifiable, Hashable, @unchecked Sendable {
     /// which is what a test that builds a `DisplayInfo` by hand gets.
     var variableModeIDs: Set<Int32> = []
 
+    /// Everything a display card draws, because SwiftUI diffs the card by
+    /// it. Main and the name used to be left out, so a main display that
+    /// moved without a mode change compared equal and the MAIN badge stayed
+    /// where it was.
     static func == (lhs: DisplayInfo, rhs: DisplayInfo) -> Bool {
         lhs.id == rhs.id
+            && lhs.isMain == rhs.isMain
+            && lhs.name == rhs.name
             && lhs.currentMode?.ioDisplayModeID == rhs.currentMode?.ioDisplayModeID
             && lhs.modes.map(\.ioDisplayModeID) == rhs.modes.map(\.ioDisplayModeID)
             && lhs.variableModeIDs == rhs.variableModeIDs
