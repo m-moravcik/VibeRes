@@ -32,6 +32,15 @@ struct NoteLocalisationTests {
 
     private static let noteKeys = catalogKeys
 
+    /// The languages the app advertises in `CFBundleLocalizations`, so a newly
+    /// added language is covered without touching this file.
+    private static let advertisedLanguages: [String] =
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleLocalizations") as? [String] ?? []
+
+    /// The app family's language set. Listed explicitly so dropping one from
+    /// `CFBundleLocalizations` cannot quietly shrink the coverage above.
+    private static let requiredLanguages: Set<String> = ["en", "sk", "cs", "de", "es", "fr"]
+
     /// True for identifier-style keys such as `note.detail.applied`, as opposed
     /// to keys that are themselves the English sentence.
     private static func isSymbolicKey(_ key: String) -> Bool {
@@ -46,12 +55,20 @@ struct NoteLocalisationTests {
         return try #require(Bundle(path: path))
     }
 
-    /// Counts `%@`, `%lld` and positional `%1$@` style specifiers.
+    /// Counts `%@`, `%lld` and positional `%1$@` style specifiers. A plural
+    /// entry compiles to a `.stringsdict` whose lookup returns a format key
+    /// such as `%#@value@`; each such variable consumes one argument.
     private func placeholderCount(_ value: String) -> Int {
-        value.ranges(of: /%(\d+\$)?(@|lld|ld|d|f)/).count
+        value.ranges(of: /%(\d+\$)?(#@\w+@|@|lld|ld|d|f)/).count
     }
 
-    @Test("Every note key is translated in every advertised language", arguments: ["en", "sk", "de"])
+    @Test("The bundle advertises every language of the app family")
+    func advertisesRequiredLanguages() {
+        let missing = Self.requiredLanguages.subtracting(Self.advertisedLanguages)
+        #expect(missing.isEmpty, "CFBundleLocalizations is missing \(missing.sorted())")
+    }
+
+    @Test("Every note key is translated in every advertised language", arguments: advertisedLanguages)
     func keysArePresent(language: String) throws {
         let bundle = try bundle(for: language)
 
@@ -70,20 +87,21 @@ struct NoteLocalisationTests {
         }
     }
 
-    @Test("Placeholders agree across languages so no locale renders garbage")
-    func placeholdersMatchEnglish() throws {
+    @Test(
+        "Placeholders agree across languages so no locale renders garbage",
+        arguments: advertisedLanguages.filter { $0 != "en" }
+    )
+    func placeholdersMatchEnglish(language: String) throws {
         let english = try bundle(for: "en")
+        let translated = try bundle(for: language)
 
-        for language in ["sk", "de"] {
-            let translated = try bundle(for: language)
-            for key in Self.noteKeys {
-                let base = english.localizedString(forKey: key, value: nil, table: nil)
-                let other = translated.localizedString(forKey: key, value: nil, table: nil)
-                #expect(
-                    placeholderCount(base) == placeholderCount(other),
-                    "\(key): en has \(placeholderCount(base)) placeholders, \(language) has \(placeholderCount(other))"
-                )
-            }
+        for key in Self.noteKeys {
+            let base = english.localizedString(forKey: key, value: nil, table: nil)
+            let other = translated.localizedString(forKey: key, value: nil, table: nil)
+            #expect(
+                placeholderCount(base) == placeholderCount(other),
+                "\(key): en has \(placeholderCount(base)) placeholders, \(language) has \(placeholderCount(other))"
+            )
         }
     }
 }
