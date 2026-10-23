@@ -191,6 +191,9 @@ against the code. "Evidence" names where it lives.
 - At most one "any external" entry per profile: more than one would have every
   entry match every external, and the last would win after blinking through the
   others.
+- An "any external" entry never takes a display that a specific entry of the
+  same profile names, so one display never gets two entries' modes. Apply,
+  preview and the confirmation all bind displays the same way.
 - A profile can pin which display becomes main. The default is "don't change".
   The change is applied as a full-coverage translation of the live arrangement
   and verified by reading the arrangement back — a successful commit is not
@@ -229,16 +232,22 @@ room to negotiate.
 ### 4.7 Auto-apply
 
 - When a monitor is plugged in or unplugged, the saved profile that exactly
-  matches the new set is applied silently.
+  matches the new set is applied silently. It runs on the display change
+  itself, never on opening the popover, and only while "Auto-apply matching
+  profile" is on.
 - "Exactly" means every entry binds to something live and every live display is
   covered. Where several profiles match, the more specific wins (EDID beats
   built-in beats any-external), and a tie goes to the more recently saved.
+- Here an "any external" entry stands in only for a monitor no saved profile
+  names as a specific one: a known monitor never gets a flexible profile's mode
+  automatically. Applying a flexible profile by hand is unaffected.
 - A resolution change on its own never triggers it: the app must not fight a
   user who just picked a mode by hand.
-- Nothing is announced when nothing actually changed.
+- Nothing is announced when nothing actually changed. When something did, the
+  popover says "Applied ..." if it is opened within 60 seconds.
 
-*Evidence:* `ProfileStore.profileMatchingExactly`,
-`DisplayStore.applyRefresh`, `ProfilesSection.autoApplyMatchingProfile`.
+*Evidence:* `ProfileStore.profileForAutoApply`, `ProfileStore.autoApply`,
+`DisplayStore.onAutoApplyNeeded`, `AutoApplyAnnouncement`.
 
 ### 4.8 Waking and racing
 

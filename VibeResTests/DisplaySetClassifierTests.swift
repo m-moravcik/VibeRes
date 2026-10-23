@@ -29,10 +29,23 @@ struct DisplaySetClassifierTests {
         )
     }
 
+    private func makeStore() -> ProfileStore {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("VibeResTests-classify-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return ProfileStore(directory: dir)
+    }
+
+    private func classify(_ profile: Profile, against displays: [DisplayInfo],
+                          in store: ProfileStore? = nil) -> DisplaySetClassifier.Classification {
+        let store = store ?? makeStore()
+        return DisplaySetClassifier.classify(store.bindings(of: profile, to: displays), against: displays)
+    }
+
     @Test("Empty profile returns .disjoint regardless of live displays")
     func emptyProfile() {
         let profile = Profile(name: "Empty", entries: [])
-        let result = DisplaySetClassifier.classify(profile, against: [info(id: 1, name: "A")])
+        let result = classify(profile, against: [info(id: 1, name: "A")])
         #expect(result == .disjoint)
     }
 
@@ -43,7 +56,7 @@ struct DisplaySetClassifierTests {
                           displayName: "External",
                           pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false)
         ])
-        let result = DisplaySetClassifier.classify(profile, against: [])
+        let result = classify(profile, against: [])
         #expect(result == .disjoint)
     }
 
@@ -57,8 +70,59 @@ struct DisplaySetClassifierTests {
                           displayName: "Any external",
                           pointWidth: 1920, pointHeight: 1080, refreshHz: 60, isHiDPI: false)
         ])
-        let result = DisplaySetClassifier.classify(profile, against: [])
+        let result = classify(profile, against: [])
         #expect(result == .disjoint)
+    }
+
+    // MARK: - Manual apply sees the apply's own bindings
+
+    private static let builtIn = DisplayMatcher.builtIn(vendor: 1, model: 2, serial: 3)
+    private static let lg = DisplayMatcher.edid(vendor: 10, model: 11, serial: 12)
+    private static let acer = DisplayMatcher.edid(vendor: 20, model: 21, serial: 22)
+
+    /// Display 1 is the built-in, 2 the LG.
+    private static func identity(_ matcher: DisplayMatcher, _ id: CGDirectDisplayID) -> Bool {
+        switch (matcher, id) {
+        case (.builtIn, 1), (.anyExternal, 2), (.edid(10, 11, 12), 2): return true
+        default: return false
+        }
+    }
+
+    private func entry(_ matcher: DisplayMatcher, _ name: String) -> Profile.Entry {
+        Profile.Entry(matcher: matcher, displayName: name, pointWidth: 1920, pointHeight: 1080,
+                      refreshHz: 60, isHiDPI: false)
+    }
+
+    private var builtInAndLG: [DisplayInfo] {
+        [info(id: 1, name: "Built-in"), info(id: 2, name: "LG UltraFine")]
+    }
+
+    @Test("A flexible profile clicked by hand is an exact match on a monitor another profile names")
+    func flexibleProfileOnKnownMonitorIsExact() {
+        let store = makeStore()
+        store.displayMatches = Self.identity
+        _ = store.add(Profile(name: "Home Office", entries: [
+            entry(Self.builtIn, "Built-in"), entry(Self.acer, "GN246HL"), entry(Self.lg, "LG UltraFine"),
+        ]))
+        let presentation = Profile(name: "Presentation", entries: [
+            entry(Self.builtIn, "Built-in"), entry(.anyExternal, "GN246HL"),
+        ])
+        _ = store.add(presentation)
+
+        #expect(classify(presentation, against: builtInAndLG, in: store) == .exactMatch)
+    }
+
+    @Test("A mixed profile whose flexible row has no free external is a partial match")
+    func mixedProfileWithoutFreeExternalIsPartial() {
+        let store = makeStore()
+        store.displayMatches = Self.identity
+        let flexible = entry(.anyExternal, "Any external")
+        let desk = Profile(name: "Desk", entries: [
+            entry(Self.builtIn, "Built-in"), entry(Self.lg, "LG UltraFine"), flexible,
+        ])
+        _ = store.add(desk)
+
+        #expect(classify(desk, against: builtInAndLG, in: store) == .partialMatch(missing: [flexible]))
     }
 
     @Test("isCleanApply returns true only for .exactMatch")

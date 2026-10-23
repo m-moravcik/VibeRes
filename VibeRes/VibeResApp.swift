@@ -33,6 +33,12 @@ struct VibeResApp: App {
         let profiles = ProfileStore()
         displays.onModeSwitch = { [weak iconAnimator] in iconAnimator?.play() }
         profiles.onModeSwitch = { [weak iconAnimator] in iconAnimator?.play() }
+        // Auto-apply belongs to the display change, not to the popover: run
+        // from a view, it waited until the popover was next opened.
+        displays.onAutoApplyNeeded = { [weak displays, weak profiles] in
+            guard let displays, let profiles, prefs.autoApplyOnDisplayChange else { return }
+            profiles.autoApply(to: displays.displays)
+        }
         _iconAnimator = State(initialValue: iconAnimator)
         _displayStore = State(initialValue: displays)
         _profileStore = State(initialValue: profiles)

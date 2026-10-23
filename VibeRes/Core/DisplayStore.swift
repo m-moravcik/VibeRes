@@ -35,14 +35,29 @@ final class DisplayStore {
     var onModeSwitch: (() -> Void)?
 
     /// Bumps once each time the active display *set* (not just modes) changes —
-    /// i.e. a monitor was added or removed. `autoApplyToken` is the UI-facing
-    /// signal for profile re-evaluation.
+    /// i.e. a monitor was added or removed. Profile re-evaluation goes through
+    /// `autoApplyToken` and `onAutoApplyNeeded`.
     private(set) var setChangeToken: Int = 0
 
     /// Bumps when saved profiles should be re-evaluated: display set changes,
     /// and settled wake refreshes where macOS may have reset modes even though
     /// the same physical monitors are still attached.
     private(set) var autoApplyToken: Int = 0
+
+    /// Called each time `autoApplyToken` goes up, from the store itself. The
+    /// app wires it to `ProfileStore.autoApply`. Auto-apply used to hang off a
+    /// view's `onChange` of the token, and a MenuBarExtra's views do not
+    /// update while the popover is closed: a monitor connected at 23:19 was
+    /// auto-applied at 23:20, when the popover was next opened, so the
+    /// resolution changed on a click of the menu bar icon.
+    @ObservationIgnored
+    var onAutoApplyNeeded: (() -> Void)?
+
+    /// Bumps the token and asks for auto-apply. Internal for the wiring test.
+    func bumpAutoApplyToken() {
+        autoApplyToken &+= 1
+        onAutoApplyNeeded?()
+    }
 
     private var registered = false
     private var pendingRefresh: Task<Void, Never>?
@@ -274,7 +289,7 @@ final class DisplayStore {
                 self.revert.clear()
             }
             if wakeEffect.shouldBumpAutoApplyToken {
-                self.autoApplyToken &+= 1
+                self.bumpAutoApplyToken()
                 Log.display.info("wakeRefresh auto-apply bump: token=\(self.autoApplyToken) displaysNow=\(self.displays.count)")
             } else if !transition.setChanged {
                 Log.display.info("wakeRefresh no-op: display set and current modes unchanged")
@@ -419,7 +434,7 @@ final class DisplayStore {
             Log.display.debug("reconfiguration: \(Self.describe(displays))", detail: displays.map(\.name).joined(separator: "; "))
             if transition.shouldBumpSetChangeToken {
                 setChangeToken &+= 1
-                autoApplyToken &+= 1
+                bumpAutoApplyToken()
                 Log.display.info("applyRefresh bump: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) setToken=\(self.setChangeToken) autoApplyToken=\(self.autoApplyToken) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
             } else if transition.shouldDismissMenuBarPopover {
                 Log.display.info("applyRefresh UI-only invalidation: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
