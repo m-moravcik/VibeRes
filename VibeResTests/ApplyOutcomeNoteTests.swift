@@ -32,7 +32,7 @@ struct ApplyOutcomeNoteTests {
         let note = ApplyOutcomeNote.make(from: [
             outcome(.applied, display: "Built-in"),
             outcome(.appliedWithFallback, display: "LG"),
-            outcome(.skippedNoMatch, display: "Dell"),
+            outcome(.failed(.other("boom")), display: "Dell"),
         ])
 
         #expect(note?.tone == .problem)
@@ -82,14 +82,80 @@ struct ApplyOutcomeNoteTests {
     @Test("Every problem is carried, not just the first")
     func problemsCarryAllDetails() {
         let note = ApplyOutcomeNote.make(from: [
-            outcome(.skippedNoMatch, display: "Dell"),
+            outcome(.skippedNoMode, display: "Dell"),
             outcome(.failed(.other("boom")), display: "LG"),
         ])
 
         #expect(note?.content == .problems([
-            .notConnected(display: "Dell"),
+            .noUsableMode(display: "Dell", width: 1920, height: 1080),
             .failed(display: "LG", problem: .other("boom")),
         ]))
+    }
+
+    // MARK: Displays that are not connected
+    //
+    // A manual apply only gets this far for a missing display after the
+    // confirmation panel has listed it and the user chose Apply Anyway, and
+    // auto-apply only ever applies a profile whose every display is present.
+    // So a skip is something the user already knows: it is said, on a line of
+    // its own, but it does not paint the note as a failure. It used to: the
+    // note read "GN246HL not connected" in red, with a warning triangle, and
+    // nothing else, over a profile whose other two displays were fine.
+
+    @Test("A display that is not connected does not raise the tone")
+    func skippedDisplayKeepsInfoTone() {
+        let note = ApplyOutcomeNote.make(from: [
+            outcome(.alreadyApplied, display: "Built-in"),
+            outcome(.alreadyApplied, display: "LG UltraFine"),
+            outcome(.skippedNoMatch, display: "GN246HL"),
+        ])
+
+        #expect(note?.tone == .info)
+        #expect(note?.content == .alreadyAtSavedSettings)
+        #expect(note?.skipped == [.notConnected(display: "GN246HL")])
+    }
+
+    @Test("A skipped display rides along with what did apply")
+    func skippedDisplayRidesAlongWithSuccess() {
+        let note = ApplyOutcomeNote.make(from: [
+            outcome(.applied, display: "LG"),
+            outcome(.skippedNoMatch, display: "Dell"),
+        ])
+
+        #expect(note?.tone == .info)
+        #expect(note?.content == .applied(
+            .applied(display: "LG", width: 1920, height: 1080, hz: nil),
+            extraCount: 0
+        ))
+        #expect(note?.skipped == [.notConnected(display: "Dell")])
+    }
+
+    @Test("A real failure still sets the tone when a display is also missing")
+    func failureOutranksSkip() {
+        let note = ApplyOutcomeNote.make(from: [
+            outcome(.failed(.other("boom")), display: "LG"),
+            outcome(.skippedNoMatch, display: "Dell"),
+        ])
+
+        #expect(note?.tone == .problem)
+        #expect(note?.content == .problems([.failed(display: "LG", problem: .other("boom"))]))
+        #expect(note?.skipped == [.notConnected(display: "Dell")])
+    }
+
+    @Test("When every display was skipped, nothing applied is a warning")
+    func everythingSkippedIsFallback() {
+        let note = ApplyOutcomeNote.make(from: [
+            outcome(.skippedNoMatch, display: "Dell"),
+            outcome(.skippedNoMatch, display: "GN246HL"),
+        ])
+
+        #expect(note?.tone == .fallback)
+        #expect(note?.content == .skippedOnly([
+            .notConnected(display: "Dell"),
+            .notConnected(display: "GN246HL"),
+        ]))
+        // Said once, as the content, not again on the skipped line.
+        #expect(note?.skipped == [])
     }
 
     @Test("A flexible profile with no external says so without naming a display")
@@ -105,7 +171,7 @@ struct ApplyOutcomeNoteTests {
         )
 
         #expect(ApplyOutcomeNote.make(from: [flexible])?.content
-                == .problems([.noExternalConnected]))
+                == .skippedOnly([.noExternalConnected]))
     }
 
     @Test("Mode strings stay numeric so they need no translation")

@@ -84,6 +84,7 @@ enum ScreenshotHarness {
                 try write(root, to: output.appendingPathComponent("root\(suffix).png"))
                 try write(detail, to: output.appendingPathComponent("detail\(suffix).png"))
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
+                try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
                 try write(
                     render(HeroScene(popover: root, scheme: scheme, banner: false)),
                     to: output.appendingPathComponent("hero\(suffix).png")
@@ -393,4 +394,50 @@ private enum DemoProfiles {
         }
     }
 }
+/// The three tones of the note under the profile pills, with real copy built
+/// from invented outcomes, so a change to their colours or a long translation
+/// can be checked without applying anything.
+private struct NoteGallery: View {
+    private static func outcome(
+        _ name: String, _ status: ProfileStore.ApplyOutcome.Status,
+        wanted: Int? = 60, used: Int? = 60
+    ) -> ProfileStore.ApplyOutcome {
+        ProfileStore.ApplyOutcome(
+            displayName: name, matcherKind: .specific,
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: wanted,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: used,
+            status: status
+        )
+    }
+
+    private let notes: [ApplyOutcomeNote] = [
+        // A profile whose third display is not plugged in.
+        ApplyOutcomeNote.make(from: [
+            outcome("Built-in Retina Display", .alreadyApplied),
+            outcome("LG UltraFine", .alreadyApplied),
+            outcome("GN246HL", .skippedNoMatch),
+        ]),
+        ApplyOutcomeNote.make(from: [outcome("LG UltraFine", .appliedWithFallback, wanted: 75)]),
+        ApplyOutcomeNote.make(from: [
+            outcome("LG UltraFine", .failed(.other("the display refused the mode"))),
+            outcome("GN246HL", .skippedNoMatch),
+        ]),
+    ].compactMap { $0 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Design.Spacing.m) {
+            ForEach(notes.indices, id: \.self) { index in
+                let note = notes[index]
+                NoteRow(
+                    tone: note.tone,
+                    text: Text(verbatim: note.localizedDescription),
+                    detail: note.localizedSkipped.map { Text(verbatim: $0) }
+                ) {}
+            }
+        }
+        .padding(.vertical, Design.Spacing.m)
+    }
+}
+
+
 #endif

@@ -10,9 +10,9 @@ struct ProfilesSection: View {
     @Environment(ProfileStore.self) private var profiles
     @Environment(DisplayStore.self) private var displays
     @Environment(Preferences.self) private var preferences
+    @Environment(\.popoverSession) private var popoverSession
     @State private var mode: Mode = .idle
-    @State private var lastNote: NoteBody?
-    @State private var lastNoteTone: ApplyOutcomeNote.Tone = .info
+    @State private var note = PopoverNote<NoteBody>()
     /// Tracks the last auto-apply signal we acted on so we don't re-apply the
     /// same display/wake event multiple times if the popover redraws.
     @State private var lastObservedAutoApplyToken: Int = -1
@@ -40,6 +40,12 @@ struct ProfilesSection: View {
             case let .outcome(note): return Text(verbatim: note.localizedDescription)
             case let .message(key): return Text(key)
             }
+        }
+
+        /// The displays an apply skipped, on the note's second line.
+        var detail: Text? {
+            guard case let .outcome(note) = self, let skipped = note.localizedSkipped else { return nil }
+            return Text(verbatim: skipped)
         }
     }
 
@@ -181,30 +187,15 @@ struct ProfilesSection: View {
                     autoApplyMatchingProfile()
                 }
 
-            if let note = lastNote {
-                // Clickable: a note that says a monitor fell back to 60 Hz is
-                // the only explanation the user gets, and it used to vanish on
-                // a six-second timer whether or not anyone had read it. Now
-                // only the reassuring ones expire on their own — see
-                // `scheduleNoteClear` — and any of them can be dismissed.
-                Button {
-                    lastNote = nil
-                } label: {
-                    HStack(alignment: .top, spacing: 4) {
-                        Image(systemName: lastNoteTone == .problem ? "exclamationmark.triangle.fill"
-                                           : (lastNoteTone == .fallback ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"))
-                            .font(.system(size: 10))
-                            .accessibilityHidden(true)
-                        note.text.font(Design.Typography.note).lineLimit(3)
-                        Spacer(minLength: 0)
-                    }
-                    .contentShape(Rectangle())
+            if let current = note.current {
+                // A note that says a monitor fell back to 60 Hz is the only
+                // explanation the user gets, so only the reassuring ones
+                // expire on their own; the rest stay until dismissed or the
+                // popover closes. See `PopoverNote`.
+                NoteRow(tone: current.tone, text: current.body.text, detail: current.body.detail) {
+                    note.dismiss()
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(noteColor)
-                .padding(.horizontal, Design.Spacing.l)
                 .padding(.top, 2)
-                .help("Dismiss")
             }
         }
         .padding(.bottom, Design.Spacing.xs)
@@ -213,13 +204,15 @@ struct ProfilesSection: View {
                 mode = .saving(buildInitialFormState())
             }
         }
-    }
-
-    private var noteColor: Color {
-        switch lastNoteTone {
-        case .info: return .green
-        case .fallback: return .orange
-        case .problem: return .red
+        .onChange(of: popoverSession) {
+            note.popoverClosed()
+            // The confirmations answer a click from the last open; a reopen
+            // hours later must not find "Apply 'Desk'?" still waiting. The
+            // forms keep what was typed into them.
+            switch mode {
+            case .confirmingApply, .confirmingDelete: mode = .idle
+            case .idle, .saving, .renaming, .editing: break
+            }
         }
     }
 
@@ -802,25 +795,17 @@ struct ProfilesSection: View {
         }
     }
 
-    /// Sets a transient note with the given tone, auto-clearing after 6s.
+    /// Shows a note in the given tone; see `PopoverNote` for how long it stays.
     private func announce(_ key: LocalizedStringKey, tone: ApplyOutcomeNote.Tone) {
-        lastNote = .message(key)
-        lastNoteTone = tone
-        scheduleNoteClear()
+        show(.message(key), tone: tone)
     }
 
-    /// Auto-clears a note after six seconds — but only a reassuring one.
-    ///
-    /// A `.fallback` or `.problem` note is the one place the user is told that
-    /// a monitor did not get what the profile asked for. Expiring that on a
-    /// timer means whoever glanced away never finds out, so those stay until
-    /// they are clicked or replaced by the next apply.
-    private func scheduleNoteClear() {
-        guard lastNoteTone == .info else { return }
-        let token = lastNote
+    private func show(_ body: NoteBody, tone: ApplyOutcomeNote.Tone) {
+        let generation = note.show(body, tone: tone)
+        guard let delay = tone.autoDismissDelay else { return }
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(6))
-            if lastNote == token { lastNote = nil }
+            try? await Task.sleep(for: delay)
+            note.expire(generation)
         }
     }
 
@@ -829,13 +814,11 @@ struct ProfilesSection: View {
     private func announceOutcome(_ result: ProfileStore.ProfileApplyResult) {
         // Aggregation lives in ApplyOutcomeNote so the precedence rules are
         // testable and the copy is localisable. See ApplyOutcomeNoteTests.
-        guard let note = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) else {
-            lastNote = nil
+        guard let outcome = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) else {
+            note.dismiss()
             return
         }
-        lastNoteTone = note.tone
-        lastNote = .outcome(note)
-        scheduleNoteClear()
+        show(.outcome(outcome), tone: outcome.tone)
     }
 
     private func commitRename(id: UUID) {
