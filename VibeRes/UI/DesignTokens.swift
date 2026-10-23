@@ -27,6 +27,9 @@ enum Design {
         static let footerRowVerticalPadding: CGFloat = 4
         /// Space a native menu keeps around a separator and at its edges.
         static let menuInset: CGFloat = 5
+        /// The height of a small segmented control on macOS 26, which a pill
+        /// on the same line matches so the two sit level.
+        static let inlineControlHeight: CGFloat = 20
     }
 
     enum Typography {

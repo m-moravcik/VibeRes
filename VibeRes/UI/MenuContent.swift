@@ -308,8 +308,7 @@ struct DisplayDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         currentModeCard(for: display)
-                        makeMainRow(for: display)
-                        filterToggle(for: display)
+                        controlsRow(for: display)
                         livePreviewHint
                         sizeList(for: display)
                     }
@@ -430,52 +429,73 @@ struct DisplayDetailView: View {
         }
     }
 
-    // MARK: Make main display
+    // MARK: Scaled / Native and Make main display
 
-    /// One-off sibling of the profile "main display" pin: only worth showing
-    /// when there is somewhere else the menu bar could go, and when it isn't
-    /// already here.
+    /// The detail's two controls on one line under the current mode: the
+    /// Scaled / Native switch on the left, Make main display on the right as
+    /// a pill in the profile pills' style.
+    ///
+    /// They used to be stacked, a bordered button with its own height over a
+    /// smaller segmented control, two shapes that did not read as one row. A
+    /// translation too long for one line puts the pill under the switch rather
+    /// than truncate either.
     @ViewBuilder
-    private func makeMainRow(for display: DisplayInfo) -> some View {
-        if !display.isMain, store.displays.count > 1 {
-            HStack {
-                Button {
-                    store.makeMain(display.id)
-                } label: {
-                    Label("Make main display", systemImage: "menubar.rectangle")
-                        .font(Design.Typography.control)
+    private func controlsRow(for display: DisplayInfo) -> some View {
+        let showsFilter = hasBothKinds(for: display)
+        // Only when there is somewhere else the menu bar could go, and when it
+        // isn't already here: the one-off sibling of a profile's main pin.
+        let showsMakeMain = !display.isMain && store.displays.count > 1
+        if showsFilter || showsMakeMain {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Design.Spacing.m) {
+                    if showsFilter {
+                        filterPicker(for: display)
+                        Spacer(minLength: 0)
+                    }
+                    if showsMakeMain { makeMainButton(for: display) }
+                    if !showsFilter { Spacer(minLength: 0) }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help("Moves the menu bar and Dock to this display. The arrangement only shifts — relative positions are preserved.")
-                Spacer()
+                VStack(alignment: .leading, spacing: Design.Spacing.s) {
+                    if showsFilter { filterPicker(for: display) }
+                    if showsMakeMain { makeMainButton(for: display) }
+                }
             }
             .padding(.horizontal, Design.Spacing.l)
             .padding(.bottom, 6)
         }
     }
 
-    // MARK: HiDPI / Native toggle
-
-    @ViewBuilder
-    private func filterToggle(for display: DisplayInfo) -> some View {
-        if hasBothKinds(for: display) {
-            HStack(spacing: 6) {
-                Picker("", selection: Binding(
-                    get: { filter(for: display) },
-                    set: { chosenFilter = $0 }
-                )) {
-                    Text("Scaled").tag(ModeFilter.hiDPIIfAvailable)
-                    Text("Native").tag(ModeFilter.allNative)
-                }
-                .pickerStyle(.segmented)
-                .controlSize(.small)
-                .labelsHidden()
-                .help("'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors.")
-            }
-            .padding(.horizontal, Design.Spacing.l)
-            .padding(.bottom, 6)
+    private func filterPicker(for display: DisplayInfo) -> some View {
+        Picker("", selection: Binding(
+            get: { filter(for: display) },
+            set: { chosenFilter = $0 }
+        )) {
+            Text("Scaled").tag(ModeFilter.hiDPIIfAvailable)
+            Text("Native").tag(ModeFilter.allNative)
         }
+        .pickerStyle(.segmented)
+        .controlSize(.small)
+        .labelsHidden()
+        .fixedSize()
+        .help("'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors.")
+    }
+
+    private func makeMainButton(for display: DisplayInfo) -> some View {
+        Button {
+            store.makeMain(display.id)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "menubar.rectangle")
+                    .font(.system(size: 9))
+                    .accessibilityHidden(true)
+                Text("Make main display")
+                    .font(PillButtonStyle.font)
+                    .lineLimit(1)
+            }
+        }
+        .buttonStyle(PillButtonStyle())
+        .fixedSize()
+        .help("Moves the menu bar and Dock to this display. The arrangement only shifts — relative positions are preserved.")
     }
 
     // MARK: Live preview hint
