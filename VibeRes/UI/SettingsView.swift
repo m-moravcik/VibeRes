@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Standalone macOS Settings window. Opens via the menu bar's Settings…
@@ -8,6 +9,11 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(Preferences.self) private var preferences
     @Environment(\.updater) private var updater
+    @Environment(DisplayStore.self) private var displays
+    @Environment(ProfileStore.self) private var profiles
+    /// True for a moment after "Copy diagnostics", so the button can say it worked
+    /// in place instead of raising an alert.
+    @State private var diagnosticsCopied = false
     @State private var launchAtLogin: Bool = LoginItem.isEnabled
     /// Forces the TabView to start on General every time the Settings
     /// window is opened. SwiftUI keeps the SettingsView instance alive
@@ -20,7 +26,7 @@ struct SettingsView: View {
     @State private var selectedTab: SettingsTab = .general
 
     enum SettingsTab: Hashable {
-        case general, display, updates
+        case general, display, updates, debug
     }
 
     var body: some View {
@@ -37,9 +43,13 @@ struct SettingsView: View {
             updatesTab
                 .tabItem { Label("Updates", systemImage: "arrow.down.circle") }
                 .tag(SettingsTab.updates)
+
+            debugTab(prefs: $prefs)
+                .tabItem { Label("Debug", systemImage: "ladybug") }
+                .tag(SettingsTab.debug)
         }
         // Sized so no tab scrolls. A little empty space beats a scroll bar in a
-        // settings window with three tabs — the previous 320pt height cut off
+        // settings window with four tabs — the previous 320pt height cut off
         // the General tab once the confirmation setting was added.
         .frame(width: 470, height: 400)
         .task {
@@ -190,5 +200,74 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    // MARK: Debug
+
+    @ViewBuilder
+    private func debugTab(prefs: Bindable<Preferences>) -> some View {
+        Form {
+            Section {
+                Toggle("Write debug log to file", isOn: prefs.debugLogEnabled)
+                Text("Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("Detail level", selection: prefs.debugLogLevel) {
+                    Text("Errors only").tag(LogLevel.error)
+                    Text("Standard").tag(LogLevel.info)
+                    Text("Everything").tag(LogLevel.debug)
+                }
+                .disabled(!preferences.debugLogEnabled)
+
+                HStack {
+                    Spacer()
+                    Button("Open log file") {
+                        NSWorkspace.shared.open(LogSink.shared.existingFileURL())
+                    }
+                    .disabled(!preferences.debugLogEnabled)
+                }
+            } header: {
+                Text("Debug log")
+            }
+
+            Section {
+                Text("Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Spacer()
+                    Button {
+                        copyDiagnostics()
+                    } label: {
+                        if diagnosticsCopied {
+                            Label("Copied", systemImage: "checkmark")
+                        } else {
+                            Text("Copy diagnostics")
+                        }
+                    }
+                }
+            } header: {
+                Text("Diagnostics")
+            }
+        }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+    }
+
+    private func copyDiagnostics() {
+        let report = Diagnostics.collect(
+            preferences: preferences,
+            displays: displays.displays,
+            profileCount: profiles.profiles.count
+        )
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(report.render(), forType: .string)
+        diagnosticsCopied = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            diagnosticsCopied = false
+        }
     }
 }

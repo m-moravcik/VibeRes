@@ -62,6 +62,7 @@ enum DesktopCapture {
                 onScreenWindowsOnly: true
             )
             guard let target = content.displays.first(where: { $0.displayID == displayID }) else {
+                Log.capture.debug("snapshot: display \(displayID) is not shareable")
                 return nil
             }
             let cfg = SCStreamConfiguration()
@@ -80,6 +81,7 @@ enum DesktopCapture {
             // Capture failed despite the cache saying we had permission —
             // treat that as a TCC stuck-loop signal so the next attempt
             // doesn't re-prompt.
+            Log.capture.error("snapshot failed despite permission (\((error as NSError).domain) \((error as NSError).code)); live preview off for this session")
             status = .stuckLoop
             return nil
         }
@@ -140,6 +142,7 @@ enum DesktopCapture {
 
         deniedAttempts += 1
         status = deniedAttempts >= 2 ? .stuckLoop : .denied
+        Log.capture.info("screen recording not granted (attempt \(deniedAttempts)), status=\(status)")
         return false
     }
 }

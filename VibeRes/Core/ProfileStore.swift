@@ -1,9 +1,6 @@
 import CoreGraphics
 import Foundation
 import Observation
-import os.log
-
-private let viberesLog = Logger(subsystem: "sk.moravcik.VibeRes", category: "apply")
 
 /// User-facing intent at save time: should this entry match a specific
 /// physical display (EDID-locked) or any monitor of that role.
@@ -103,6 +100,7 @@ final class ProfileStore {
         // pull an implausible file into memory on the main actor at launch.
         let size = (try? storeURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard Self.isWithinSizeLimit(bytes: size) else {
+            Log.profiles.error("load: profiles file is \(size) bytes, over the size limit; ignoring it")
             lastError = .profilesUnreadable
             profiles = []
             return
@@ -114,11 +112,19 @@ final class ProfileStore {
         }
         do {
             profiles = Self.capped(try JSONDecoder().decode([Profile].self, from: data))
+            Log.profiles.info("load: \(profiles.count) profile(s)")
         } catch {
             // Sanitised — don't surface JSONDecoder internals or file paths.
+            Log.profiles.error("load: profiles file could not be decoded (\(Self.errorCode(error)))")
             lastError = .profilesUnreadable
             profiles = []
         }
+    }
+
+    /// Domain and code only: a Cocoa error's description carries the file path.
+    private static func errorCode(_ error: Error) -> String {
+        let ns = error as NSError
+        return "\(ns.domain) \(ns.code)"
     }
 
     func save() {
@@ -133,7 +139,9 @@ final class ProfileStore {
                 ofItemAtPath: storeURL.path
             )
             lastError = nil
+            Log.profiles.debug("save: \(profiles.count) profile(s)")
         } catch {
+            Log.profiles.error("save: profiles could not be written (\(Self.errorCode(error)))")
             lastError = .profilesNotSaved
         }
     }
@@ -151,6 +159,7 @@ final class ProfileStore {
             return nameVerdict(for: p.name, excluding: p.id)
         }
         profiles.append(p)
+        Log.profiles.info("add: now \(profiles.count) profile(s)")
         save()
         return .saved
     }
@@ -234,6 +243,7 @@ final class ProfileStore {
 
     func delete(_ profile: Profile) {
         profiles.removeAll { $0.id == profile.id }
+        Log.profiles.info("delete: now \(profiles.count) profile(s)")
         save()
     }
 
@@ -754,7 +764,7 @@ final class ProfileStore {
                 // Diagnostic logging — when apply silently fails the user has
                 // zero visibility into why. Goes to Console.app under
                 // sk.moravcik.VibeRes.
-                viberesLog.notice("apply \(change.name, privacy: .public): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) vrr=\(change.isVariable) modeID=\(change.mode.ioDisplayModeID)")
+                Log.apply.info("apply \(DisplayLabel.label(for: change.display)): \(change.previous?.width ?? 0)×\(change.previous?.height ?? 0) → \(change.mode.width)×\(change.mode.height) @ \(change.mode.refreshHz ?? 0)Hz hidpi=\(change.mode.isHiDPI) vrr=\(change.isVariable) modeID=\(change.mode.ioDisplayModeID)", detail: change.name)
             }
 
             do {
@@ -771,7 +781,7 @@ final class ProfileStore {
                         if let previous = change.previous, seenForRevert.insert(change.display).inserted {
                             batchSnapshot.append((change.display, change.name, previous))
                         }
-                        viberesLog.notice("apply \(change.name, privacy: .public): SUCCESS")
+                        Log.apply.info("apply \(DisplayLabel.label(for: change.display)): SUCCESS", detail: change.name)
                     } else {
                         let failure = result.rejected[change.display] ?? .applyMode(.failure)
                         outcomes[change.outcomeIndex].status = .failed(.switchFailed(failure))
@@ -779,14 +789,14 @@ final class ProfileStore {
                         outcomes[change.outcomeIndex].appliedSize = nil
                         outcomes[change.outcomeIndex].appliedHz = nil
                         outcomes[change.outcomeIndex].appliedVRR = false
-                        viberesLog.error("apply \(change.name, privacy: .public): REJECTED — \(reason, privacy: .public)")
+                        Log.apply.error("apply \(DisplayLabel.label(for: change.display)): REJECTED — \(reason)", detail: change.name)
                     }
                 }
             } catch {
                 // The commit itself failed, so not one of the staged displays
                 // changed. Reporting anything as applied here would leave the
                 // user with a success message and an unchanged desktop.
-                viberesLog.error("apply: transaction failed with \(String(describing: error), privacy: .public)")
+                Log.apply.error("apply: transaction failed with \(String(describing: error))")
                 for change in planned {
                     outcomes[change.outcomeIndex].status = .failed(error.asUserFacingProblem)
                     outcomes[change.outcomeIndex].appliedSize = nil
@@ -848,11 +858,11 @@ final class ProfileStore {
             }
 
             let name = displays.first(where: { $0.id == target })?.name ?? "display \(target)"
-            viberesLog.notice("main display: \(live.main) → \(target) (\(name, privacy: .public)), \(plan.count) origins")
+            Log.apply.info("main display: \(live.main) → \(target) (\(DisplayLabel.label(for: target))), \(plan.count) origins", detail: name)
             do {
                 try applyOrigins(plan, .permanently)
             } catch {
-                viberesLog.error("main display: transaction failed — \(String(describing: error), privacy: .public)")
+                Log.apply.error("main display: transaction failed — \(String(describing: error))")
                 return .failed(error.asUserFacingProblem)
             }
             previousMain = live.main
@@ -862,7 +872,7 @@ final class ProfileStore {
             if after.main == target, MainDisplayPlanner.verified(plan: plan, actualBounds: after.bounds) {
                 return .changed(displayName: name)
             }
-            viberesLog.error("main display: committed but read-back differs from the plan (F5)")
+            Log.apply.error("main display: committed but read-back differs from the plan (F5)")
             return .changedButAdjusted(displayName: name)
         }
     }

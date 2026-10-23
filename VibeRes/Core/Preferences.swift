@@ -14,6 +14,8 @@ final class Preferences {
     private static let launchAtLoginKey = "VibeRes.LaunchAtLogin"
     private static let confirmChangesKey = "VibeRes.ConfirmDisplayChanges"
     private static let livePreviewHintDismissedKey = "VibeRes.LivePreviewHintDismissed"
+    static let debugLogEnabledKey = "VibeRes.DebugLogEnabled"
+    static let debugLogLevelKey = "VibeRes.DebugLogLevel"
 
     var autoApplyOnDisplayChange: Bool {
         didSet {
@@ -97,7 +99,34 @@ final class Preferences {
         }
     }
 
-    init() {
+    /// Opt-in: also write the app log to `~/Library/Logs/VibeRes/` so a bug report
+    /// can carry it. Off by default, and nothing in it ever leaves the Mac unless
+    /// the user attaches it. `os.Logger` records regardless; this only adds the file.
+    var debugLogEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(debugLogEnabled, forKey: Self.debugLogEnabledKey)
+            applyDebugLog()
+        }
+    }
+
+    /// How much the debug log file records. Info by default: state changes and
+    /// failures, without the per-refresh chatter of `.debug`.
+    var debugLogLevel: LogLevel {
+        didSet {
+            UserDefaults.standard.set(debugLogLevel.rawValue, forKey: Self.debugLogLevelKey)
+            applyDebugLog()
+        }
+    }
+
+    /// The sink the debug log choice drives; nil writes no file whatever the toggle says.
+    private let logSink: LogSink?
+
+    private func applyDebugLog() {
+        logSink?.configure(enabled: debugLogEnabled, verbosity: debugLogLevel)
+    }
+
+    init(logSink: LogSink? = nil) {
+        self.logSink = logSink
         self.confirmDisplayChanges = UserDefaults.standard.bool(forKey: Self.confirmChangesKey)
         // Read before the didSet observers can fire.
         self.launchAtLoginIntent = UserDefaults.standard.object(forKey: Self.launchAtLoginKey) as? Bool
@@ -128,5 +157,10 @@ final class Preferences {
         // First-launch detection: bool(forKey:) returns false when missing,
         // which is exactly what we want — fresh installs see the tour.
         self.onboardingShown = UserDefaults.standard.bool(forKey: Self.onboardingShownKey)
+        self.debugLogEnabled = UserDefaults.standard.bool(forKey: Self.debugLogEnabledKey)
+        self.debugLogLevel = (UserDefaults.standard.object(forKey: Self.debugLogLevelKey) as? Int)
+            .flatMap(LogLevel.init(rawValue:)) ?? .info
+        // didSet does not run in init, so hand the stored choice to the sink here.
+        applyDebugLog()
     }
 }
