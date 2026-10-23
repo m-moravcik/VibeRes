@@ -21,7 +21,7 @@ import Testing
 struct DisplayStoreDismissWiringTests {
     @Test("A refresh that changes no displays must not close the popover")
     func modeOnlyRefreshKeepsPopoverOpen() async {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
 
@@ -44,7 +44,7 @@ struct DisplayStoreDismissWiringTests {
 
     @Test("A swap VibeRes made keeps the popover open and re-anchors it on close")
     func ownSwapKeepsPopoverOpen() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
         store.popoverIsOpenOverride = { true }
@@ -66,7 +66,7 @@ struct DisplayStoreDismissWiringTests {
 
     @Test("A swap VibeRes made after the popover already closed re-anchors at once")
     func ownSwapWithPopoverClosedReanchorsAtOnce() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
         store.popoverIsOpenOverride = { false }
@@ -81,7 +81,7 @@ struct DisplayStoreDismissWiringTests {
 
     @Test("A swap made in System Settings still closes the popover at once")
     func foreignSwapDismisses() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
 
@@ -93,7 +93,7 @@ struct DisplayStoreDismissWiringTests {
 
     @Test("An expectation that has run out does not hide a later swap")
     func staleExpectationExpires() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
         let now = Date()
@@ -109,7 +109,7 @@ struct DisplayStoreDismissWiringTests {
 
     @Test("Each expectation covers one swap")
     func expectationIsConsumed() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
         store.popoverIsOpenOverride = { true }
@@ -124,7 +124,7 @@ struct DisplayStoreDismissWiringTests {
 
     @Test("A display set change still closes the popover, even after our own swap")
     func setChangeAlwaysDismisses() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var dismissals = 0
         store.dismissStalePopoverOverride = { dismissals += 1 }
 

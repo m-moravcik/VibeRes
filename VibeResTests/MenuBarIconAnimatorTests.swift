@@ -106,7 +106,7 @@ struct MenuBarIconAnimatorTests {
     func successfulApplyPlays() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.applyMode = { _, _, _ in }
 
@@ -120,7 +120,7 @@ struct MenuBarIconAnimatorTests {
     func noSwitchNoAnimation() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.applyMode = { _, _, _ in throw ResolutionSwitcher.Failure.applyMode(.cannotComplete) }
 
@@ -150,7 +150,7 @@ struct MenuBarIconAnimatorTests {
     func currentModeClickDoesNotPlay() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.applyMode = { _, _, _ in }
         let display = try #require(store.displays.first, "no active display on this machine")
@@ -166,7 +166,7 @@ struct MenuBarIconAnimatorTests {
     func mainOnlyRevertDoesNotPlay() {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         var currentMain: CGDirectDisplayID = 7
         store.liveArrangement = {
@@ -186,7 +186,7 @@ struct MenuBarIconAnimatorTests {
     func revertPlays() throws {
         let rig = Rig()
         let animator = rig.animator()
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.onModeSwitch = { animator.play() }
         store.revert.record(displayID: 1, displayName: "Built-in", before: try aRealMode())
         store.applyMode = { _, _, _ in }

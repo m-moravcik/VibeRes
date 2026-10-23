@@ -22,7 +22,7 @@ struct RevertMainDisplayTests {
 
     @Test("A failed mode restore and a successful main restore are counted independently")
     func mixedModeAndMainRestore() throws {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         let mode = try aRealMode()
         store.revert.recordBatch(
             [(id: 1, name: "Built-in", before: mode)],
@@ -55,7 +55,7 @@ struct RevertMainDisplayTests {
 
     @Test("performRevert translates the live arrangement back to the old main")
     func revertsMain() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var plans: [[CGDirectDisplayID: CGPoint]] = []
         var currentMain: CGDirectDisplayID = 7
         store.applyMode = { _, _, _ in }
@@ -85,7 +85,7 @@ struct RevertMainDisplayTests {
     }
 
     private func storeWithMainToRestore() -> DisplayStore {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var currentMain: CGDirectDisplayID = 7
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
@@ -133,7 +133,7 @@ struct RevertMainDisplayTests {
 
     @Test("A commit that silently leaves main unchanged is not counted as restored (F5)")
     func silentlyUnchangedMainNotCountedAsRestored() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
             (main: 7, bounds: [
@@ -157,7 +157,7 @@ struct RevertMainDisplayTests {
 
     @Test("An old main that is no longer active is skipped, not guessed at")
     func staleMainSkipped() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         var originCalled = false
         store.applyMode = { _, _, _ in }
         store.liveArrangement = { (main: 7, bounds: [7: .zero]) }
@@ -172,7 +172,7 @@ struct RevertMainDisplayTests {
 
     @Test("A failed origin restore keeps the way back armed")
     func failedRestoreStaysArmed() {
-        let store = DisplayStore()
+        let store = DisplayStore.forTesting()
         store.applyMode = { _, _, _ in }
         store.liveArrangement = {
             (main: 7, bounds: [5: CGRect(x: -1800, y: 0, width: 1800, height: 1169), 7: .zero])
