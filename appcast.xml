@@ -6,33 +6,26 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.11.0</title>
-      <pubDate>Fri, 23 Oct 2026 22:55:45 +0000</pubDate>
-      <sparkle:version>30</sparkle:version>
-      <sparkle:shortVersionString>0.11.0</sparkle:shortVersionString>
+      <title>0.11.1</title>
+      <pubDate>Sat, 24 Oct 2026 12:20:39 +0000</pubDate>
+      <sparkle:version>31</sparkle:version>
+      <sparkle:shortVersionString>0.11.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
 <ul>
-<li>Clicking a profile or a display now answers in the popover: the numbers on the changed displays roll to the new resolution, the changed card lights up, the MAIN badge moves to the new main display, and the profile&#x27;s checkmark bounces as the menu bar icon plays its switch animation. With Reduce Motion on, all of it crossfades.</li>
-<li>Variable refresh rate (Adaptive Sync, ProMotion): VibeRes now tells variable modes from fixed ones. A display that offers both shows a separate VRR chip, Simple mode keeps a display that is on Variable on Variable, profiles remember it, and the CLI accepts <code>@160vrr</code>.</li>
-<li>Auto-apply now runs when a display connects, not the next time you open the menu, and a flexible &quot;any external&quot; profile no longer takes over a monitor that another profile names.</li>
-<li>A profile that moves the main display keeps the menu open, so you see what changed.</li>
-<li>Calmer notes: colour only on the symbol, a display that is not connected is mentioned on a quieter line instead of as an error, and notes clear when the menu closes.</li>
-<li>Scaled / Native and Make main display share one row, display cards keep their order when the main display moves, and long display names fit beside the MAIN badge.</li>
-<li>Czech, Spanish and French, so VibeRes now speaks six languages.</li>
-<li>Settings &gt; Debug: an opt-in local debug log and Copy diagnostics for bug reports. VibeRes still sends nothing anywhere, and display names are never written to the log.</li>
-<li>Fixed: the MAIN badge could stay on the display that had lost the menu bar, and the laptop symbol followed the main display instead of the built-in one.</li>
+<li>Words in the accent colour are easier to read. The current size, its CURRENT badge and the flexible-profile ✱ were drawn in the plain accent colour, which measured around 3:1 against the menu. They are now shaded from the accent you picked, darker in light mode and lighter in dark mode, until they reach at least 4.5:1 wherever they appear. Symbols and highlights keep the plain accent.</li>
+<li>After a resolution change, a display card&#x27;s mode line and the refresh rate in a display&#x27;s detail no longer turn near black for a second while their numbers roll.</li>
 </ul>
 <p>Signed with Developer ID, notarized and stapled. Requires macOS 26.</p>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.11.0/VibeRes-0.11.0.zip"
-                 sparkle:edSignature="A8BRyVy87nq2g5SO16mO2PyDDp/OldfYYjfazaT1hDgjDgrxhXu4e9vpQty8wdWVNwfZto8BZw3ccu9JxYE4AA=="
-                 length="4466173"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.11.1/VibeRes-0.11.1.zip"
+                 sparkle:edSignature="gLwKhvmTtS13u2ZZJ5Gl8W73i68VxYQBCJ0ouAEHWU/RsEd6QLmg32+PkV456SxEiYnbdmP2Eb/ZkPQ9rsPqBw=="
+                 length="4475221"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: 4UZxewSJotEgYmnvHdlFEGVcz40GuwCyR8A+YoqOaQMVJ5IzCMB0CO1MrC0mbGVG586WR6fv34Q14m51eQOrBQ==
-length: 2788
+edSignature: vhszKC7ZYkMgMi7mPy1o9e1C6BbNUzsFfc4Z2MJJqRZRkqg+sbm29apd/tm+EQQ4wGN/DtGuhoJ5MCumn9aWCQ==
+length: 1685
 -->
