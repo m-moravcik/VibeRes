@@ -51,7 +51,7 @@ struct ProfilePill: View {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(isHovering
                           ? Color.accentColor.opacity(Design.Palette.pillHoverAccentOpacity)
-                          : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18)))
+                          : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(Design.Palette.pillRestSecondaryOpacity)))
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)

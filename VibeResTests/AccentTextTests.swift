@@ -38,17 +38,22 @@ struct AccentTextTests {
         #expect(abs(AccentText.contrast(Self.rgb(0x777777), white) - 4.48) < 0.005)
     }
 
+    /// Where accent words sit.
+    static func places(_ accent: NSColor, dark: Bool) -> [(name: String, background: NSColor)] {
+        [
+            ("hovered pill", AccentText.hoveredPill(accent: accent, dark: dark)),
+            ("resting pill", AccentText.restingPill(dark: dark)),
+            ("badge", AccentText.badge(accent: accent, dark: dark)),
+            ("popover", AccentText.popover(dark: dark)),
+        ]
+    }
+
     @Test(arguments: [false, true])
     func everyAccentReadsWhereverAccentWordsSit(dark: Bool) {
         for accent in Self.accents {
             let base = dark ? accent.dark : accent.light
             let text = AccentText.color(for: base, dark: dark)
-            let places = [
-                ("hovered pill", AccentText.hoveredPill(accent: base, dark: dark)),
-                ("badge", AccentText.badge(accent: base, dark: dark)),
-                ("popover", AccentText.popover(dark: dark)),
-            ]
-            for (place, background) in places {
+            for (place, background) in Self.places(base, dark: dark) {
                 let ratio = AccentText.contrast(text, background)
                 #expect(ratio >= AccentText.minimumContrast, "\(accent.name) on the \(place): \(ratio)")
             }
@@ -56,15 +61,16 @@ struct AccentTextTests {
     }
 
     /// Shaded only as far as it takes, so blue still looks like the accent:
-    /// one 2% step less would not read on a hovered pill, and an accent that
-    /// already reads is left as it is.
+    /// one 2% step less would not read somewhere accent words sit, and an
+    /// accent that already reads everywhere is left as it is.
     @Test(arguments: [false, true])
     func shadesNoFurtherThanNeeded(dark: Bool) {
         for accent in Self.accents {
             let base = (dark ? accent.dark : accent.light).usingColorSpace(.sRGB)!
-            let pill = AccentText.hoveredPill(accent: base, dark: dark)
+            let places = Self.places(base, dark: dark)
+            func worst(_ color: NSColor) -> Double { places.map { AccentText.contrast(color, $0.background) }.min()! }
             let text = AccentText.color(for: base, dark: dark).usingColorSpace(.sRGB)!
-            if AccentText.contrast(base, pill) >= AccentText.minimumContrast {
+            if worst(base) >= AccentText.minimumContrast {
                 #expect(text == base, "\(accent.name) already reads")
                 continue
             }
@@ -74,7 +80,7 @@ struct AccentTextTests {
             let (from, to) = channels.max { abs(toward - $0.0) < abs(toward - $1.0) }!
             let step = ((to - from) / (toward - from) * 50).rounded()
             let lessShaded = Self.blend(base, toward: toward, (step - 1) / 50)
-            let ratio = AccentText.contrast(lessShaded, pill)
+            let ratio = worst(lessShaded)
             #expect(ratio < AccentText.minimumContrast, "\(accent.name) at step \(step - 1): \(ratio)")
         }
     }
