@@ -113,8 +113,9 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           # Checked before anything is built: the notes are the GitHub release
-          # body and Sparkle's update window, so a release without them, or
-          # with an em dash the owner's rules forbid, stops here.
+          # body and Sparkle's update window, so a release without them, with
+          # an em dash the owner's rules forbid, or without the line saying who
+          # stands behind the update (see RELEASING.md), stops here.
           NOTES="release-notes/$VERSION.md"
           if [ ! -s "$NOTES" ] || ! grep -q '[^[:space:]]' "$NOTES"; then
             echo "::error::$NOTES is missing or empty; write it before tagging"
@@ -124,6 +125,14 @@ jobs:
             echo "::error::$NOTES contains an em dash"
             exit 1
           fi
+          APPLE_LINE="Signed with an Apple Developer ID and notarized by Apple."
+          case "$(grep -v '^[[:space:]]*$' "$NOTES" | tail -n 1)" in
+            "$APPLE_LINE"*) ;;
+            *)
+              echo "::error::$NOTES must end with: $APPLE_LINE Requires macOS 26."
+              exit 1
+              ;;
+          esac
           echo "Release notes: $NOTES"
 
       - name: Verify the build number increased

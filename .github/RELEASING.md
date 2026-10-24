@@ -242,10 +242,17 @@ pre-built binary, it needs its own Developer ID signature — and
 1. Bump `MARKETING_VERSION` (and `CURRENT_PROJECT_VERSION`) in `project.yml`.
 2. Bump `version` and `tag:` in `Formula/viberes.rb`.
 3. Write `release-notes/X.Y.Z.md`: short bullets of what changed for the user,
-   ending with "Signed with Developer ID, notarized and stapled. Requires
-   macOS 26." No em dash (the workflow refuses one). It becomes the GitHub
-   release body and Sparkle's update window. Since 0.11.0 the notes live
-   there, as in ClipShot and Eject Guard; `CHANGELOG.md` is history up to
+   ending with this line, as in Eject Guard:
+   ```
+   Signed with an Apple Developer ID and notarized by Apple. Requires macOS 26.
+   ```
+   The update window is where people decide whether to trust an update, so it
+   says who stands behind it. It says exactly what happens: the app is signed
+   with a Developer ID certificate Apple issued, and Apple notarizes it, which
+   is not the same as Apple signing it. No em dash. The workflow refuses notes
+   that are missing, hold an em dash or end with anything else. They become
+   the GitHub release body and Sparkle's update window. Since 0.11.0 the notes
+   live there, as in ClipShot and Eject Guard; `CHANGELOG.md` is history up to
    0.10.6 and is never edited by hand.
 4. Commit and push to `main`.
 5. Tag and push:
