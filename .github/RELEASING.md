@@ -249,8 +249,10 @@ pre-built binary, it needs its own Developer ID signature — and
    The update window is where people decide whether to trust an update, so it
    says who stands behind it. It says exactly what happens: the app is signed
    with a Developer ID certificate Apple issued, and Apple notarizes it, which
-   is not the same as Apple signing it. No em dash. The workflow refuses notes
-   that are missing, hold an em dash or end with anything else. They become
+   is not the same as Apple signing it. The macOS version follows
+   `MACOSX_DEPLOYMENT_TARGET` in `project.yml`. No em dash. The workflow
+   refuses notes that are missing, hold an em dash or end with anything other
+   than that exact line. They become
    the GitHub release body and Sparkle's update window. Since 0.11.0 the notes
    live there, as in ClipShot and Eject Guard; `CHANGELOG.md` is history up to
    0.10.6 and is never edited by hand.
