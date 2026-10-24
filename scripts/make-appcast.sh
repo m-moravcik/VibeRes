@@ -46,8 +46,15 @@ fi
 
 VERSION="$(awk -F'"' '/MARKETING_VERSION:/ {print $2; exit}' project.yml)"
 BUILD="$(awk -F'"' '/CURRENT_PROJECT_VERSION:/ {print $2; exit}' project.yml)"
-MIN_OS="$(awk -F'"' '/MACOSX_DEPLOYMENT_TARGET:/ {print $2; exit}' project.yml)"
 [ -n "$VERSION" ] && [ -n "$BUILD" ] || die "could not read version numbers from project.yml"
+
+# The minimum macOS comes from the Info.plist inside the archive, which is what
+# ships, not from project.yml: there the app target's deploymentTarget overrides
+# the project-wide MACOSX_DEPLOYMENT_TARGET, so reading either one by hand can
+# disagree with the built app.
+MIN_OS="$(unzip -p "$ZIP" VibeRes.app/Contents/Info.plist 2>/dev/null \
+  | plutil -extract LSMinimumSystemVersion raw -o - - 2>/dev/null)" || MIN_OS=""
+[ -n "$MIN_OS" ] || die "could not read LSMinimumSystemVersion from VibeRes.app/Contents/Info.plist in $ZIP"
 
 # Sparkle compares sparkle:version, which is CFBundleVersion — the build number,
 # not the marketing version. Getting this wrong makes every client see "no
