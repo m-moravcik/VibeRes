@@ -62,6 +62,12 @@ enum Design {
         static let rowSelectedFill = Color.accentColor.opacity(0.12)
         static let rowSelectedTint = Color.accentColor
         static let separator = Color.secondary.opacity(0.15)
+        /// Secondary text whose digits roll (`rollingNumbers`). Rolling text is
+        /// drawn without the material's vibrancy while it rolls, and
+        /// `.secondary` then turns near black for about a second after every
+        /// mode change, recorded on macOS 26. The plain label colour reads the
+        /// same at rest and keeps it while rolling. Eject Guard hit it first.
+        static let rollingSecondary = Color(nsColor: .secondaryLabelColor)
         /// Behind a note that asks to be read: a warm wash for a warning (and
         /// the revert countdown), a red one for a failure, as Eject Guard and
         /// ClipShot draw their attention rows. The words on them stay in label

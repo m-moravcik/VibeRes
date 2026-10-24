@@ -37,7 +37,9 @@ extension View {
     }
 
     /// Digits that roll to their new value when `value` changes. Reduce
-    /// Motion: a crossfade.
+    /// Motion: a crossfade. Rolling text is drawn without the material's
+    /// vibrancy, so secondary text that rolls takes
+    /// `Design.Palette.rollingSecondary` rather than `.secondary`.
     func rollingNumbers(on value: some Equatable, reduceMotion: Bool) -> some View {
         contentTransition(reduceMotion ? .opacity : .numericText())
             .animation(reduceMotion ? Design.Motion.quick : Design.Motion.number, value: value)

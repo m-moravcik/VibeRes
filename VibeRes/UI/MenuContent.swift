@@ -258,7 +258,7 @@ private struct DisplayCard: View {
                     if let cur = display.currentMode {
                         Text(currentModeSubtitle(cur, isVRRTwin: display.isVRRTwin(cur)))
                             .font(Design.Typography.cardSubtitle)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Design.Palette.rollingSecondary)
                             .lineLimit(1)
                             .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                     }
@@ -464,6 +464,7 @@ struct DisplayDetailView: View {
                     HStack(spacing: 4) {
                         if let hz = cur.refreshHz {
                             Text("\(hz) Hz")
+                                .foregroundStyle(Design.Palette.rollingSecondary)
                                 .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                             if display.isVRRTwin(cur) {
                                 Text("VRR")
