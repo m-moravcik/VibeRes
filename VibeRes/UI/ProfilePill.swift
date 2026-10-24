@@ -42,7 +42,7 @@ struct ProfilePill: View {
                 if isCurrentlyFlexible {
                     Text("✱")
                         .font(Design.Typography.badge)
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Design.Palette.accentText)
                 }
             }
             .padding(.horizontal, 8)
@@ -50,8 +50,8 @@ struct ProfilePill: View {
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(isHovering
-                          ? Color.accentColor.opacity(0.25)
-                          : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18)))
+                          ? Color.accentColor.opacity(Design.Palette.pillHoverAccentOpacity)
+                          : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(Design.Palette.pillRestSecondaryOpacity)))
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
