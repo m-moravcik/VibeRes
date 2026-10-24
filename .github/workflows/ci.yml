@@ -170,6 +170,9 @@ jobs:
           # Smoke-test the parser by feeding garbage; we expect a non-zero exit and a
           # message on stderr. We never call `set` because that would mutate the
           # runner's display state.
-          ! "$BIN" set "Built-in" "garbage-spec" 2>/dev/null
+          if "$BIN" set "Built-in" "garbage-spec" 2>/dev/null; then
+            echo "viberes CLI accepted a garbage spec"
+            exit 1
+          fi
           echo "viberes CLI smoke OK"
         shell: bash
