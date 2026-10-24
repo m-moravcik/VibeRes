@@ -96,7 +96,7 @@ struct ProfileEditForm: View {
                     if !value.isBuiltIn, value.matcherKind == .anyExternal {
                         Text("✱ flex")
                             .font(Design.Typography.badge)
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(Design.Palette.accentText)
                     }
                     if !isMatcherConnected(value) {
                         Text("not connected")

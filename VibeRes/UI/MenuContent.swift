@@ -482,7 +482,7 @@ struct DisplayDetailView: View {
                 Text("CURRENT")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(0.6)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Design.Palette.accentText)
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(
                         Capsule().fill(Color.accentColor.opacity(0.15))
@@ -1117,7 +1117,7 @@ private struct CompactResolutionRow: View {
     private var sizeLabel: some View {
         Text("\(formatThousands(group.pointWidth)) × \(formatThousands(group.pointHeight))")
             .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
-            .foregroundStyle(isCurrentSize ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+            .foregroundStyle(isCurrentSize ? AnyShapeStyle(Design.Palette.accentText) : AnyShapeStyle(.primary))
             .frame(minWidth: 100, alignment: .leading)
             // Fades to the accent rather than cutting to it when this becomes
             // the current size; nothing moves.

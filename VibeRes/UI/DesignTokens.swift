@@ -61,6 +61,18 @@ enum Design {
         static let chipFill = Color.secondary.opacity(0.16)
         static let rowSelectedFill = Color.accentColor.opacity(0.12)
         static let rowSelectedTint = Color.accentColor
+        /// Words in the accent colour: the current size, its CURRENT badge and
+        /// the flexible-profile mark. The accent the user picked, shaded until
+        /// it reads; see `AccentText`. Resolved per appearance, and again when
+        /// the accent changes.
+        static let accentText = Color(nsColor: NSColor(name: nil) { appearance in
+            var accent = NSColor.controlAccentColor
+            appearance.performAsCurrentDrawingAppearance {
+                accent = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? accent
+            }
+            let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            return AccentText.color(for: accent, dark: dark)
+        })
         static let separator = Color.secondary.opacity(0.15)
         /// Secondary text whose digits roll (`rollingNumbers`). Rolling text is
         /// drawn without the material's vibrancy while it rolls, and

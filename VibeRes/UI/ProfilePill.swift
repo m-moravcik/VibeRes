@@ -42,7 +42,7 @@ struct ProfilePill: View {
                 if isCurrentlyFlexible {
                     Text("✱")
                         .font(Design.Typography.badge)
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Design.Palette.accentText)
                 }
             }
             .padding(.horizontal, 8)
