@@ -6,14 +6,15 @@ import AppKit
 /// CURRENT badge and 3.6:1 on the popover, light and dark, under the 4.5:1
 /// WCAG asks for. This keeps the hue the user picked and moves it towards
 /// black in light mode and towards white in dark mode, only as far as it takes
-/// to read on the CURRENT badge, the most tinted place accent words sit. A
-/// fixed shade would not do: darkened by a third, blue reads, yellow does not.
+/// to read on a hovered profile pill, the most tinted place accent words sit.
+/// A fixed shade would not do: darkened by a third, blue reads, yellow does
+/// not.
 enum AccentText {
     static let minimumContrast = 4.5
 
     static func color(for accent: NSColor, dark: Bool) -> NSColor {
         let accent = srgb(accent)
-        let background = badge(accent: accent, dark: dark)
+        let background = hoveredPill(accent: accent, dark: dark)
         let toward = dark ? NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)
                           : NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
         for step in 0...50 {
@@ -21,6 +22,12 @@ enum AccentText {
             if contrast(candidate, background) >= minimumContrast { return candidate }
         }
         return toward
+    }
+
+    /// A hovered profile pill: the accent at `pillHoverAccentOpacity` on the
+    /// popover.
+    static func hoveredPill(accent: NSColor, dark: Bool) -> NSColor {
+        mix(srgb(accent), CGFloat(Design.Palette.pillHoverAccentOpacity), over: popover(dark: dark))
     }
 
     /// The CURRENT badge: the accent at 15% on the current-mode card, which is

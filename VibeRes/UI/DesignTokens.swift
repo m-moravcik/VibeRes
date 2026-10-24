@@ -61,6 +61,9 @@ enum Design {
         static let chipFill = Color.secondary.opacity(0.16)
         static let rowSelectedFill = Color.accentColor.opacity(0.12)
         static let rowSelectedTint = Color.accentColor
+        /// The accent behind a hovered profile pill, the most tinted place
+        /// accent words sit. `AccentText` shades them to read on it.
+        static let pillHoverAccentOpacity = 0.25
         /// Words in the accent colour: the current size, its CURRENT badge and
         /// the flexible-profile mark. The accent the user picked, shaded until
         /// it reads; see `AccentText`. Resolved per appearance, and again when

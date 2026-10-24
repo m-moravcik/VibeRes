@@ -50,7 +50,7 @@ struct ProfilePill: View {
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(isHovering
-                          ? Color.accentColor.opacity(0.25)
+                          ? Color.accentColor.opacity(Design.Palette.pillHoverAccentOpacity)
                           : (isActive ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.18)))
             )
             .overlay {
