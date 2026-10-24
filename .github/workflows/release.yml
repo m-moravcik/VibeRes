@@ -125,13 +125,19 @@ jobs:
             echo "::error::$NOTES contains an em dash"
             exit 1
           fi
-          # The whole line, macOS version included, taken from the deployment
-          # target that LSMinimumSystemVersion is set from, as Eject Guard's
+          # The whole line, macOS version included, taken from the VibeRes
+          # target's deploymentTarget (the project-wide
+          # MACOSX_DEPLOYMENT_TARGET only when the target sets none), which is
+          # what its LSMinimumSystemVersion resolves to, as Eject Guard's
           # release.sh takes it from LSMinimumSystemVersion.
-          MIN_OS="$(sed -n 's/^ *MACOSX_DEPLOYMENT_TARGET: *"\([0-9.]*\)".*/\1/p' project.yml | head -n 1)"
+          MIN_OS="$(ruby -ryaml -e 'p = YAML.load_file("project.yml"); puts p.dig("targets", "VibeRes", "deploymentTarget") || p.dig("settings", "base", "MACOSX_DEPLOYMENT_TARGET")')"
+          if [ -z "$MIN_OS" ]; then
+            echo "::error::could not read the VibeRes deployment target from project.yml"
+            exit 1
+          fi
           APPLE_LINE="Signed with an Apple Developer ID and notarized by Apple. Requires macOS ${MIN_OS%.0}."
           LAST="$(grep -v '^[[:space:]]*$' "$NOTES" | tail -n 1 | sed 's/[[:space:]]*$//')"
-          if [ -z "$MIN_OS" ] || [ "$LAST" != "$APPLE_LINE" ]; then
+          if [ "$LAST" != "$APPLE_LINE" ]; then
             echo "::error::$NOTES must end with: $APPLE_LINE"
             exit 1
           fi
