@@ -12,24 +12,19 @@ import XCTest
 @MainActor
 final class OnboardingProfileStepTests: XCTestCase {
     private var app: XCUIApplication!
-    private var profileDirectory: URL!
-
     override func setUp() async throws {
         continueAfterFailure = false
-        // The app is not sandboxed and cannot write into the runner's container.
-        profileDirectory = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
-            .appendingPathComponent("VibeResUITests-onboarding-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: profileDirectory, withIntermediateDirectories: true)
         app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-VibeRes.OnboardingShown", "NO"]
-        app.launchEnvironment["VIBERES_PROFILE_DIR"] = profileDirectory.path
-        app.launch()
+        // The sandboxed runner cannot access /private/tmp, and the app cannot
+        // write into the runner's container. Let the app create its scratch
+        // directory; leave it in /private/tmp for the system to clear.
+        app.launchEnvironment["VIBERES_PROFILE_DIR"] = "/private/tmp/VibeResUITests-onboarding-\(UUID().uuidString)"
     }
 
     override func tearDown() async throws {
         app?.terminate()
         app = nil
-        if let profileDirectory { try? FileManager.default.removeItem(at: profileDirectory) }
     }
 
     func testSaveButtonSavesTheCurrentDisplaysAndTheTourShowsThePill() throws {
@@ -63,11 +58,9 @@ final class OnboardingProfileStepTests: XCTestCase {
     }
 
     func testFailedSaveShowsAnErrorWithoutAConfirmation() throws {
+        // The app cannot create a catalog on the read-only system volume.
+        app.launchEnvironment["VIBERES_PROFILE_DIR"] = "/System/VibeResUITests-unwritable-\(UUID().uuidString)"
         let popover = try openProfileStep()
-        // A directory in place of the catalog makes the app's atomic write fail.
-        try FileManager.default.createDirectory(
-            at: profileDirectory.appendingPathComponent("profiles.json"), withIntermediateDirectories: true
-        )
         popover.buttons["Save profile"].click()
 
         XCTAssertTrue(
@@ -81,6 +74,7 @@ final class OnboardingProfileStepTests: XCTestCase {
     // MARK: - Helpers
 
     private func openProfileStep() throws -> XCUIElement {
+        app.launch()
         let item = app.statusItems.firstMatch
         XCTAssertTrue(item.waitForExistence(timeout: 15), "the menu-bar item never appeared")
         try XCTSkipUnless(item.waitUntilHittable(timeout: 5), "a menu bar manager is hiding the Debug build's item")
@@ -95,6 +89,10 @@ final class OnboardingProfileStepTests: XCTestCase {
             "no name field on the profile step. Popover contains:\n\(popover.debugDescription)"
         )
         XCTAssertFalse(savedNote(in: popover).exists, "an unsaved profile must not announce success")
+        XCTAssertFalse(
+            staticText(in: popover, beginningWith: "Some monitors report the same identity.").exists,
+            "an unsaved profile must not announce an ambiguity warning"
+        )
         return popover
     }
 

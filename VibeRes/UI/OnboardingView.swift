@@ -172,18 +172,24 @@ private struct FirstProfileSaver: View {
         // not change the step's height either.
         VStack(spacing: 6) {
             saveSlot
-            Text(String(localized: "onboarding.save.ambiguous"))
-                .font(Design.Typography.note)
-                .foregroundStyle(.orange)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .opacity(hasAmbiguousDisplays ? 1 : 0)
-                .accessibilityHidden(!hasAmbiguousDisplays)
+            if hasAmbiguousDisplays {
+                ambiguityWarning
+            } else {
+                ambiguityWarning.hidden()
+            }
         }
         .animation(.easeInOut(duration: 0.18), value: savedName)
         .onAppear {
             if name.isEmpty { name = suggestedName }
         }
+    }
+
+    private var ambiguityWarning: some View {
+        Text(String(localized: "onboarding.save.ambiguous"))
+            .font(Design.Typography.note)
+            .foregroundStyle(.orange)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var saveSlot: some View {
