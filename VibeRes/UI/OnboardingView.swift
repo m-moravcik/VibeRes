@@ -190,17 +190,11 @@ private struct FirstProfileSaver: View {
         ZStack {
             // Laid out before saving too, with the name as typed, so the slot
             // is already tall enough for the confirmation's two lines.
-            Label(
-                String(format: String(localized: "onboarding.save.done"), savedName ?? canonicalName),
-                systemImage: "checkmark.circle.fill"
-            )
-            .font(Design.Typography.note)
-            .foregroundStyle(.secondary)
-            .symbolRenderingMode(.multicolor)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .opacity(savedName == nil ? 0 : 1)
-            .accessibilityHidden(savedName == nil)
+            if let savedName {
+                confirmation(savedName)
+            } else {
+                confirmation(canonicalName).hidden()
+            }
             VStack(spacing: 6) {
                 HStack(spacing: 6) {
                     TextField(String(localized: "onboarding.save.field"), text: $name)
@@ -225,6 +219,18 @@ private struct FirstProfileSaver: View {
             .disabled(savedName != nil)
             .accessibilityHidden(savedName != nil)
         }
+    }
+
+    private func confirmation(_ name: String) -> some View {
+        Label(
+            String(format: String(localized: "onboarding.save.done"), name),
+            systemImage: "checkmark.circle.fill"
+        )
+        .font(Design.Typography.note)
+        .foregroundStyle(.secondary)
+        .symbolRenderingMode(.multicolor)
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var canonicalName: String {

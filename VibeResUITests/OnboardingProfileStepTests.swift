@@ -16,8 +16,10 @@ final class OnboardingProfileStepTests: XCTestCase {
 
     override func setUp() async throws {
         continueAfterFailure = false
-        profileDirectory = FileManager.default.temporaryDirectory
+        // The app is not sandboxed and cannot write into the runner's container.
+        profileDirectory = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
             .appendingPathComponent("VibeResUITests-onboarding-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: profileDirectory, withIntermediateDirectories: true)
         app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-VibeRes.OnboardingShown", "NO"]
         app.launchEnvironment["VIBERES_PROFILE_DIR"] = profileDirectory.path
@@ -42,17 +44,7 @@ final class OnboardingProfileStepTests: XCTestCase {
             "no confirmation after Save. Popover contains:\n\(popover.debugDescription)"
         )
 
-        popover.buttons["Next"].click()
-        // Clicked at once, like a person double-stepping through the tour:
-        // the tour keeps one height on every step so Done is where Next was.
-        popover.buttons["Done"].click()
-        XCTAssertTrue(popover.exists, "finishing the tour closed the popover")
-        XCTAssertTrue(
-            // The pill's label also carries its icon ("Selected" when active).
-            popover.buttons.matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
-                .waitForExistence(timeout: 5),
-            "the saved profile's pill is not on the root view. Popover contains:\n\(popover.debugDescription)"
-        )
+        finishTourAndAssertProfilePill(name, in: popover)
     }
 
     func testReturnInTheNameFieldSavesAndStaysOnTheStep() throws {
@@ -67,6 +59,23 @@ final class OnboardingProfileStepTests: XCTestCase {
             "Return in the name field did not save. Popover contains:\n\(popover.debugDescription)"
         )
         XCTAssertTrue(staticText(in: popover, beginningWith: "Step 2 of 3").exists, "Return also advanced the tour")
+        finishTourAndAssertProfilePill("Desk", in: popover)
+    }
+
+    func testFailedSaveShowsAnErrorWithoutAConfirmation() throws {
+        let popover = try openProfileStep()
+        // A directory in place of the catalog makes the app's atomic write fail.
+        try FileManager.default.createDirectory(
+            at: profileDirectory.appendingPathComponent("profiles.json"), withIntermediateDirectories: true
+        )
+        popover.buttons["Save profile"].click()
+
+        XCTAssertTrue(
+            staticText(in: popover, beginningWith: "The profile could not be saved.").waitForExistence(timeout: 5),
+            "no inline error after the catalog write failed"
+        )
+        XCTAssertFalse(savedNote(in: popover).exists, "a failed save must not announce success")
+        XCTAssertTrue(popover.textFields.firstMatch.isEnabled, "a failed save must allow retry")
     }
 
     // MARK: - Helpers
@@ -85,7 +94,22 @@ final class OnboardingProfileStepTests: XCTestCase {
             popover.textFields.firstMatch.waitForExistence(timeout: 5),
             "no name field on the profile step. Popover contains:\n\(popover.debugDescription)"
         )
+        XCTAssertFalse(savedNote(in: popover).exists, "an unsaved profile must not announce success")
         return popover
+    }
+
+    private func finishTourAndAssertProfilePill(_ name: String, in popover: XCUIElement) {
+        popover.buttons["Next"].click()
+        // Clicked at once, like a person double-stepping through the tour:
+        // the tour keeps one height on every step so Done is where Next was.
+        popover.buttons["Done"].click()
+        XCTAssertTrue(popover.exists, "finishing the tour closed the popover")
+        XCTAssertTrue(
+            // The pill's label also carries its icon ("Selected" when active).
+            popover.buttons.matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
+                .waitForExistence(timeout: 5),
+            "the saved profile's pill is not on the root view. Popover contains:\n\(popover.debugDescription)"
+        )
     }
 
     private func savedNote(in popover: XCUIElement) -> XCUIElement {
