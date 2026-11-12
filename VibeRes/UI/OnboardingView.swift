@@ -39,17 +39,21 @@ struct OnboardingView: View {
             .padding(.horizontal, 14)
             .padding(.top, 12)
 
-            // Step content — animated cross-fade between steps. We swap the
-            // identity via .id(step) so SwiftUI runs the transition cleanly.
-            Group {
-                switch step {
-                case 0: stepWelcome
-                case 1: stepProfiles
-                default: stepSimple
+            // Every step is laid out at once and only the current one shows,
+            // so the popover is as tall as the tallest step on every step.
+            // Swapping one step for another resized the popover, which moved
+            // Next/Done out from under the pointer: a quick second click then
+            // landed outside the popover and closed it.
+            ZStack(alignment: .top) {
+                ForEach(0..<Self.totalSteps, id: \.self) { index in
+                    stepContent(index)
+                        .opacity(index == step ? 1 : 0)
+                        .offset(x: index == step ? 0 : (index > step ? 16 : -16))
+                        .allowsHitTesting(index == step)
+                        .disabled(index != step)
+                        .accessibilityHidden(index != step)
                 }
             }
-            .id(step)
-            .transition(.opacity.combined(with: .move(edge: .trailing)))
             .padding(.horizontal, 18)
             .padding(.top, 8)
             .padding(.bottom, 12)
@@ -97,6 +101,15 @@ struct OnboardingView: View {
     }
 
     // MARK: - Steps
+
+    @ViewBuilder
+    private func stepContent(_ index: Int) -> some View {
+        switch index {
+        case 0: stepWelcome
+        case 1: stepProfiles
+        default: stepSimple
+        }
+    }
 
     @ViewBuilder
     private var stepWelcome: some View {
@@ -154,19 +167,23 @@ private struct FirstProfileSaver: View {
     @State private var problem: String?
 
     var body: some View {
-        Group {
-            if let savedName {
-                Label(
-                    String(format: String(localized: "onboarding.save.done"), savedName),
-                    systemImage: "checkmark.circle.fill"
-                )
-                .font(Design.Typography.note)
-                .foregroundStyle(.secondary)
-                .symbolRenderingMode(.multicolor)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .transition(.opacity)
-            } else if !displays.displays.isEmpty {
+        // The field row and the confirmation share one slot, so saving does
+        // not change the step's height either.
+        ZStack {
+            // Laid out before saving too, with the name as typed, so the slot
+            // is already tall enough for the confirmation's two lines.
+            Label(
+                String(format: String(localized: "onboarding.save.done"), savedName ?? trimmedName),
+                systemImage: "checkmark.circle.fill"
+            )
+            .font(Design.Typography.note)
+            .foregroundStyle(.secondary)
+            .symbolRenderingMode(.multicolor)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .opacity(savedName == nil ? 0 : 1)
+            .accessibilityHidden(savedName == nil)
+            if !displays.displays.isEmpty {
                 VStack(spacing: 6) {
                     HStack(spacing: 6) {
                         TextField(String(localized: "onboarding.save.field"), text: $name)
@@ -186,6 +203,10 @@ private struct FirstProfileSaver: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .opacity(savedName == nil ? 1 : 0)
+                .allowsHitTesting(savedName == nil)
+                .disabled(savedName != nil)
+                .accessibilityHidden(savedName != nil)
             }
         }
         .animation(.easeInOut(duration: 0.18), value: savedName)

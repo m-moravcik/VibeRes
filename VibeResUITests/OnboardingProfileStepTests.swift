@@ -43,9 +43,14 @@ final class OnboardingProfileStepTests: XCTestCase {
         )
 
         popover.buttons["Next"].click()
+        // Clicked at once, like a person double-stepping through the tour:
+        // the tour keeps one height on every step so Done is where Next was.
         popover.buttons["Done"].click()
+        XCTAssertTrue(popover.exists, "finishing the tour closed the popover")
         XCTAssertTrue(
-            popover.buttons[name].waitForExistence(timeout: 5),
+            // The pill's label also carries its icon ("Selected" when active).
+            popover.buttons.matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
+                .waitForExistence(timeout: 5),
             "the saved profile's pill is not on the root view. Popover contains:\n\(popover.debugDescription)"
         )
     }
@@ -61,7 +66,7 @@ final class OnboardingProfileStepTests: XCTestCase {
             savedNote(in: popover).waitForExistence(timeout: 5),
             "Return in the name field did not save. Popover contains:\n\(popover.debugDescription)"
         )
-        XCTAssertTrue(popover.staticTexts["Step 2 of 3"].exists, "Return also advanced the tour")
+        XCTAssertTrue(staticText(in: popover, beginningWith: "Step 2 of 3").exists, "Return also advanced the tour")
     }
 
     // MARK: - Helpers
@@ -69,7 +74,7 @@ final class OnboardingProfileStepTests: XCTestCase {
     private func openProfileStep() throws -> XCUIElement {
         let item = app.statusItems.firstMatch
         XCTAssertTrue(item.waitForExistence(timeout: 15), "the menu-bar item never appeared")
-        try XCTSkipUnless(item.isHittable, "a menu bar manager is hiding the Debug build's item")
+        try XCTSkipUnless(item.waitUntilHittable(timeout: 5), "a menu bar manager is hiding the Debug build's item")
         item.click()
 
         let popover = app.dialogs.firstMatch
@@ -84,6 +89,12 @@ final class OnboardingProfileStepTests: XCTestCase {
     }
 
     private func savedNote(in popover: XCUIElement) -> XCUIElement {
-        popover.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Saved as")).firstMatch
+        staticText(in: popover, beginningWith: "Saved as")
+    }
+
+    /// SwiftUI text on macOS reaches accessibility as a static text whose
+    /// *value* carries the string; its label is empty.
+    private func staticText(in popover: XCUIElement, beginningWith prefix: String) -> XCUIElement {
+        popover.staticTexts.matching(NSPredicate(format: "value BEGINSWITH %@", prefix)).firstMatch
     }
 }
