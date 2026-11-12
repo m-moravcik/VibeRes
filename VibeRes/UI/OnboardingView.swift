@@ -165,15 +165,33 @@ private struct FirstProfileSaver: View {
     /// The name the profile was saved under, once it was.
     @State private var savedName: String?
     @State private var problem: String?
+    @State private var hasAmbiguousDisplays = false
 
     var body: some View {
         // The field row and the confirmation share one slot, so saving does
         // not change the step's height either.
+        VStack(spacing: 6) {
+            saveSlot
+            Text(String(localized: "onboarding.save.ambiguous"))
+                .font(Design.Typography.note)
+                .foregroundStyle(.orange)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .opacity(hasAmbiguousDisplays ? 1 : 0)
+                .accessibilityHidden(!hasAmbiguousDisplays)
+        }
+        .animation(.easeInOut(duration: 0.18), value: savedName)
+        .onAppear {
+            if name.isEmpty { name = suggestedName }
+        }
+    }
+
+    private var saveSlot: some View {
         ZStack {
             // Laid out before saving too, with the name as typed, so the slot
             // is already tall enough for the confirmation's two lines.
             Label(
-                String(format: String(localized: "onboarding.save.done"), savedName ?? trimmedName),
+                String(format: String(localized: "onboarding.save.done"), savedName ?? canonicalName),
                 systemImage: "checkmark.circle.fill"
             )
             .font(Design.Typography.note)
@@ -183,41 +201,34 @@ private struct FirstProfileSaver: View {
             .fixedSize(horizontal: false, vertical: true)
             .opacity(savedName == nil ? 0 : 1)
             .accessibilityHidden(savedName == nil)
-            if !displays.displays.isEmpty {
-                VStack(spacing: 6) {
-                    HStack(spacing: 6) {
-                        TextField(String(localized: "onboarding.save.field"), text: $name)
-                            .textFieldStyle(.roundedBorder)
-                            .controlSize(.small)
-                            .onSubmit(save)
-                            .onChange(of: name) { problem = nil }
-                        Button(String(localized: "onboarding.save.button"), action: save)
-                            .controlSize(.small)
-                            .buttonStyle(.bordered)
-                            .disabled(trimmedName.isEmpty)
-                    }
-                    if let problem {
-                        Text(problem)
-                            .font(Design.Typography.note)
-                            .foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            VStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    TextField(String(localized: "onboarding.save.field"), text: $name)
+                        .textFieldStyle(.roundedBorder)
+                        .controlSize(.small)
+                        .onSubmit(save)
+                        .onChange(of: name) { problem = nil }
+                    Button(String(localized: "onboarding.save.button"), action: save)
+                        .controlSize(.small)
+                        .buttonStyle(.bordered)
+                        .disabled(canonicalName.isEmpty)
                 }
-                .opacity(savedName == nil ? 1 : 0)
-                .allowsHitTesting(savedName == nil)
-                .disabled(savedName != nil)
-                .accessibilityHidden(savedName != nil)
+                if let problem {
+                    Text(problem)
+                        .font(Design.Typography.note)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-        }
-        .animation(.easeInOut(duration: 0.18), value: savedName)
-        .onAppear {
-            // Replaying the tour must not offer a name that is already taken.
-            if name.isEmpty { name = suggestedName }
+            .opacity(savedName == nil ? 1 : 0)
+            .allowsHitTesting(savedName == nil)
+            .disabled(savedName != nil)
+            .accessibilityHidden(savedName != nil)
         }
     }
 
-    private var trimmedName: String {
-        name.trimmingCharacters(in: .whitespaces)
+    private var canonicalName: String {
+        ProfileStore.sanitised(name)
     }
 
     private var suggestedName: String {
@@ -228,14 +239,17 @@ private struct FirstProfileSaver: View {
     }
 
     private func save() {
-        guard !trimmedName.isEmpty else { return }
-        switch profiles.captureWholeSetup(name: trimmedName, displays: displays.displays) {
+        guard !canonicalName.isEmpty else { return }
+        switch profiles.captureWholeSetup(name: canonicalName, displays: displays.displays) {
         case .saved, .savedWithMissingDisplays:
-            savedName = trimmedName
+            savedName = canonicalName
+            hasAmbiguousDisplays = !DisplayIdentity.ambiguous(
+                displays.displays.filter { $0.currentMode != nil }.map { DisplayIdentity.capture($0.id) }
+            ).isEmpty
             problem = nil
         case .rejectedDuplicateName:
             problem = String(localized: "onboarding.save.duplicate")
-        case .rejectedEmpty, .rejectedEmptyName, .rejectedNotFound, .rejectedMultipleAnyExternal:
+        case .failedToSave, .rejectedEmpty, .rejectedEmptyName, .rejectedNotFound, .rejectedMultipleAnyExternal:
             problem = String(localized: "onboarding.save.failed")
         }
     }

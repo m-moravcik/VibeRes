@@ -55,4 +55,49 @@ struct WholeSetupCaptureTests {
         #expect(store.captureWholeSetup(name: "desk", displays: [info(101)]) == .rejectedDuplicateName("desk"))
         #expect(store.profiles.count == 1)
     }
+
+    @Test("A failed write leaves no phantom profile and permits retry")
+    func failedCaptureCanRetry() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("VibeResTests-write-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let catalog = dir.appendingPathComponent("profiles.json")
+        try FileManager.default.createDirectory(at: catalog, withIntermediateDirectories: true)
+        let store = ProfileStore(directory: dir)
+        let displays = [info(101)]
+        _ = try #require(displays.first?.currentMode)
+
+        #expect(store.captureWholeSetup(name: "Desk", displays: displays) == .failedToSave)
+        #expect(store.lastError == .profilesNotSaved)
+        #expect(store.profiles.isEmpty)
+
+        try FileManager.default.moveItem(at: catalog, to: dir.appendingPathComponent("blocked"))
+        #expect(store.captureWholeSetup(name: "Desk", displays: displays) == .saved)
+        #expect(store.lastError == nil)
+        #expect(ProfileStore(directory: dir).profiles.map(\.name) == ["Desk"])
+    }
+
+    @Test("The captured name is canonical on disk and in memory")
+    func canonicalName() throws {
+        let store = makeStore()
+        let displays = [info(101)]
+        _ = try #require(displays.first?.currentMode)
+        let expected = String(repeating: "A", count: 128)
+        #expect(store.captureWholeSetup(name: " \u{0}\(expected)Z\n", displays: displays) == .saved)
+        #expect(store.profiles.first?.name == expected)
+        store.load()
+        #expect(store.profiles.first?.name == expected)
+    }
+
+    @Test("Canonicalising before capture preserves the confirmed name")
+    func canonicalNameRemainsStable() throws {
+        let store = makeStore()
+        let displays = [info(101)]
+        _ = try #require(displays.first?.currentMode)
+        let expected = String(repeating: "A", count: 127)
+        let canonical = ProfileStore.sanitised(expected + " Z")
+        #expect(canonical == expected)
+        #expect(store.captureWholeSetup(name: canonical, displays: displays) == .saved)
+        #expect(store.profiles.first?.name == canonical)
+    }
 }
