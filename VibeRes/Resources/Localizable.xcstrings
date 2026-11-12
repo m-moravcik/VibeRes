@@ -7846,6 +7846,216 @@
         }
       }
     },
+    "onboarding.save.button": {
+      "comment": "Onboarding profile step: saves every connected display as a profile",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložit profil"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil speichern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save profile"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar perfil"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer le profil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložiť profil"
+          }
+        }
+      }
+    },
+    "onboarding.save.done": {
+      "comment": "Onboarding profile step: confirmation after saving. %@ is the profile name",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloženo jako „%@“. Najdeš ho nahoře v nabídce."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeichert als „%@“. Du findest es oben im Menü."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved as “%@”. You’ll find it at the top of the menu."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado como “%@”. Lo encontrarás arriba en el menú."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré sous « %@ ». Vous le trouverez en haut du menu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložené ako „%@“. Nájdeš ho hore v menu."
+          }
+        }
+      }
+    },
+    "onboarding.save.duplicate": {
+      "comment": "Onboarding profile step: the typed name is already used by another profile",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil s tímto názvem už existuje. Zvol jiný název."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Profil mit diesem Namen gibt es schon. Wähle einen anderen Namen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A profile with this name already exists. Pick another name."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya existe un perfil con este nombre. Elige otro nombre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un profil porte déjà ce nom. Choisissez-en un autre."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil s týmto názvom už existuje. Zvoľ iný názov."
+          }
+        }
+      }
+    },
+    "onboarding.save.failed": {
+      "comment": "Onboarding profile step: saving failed for any other reason",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil se nepodařilo uložit. Uložit ho můžeš později z nabídky."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Profil konnte nicht gespeichert werden. Du kannst es später im Menü speichern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The profile could not be saved. You can save one later from the menu."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar el perfil. Puedes guardarlo más tarde desde el menú."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’enregistrer le profil. Vous pourrez l’enregistrer plus tard depuis le menu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil sa nepodarilo uložiť. Uložiť ho môžeš neskôr z menu."
+          }
+        }
+      }
+    },
+    "onboarding.save.field": {
+      "comment": "Onboarding profile step: placeholder of the profile name field",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Název profilu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profilname"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile name"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre del perfil"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du profil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Názov profilu"
+          }
+        }
+      }
+    },
     "onboarding.simple.body": {
       "comment": "Onboarding step 3 body",
       "extractionState": "manual",

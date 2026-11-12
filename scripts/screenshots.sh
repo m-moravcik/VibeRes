@@ -6,6 +6,7 @@
 #   scripts/screenshots.sh sk     # Slovak, for the web.pexelo portfolio
 #
 # Writes root, detail, save, revert, notes (the outcome note's three tones),
+# onboarding-profile (the welcome tour's profile step),
 # hero (popover under the menu bar) and banner (1920x1080) in -light and -dark,
 # plus icon.png. The displays are this Mac's; the profiles are invented. Copy
 # what you need into docs/screenshots.

@@ -417,6 +417,19 @@ final class ProfileStore {
         }
     }
 
+    /// Saves every connected display, as it is now, under `name`: the one-click
+    /// "save what you have" the welcome tour offers. Each display is bound to
+    /// that exact monitor and main is left alone, which is what the full form
+    /// produces when the user changes nothing in it.
+    @discardableResult
+    func captureWholeSetup(name: String, displays: [DisplayInfo]) -> SaveResult {
+        captureCurrent(
+            name: name,
+            displays: displays,
+            selection: Dictionary(uniqueKeysWithValues: displays.map { ($0.id, .specific) })
+        )
+    }
+
     /// Captures the current state of selected displays as a new profile.
     /// `selection` decides which physical displays to include and how to bind
     /// each entry — by EDID (specific) or by role (any external).

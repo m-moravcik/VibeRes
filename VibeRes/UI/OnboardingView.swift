@@ -8,9 +8,14 @@ import SwiftUI
 /// the tour does not re-appear; it can be replayed from Settings → General.
 struct OnboardingView: View {
     @Environment(Preferences.self) private var preferences
-    @State private var step: Int = 0
+    @State private var step: Int
 
     private static let totalSteps = 3
+
+    /// `step` lets the screenshot harness open the tour past its first card.
+    init(step: Int = 0) {
+        _step = State(initialValue: step)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -103,13 +108,19 @@ struct OnboardingView: View {
         )
     }
 
+    /// Explains profiles and offers to save the current displays as the first
+    /// one right here, so the tour ends with something the user made rather
+    /// than three cards they read.
     @ViewBuilder
     private var stepProfiles: some View {
-        StepCard(
-            symbol: "rectangle.stack.fill",
-            title: String(localized: "onboarding.profiles.title"),
-            bodyText: String(localized: "onboarding.profiles.body")
-        )
+        VStack(spacing: 12) {
+            StepCard(
+                symbol: "rectangle.stack.fill",
+                title: String(localized: "onboarding.profiles.title"),
+                bodyText: String(localized: "onboarding.profiles.body")
+            )
+            FirstProfileSaver()
+        }
     }
 
     @ViewBuilder
@@ -123,6 +134,89 @@ struct OnboardingView: View {
 
     private func finish() {
         preferences.onboardingShown = true
+    }
+}
+
+/// Name field and Save button for the tour's profile step. Saves every
+/// connected display as it is now, with no form: anything finer (leaving a
+/// display out, "any external", which one is main) belongs to the full Save
+/// form in the popover, which the user meets next.
+///
+/// Saving is explicit. Next moves on without saving, because a profile the
+/// user did not ask for would be a pill they have to work out how to delete.
+private struct FirstProfileSaver: View {
+    @Environment(ProfileStore.self) private var profiles
+    @Environment(DisplayStore.self) private var displays
+
+    @State private var name = ""
+    /// The name the profile was saved under, once it was.
+    @State private var savedName: String?
+    @State private var problem: String?
+
+    var body: some View {
+        Group {
+            if let savedName {
+                Label(
+                    String(format: String(localized: "onboarding.save.done"), savedName),
+                    systemImage: "checkmark.circle.fill"
+                )
+                .font(Design.Typography.note)
+                .foregroundStyle(.secondary)
+                .symbolRenderingMode(.multicolor)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .transition(.opacity)
+            } else if !displays.displays.isEmpty {
+                VStack(spacing: 6) {
+                    HStack(spacing: 6) {
+                        TextField(String(localized: "onboarding.save.field"), text: $name)
+                            .textFieldStyle(.roundedBorder)
+                            .controlSize(.small)
+                            .onSubmit(save)
+                            .onChange(of: name) { problem = nil }
+                        Button(String(localized: "onboarding.save.button"), action: save)
+                            .controlSize(.small)
+                            .buttonStyle(.bordered)
+                            .disabled(trimmedName.isEmpty)
+                    }
+                    if let problem {
+                        Text(problem)
+                            .font(Design.Typography.note)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: savedName)
+        .onAppear {
+            // Replaying the tour must not offer a name that is already taken.
+            if name.isEmpty { name = suggestedName }
+        }
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespaces)
+    }
+
+    private var suggestedName: String {
+        Profile.suggestedName(
+            displayNames: displays.displays.map(\.name),
+            existingNames: Set(profiles.profiles.map(\.name))
+        )
+    }
+
+    private func save() {
+        guard !trimmedName.isEmpty else { return }
+        switch profiles.captureWholeSetup(name: trimmedName, displays: displays.displays) {
+        case .saved, .savedWithMissingDisplays:
+            savedName = trimmedName
+            problem = nil
+        case .rejectedDuplicateName:
+            problem = String(localized: "onboarding.save.duplicate")
+        case .rejectedEmpty, .rejectedEmptyName, .rejectedNotFound, .rejectedMultipleAnyExternal:
+            problem = String(localized: "onboarding.save.failed")
+        }
     }
 }
 
