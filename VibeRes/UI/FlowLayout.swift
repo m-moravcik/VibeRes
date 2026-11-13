@@ -33,7 +33,9 @@ struct FlowLayout: Layout {
             var x = bounds.minX
             let lineHeight = cache.lineHeights[rowIndex]
             for index in row {
-                let size = subviews[index].sizeThatFits(.unspecified)
+                let size = subviews[index].sizeThatFits(
+                    ProposedViewSize(width: bounds.width, height: nil)
+                )
                 subviews[index].place(
                     at: CGPoint(x: x, y: y),
                     anchor: .topLeading,
@@ -57,7 +59,11 @@ struct FlowLayout: Layout {
         var maxWidthSeen: CGFloat = 0
 
         for (i, subview) in subviews.enumerated() {
-            let size = subview.sizeThatFits(.unspecified)
+            // An individual pill can be wider than the whole row. Propose
+            // the row's width so its one-line name can truncate to fit.
+            let size = subview.sizeThatFits(
+                ProposedViewSize(width: width.isFinite ? width : nil, height: nil)
+            )
             let needed = currentRow.isEmpty ? size.width : currentRowWidth + spacing + size.width
 
             if !currentRow.isEmpty && needed > width {

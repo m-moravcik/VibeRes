@@ -127,9 +127,9 @@ final class ProfileStore {
         return "\(ns.domain) \(ns.code)"
     }
 
-    func save() {
+    private func save(_ catalog: [Profile]) -> SaveResult {
         do {
-            let data = try JSONEncoder().encode(profiles)
+            let data = try JSONEncoder().encode(catalog)
             try data.write(to: storeURL, options: [.atomic])
             // Restrict to owner read/write only — profiles contain EDID identifiers
             // and resolution preferences which other users on the machine
@@ -138,11 +138,14 @@ final class ProfileStore {
                 [.posixPermissions: 0o600],
                 ofItemAtPath: storeURL.path
             )
+            profiles = catalog
             lastError = nil
             Log.profiles.debug("save: \(profiles.count) profile(s)")
+            return .saved
         } catch {
             Log.profiles.error("save: profiles could not be written (\(Self.errorCode(error)))")
             lastError = .profilesNotSaved
+            return .failedToSave
         }
     }
 
@@ -158,10 +161,7 @@ final class ProfileStore {
         guard case .saved = nameVerdict(for: p.name, excluding: p.id) else {
             return nameVerdict(for: p.name, excluding: p.id)
         }
-        profiles.append(p)
-        Log.profiles.info("add: now \(profiles.count) profile(s)")
-        save()
-        return .saved
+        return save(profiles + [p])
     }
 
     @discardableResult
@@ -172,9 +172,9 @@ final class ProfileStore {
         guard case .saved = nameVerdict(for: p.name, excluding: p.id) else {
             return nameVerdict(for: p.name, excluding: p.id)
         }
-        profiles[i] = p
-        save()
-        return .saved
+        var catalog = profiles
+        catalog[i] = p
+        return save(catalog)
     }
 
     /// The refusal a name would earn, or `.saved` when it is acceptable.
@@ -238,13 +238,12 @@ final class ProfileStore {
             !CharacterSet.controlCharacters.contains(scalar) && scalar != "\0"
         }.map(Character.init)
         let trimmed = String(stripped).trimmingCharacters(in: .whitespacesAndNewlines)
-        return String(trimmed.prefix(128))
+        return String(trimmed.prefix(128)).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    func delete(_ profile: Profile) {
-        profiles.removeAll { $0.id == profile.id }
-        Log.profiles.info("delete: now \(profiles.count) profile(s)")
-        save()
+    @discardableResult
+    func delete(_ profile: Profile) -> SaveResult {
+        save(profiles.filter { $0.id != profile.id })
     }
 
     /// Refreshes a profile's recorded resolution+refresh+HiDPI for each entry from
@@ -271,8 +270,9 @@ final class ProfileStore {
                 isVariableRefresh: info.isVariable(mode)
             )
         }
-        profiles[i] = updated
-        save()
+        var catalog = profiles
+        catalog[i] = updated
+        guard save(catalog) == .saved else { return nil }
         return updated
     }
 
@@ -285,6 +285,7 @@ final class ProfileStore {
         case madeFlexible
         case madeSpecific
         case blockedNoExternal
+        case failedToSave
     }
 
     /// Toggles each external entry between .edid (specific) and .anyExternal
@@ -332,8 +333,9 @@ final class ProfileStore {
                 return entry
             }
         }
-        profiles[i] = updated
-        save()
+        var catalog = profiles
+        catalog[i] = updated
+        guard save(catalog) == .saved else { return .failedToSave }
         return isCurrentlyFlexible ? .madeSpecific : .madeFlexible
     }
 
@@ -342,6 +344,7 @@ final class ProfileStore {
     /// describe whether the save itself was accepted.
     enum SaveResult: Equatable {
         case saved
+        case failedToSave
         /// Saved, but displays the user had selected were gone by the time Save
         /// was pressed. A distinct case rather than a payload on `.saved`
         /// because Swift lets `case .saved:` match a case *with* a payload, so
@@ -397,9 +400,9 @@ final class ProfileStore {
         guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedNotFound }
         var updated = profiles[i]
         updated.entries = newEntries
-        profiles[i] = updated
-        save()
-        return .saved
+        var catalog = profiles
+        catalog[i] = updated
+        return save(catalog)
     }
 
     /// How a live display gets bound: by role (any external) or by identity —
@@ -415,6 +418,19 @@ final class ProfileStore {
                 ? .builtIn(vendor: identity.vendor, model: identity.model, serial: identity.serial)
                 : .edid(vendor: identity.vendor, model: identity.model, serial: identity.serial)
         }
+    }
+
+    /// Saves every connected display, as it is now, under `name`: the one-click
+    /// "save what you have" the welcome tour offers. Each display is bound to
+    /// that exact monitor and main is left alone, which is what the full form
+    /// produces when the user changes nothing in it.
+    @discardableResult
+    func captureWholeSetup(name: String, displays: [DisplayInfo]) -> SaveResult {
+        captureCurrent(
+            name: name,
+            displays: displays,
+            selection: Dictionary(uniqueKeysWithValues: displays.map { ($0.id, .specific) })
+        )
     }
 
     /// Captures the current state of selected displays as a new profile.

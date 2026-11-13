@@ -322,7 +322,8 @@ room to negotiate.
 - Launch at login via `SMAppService`, with the user's *intent* stored
   separately so a registration invalidated by an update or a move is
   re-registered rather than silently forgotten.
-- A three-step welcome tour on first launch, replayable from Settings.
+- A three-step welcome tour on first launch, replayable from Settings. Its
+  profile step offers the [first-profile workflow](README.md#profiles).
 - Settings in a standard `⌘,` scene: General, Display, Updates, Debug.
 - `⌘1`…`⌘9` apply the first nine profiles while the popover has focus.
 

@@ -300,7 +300,7 @@ struct ProfilesSection: View {
                     } onRename: {
                         mode = .renaming(profileID: profile.id, newName: profile.name)
                     } onUpdateCurrent: {
-                        _ = profiles.updateFromCurrent(profile, displays: displays.displays)
+                        guard profiles.updateFromCurrent(profile, displays: displays.displays) != nil else { return }
                         announce("Updated '\(profile.name)' with current setup", tone: .info)
                     } onToggleFlexible: {
                         let result = profiles.toggleFlexible(profile, displays: displays.displays)
@@ -309,6 +309,8 @@ struct ProfilesSection: View {
                             announce("'\(profile.name)' now matches any external monitor", tone: .info)
                         case .madeSpecific:
                             announce("'\(profile.name)' is locked to current monitors", tone: .info)
+                        case .failedToSave:
+                            return
                         case .blockedNoExternal:
                             announce("Connect the external monitor first to lock '\(profile.name)' to it.", tone: .problem)
                         }
@@ -494,7 +496,7 @@ struct ProfilesSection: View {
                 profileName: name,
                 delete: {
                     if let profile = profiles.profiles.first(where: { $0.id == id }) {
-                        profiles.delete(profile)
+                        guard profiles.delete(profile) == .saved else { return }
                         announce("Deleted '\(name)'", tone: .info)
                     }
                     mode = .idle
@@ -747,6 +749,8 @@ struct ProfilesSection: View {
                 announce("Could not update the profile — it no longer exists.", tone: .problem)
                 mode = .idle
             }
+        case .failedToSave:
+            return
         case .rejectedMultipleAnyExternal:
             announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
         case .rejectedEmpty:
@@ -802,6 +806,8 @@ struct ProfilesSection: View {
                 "Saved, but \(count) selected display(s) were disconnected before saving and are not in the profile.",
                 tone: .fallback
             )
+        case .failedToSave:
+            return
         case .rejectedMultipleAnyExternal:
             announce("Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.", tone: .problem)
         case .rejectedEmpty:
@@ -887,6 +893,8 @@ struct ProfilesSection: View {
         case .rejectedDuplicateName(let name):
             // Keep the user in the rename field — the fix is one keystroke away.
             announce("A profile named '\(name)' already exists. Pick another name.", tone: .problem)
+        case .failedToSave:
+            return
         case .rejectedEmptyName, .rejectedEmpty, .rejectedMultipleAnyExternal, .rejectedNotFound:
             announce("Could not rename the profile.", tone: .problem)
             mode = .idle

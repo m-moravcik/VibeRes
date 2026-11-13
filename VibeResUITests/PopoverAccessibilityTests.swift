@@ -43,8 +43,11 @@ final class PopoverAccessibilityTests: XCTestCase {
         XCTAssertTrue(item.waitForExistence(timeout: 15), "the menu-bar item never appeared")
         // A menu bar manager parks items it has not been told to show far off
         // screen. Say so, rather than failing later with "not hittable".
+        // Right after launch the item exists before the menu bar has placed
+        // it, and reads as not hittable for a moment; asking once made every
+        // test here flaky.
         XCTAssertTrue(
-            item.isHittable,
+            item.waitUntilHittable(timeout: 5),
             """
             the menu-bar item exists but is off screen at \(item.frame). A menu \
             bar manager (Bartender, Ice) is hiding it: set the Debug build, \
@@ -196,5 +199,16 @@ final class PopoverAccessibilityTests: XCTestCase {
             popover.buttons["Quit"].waitForExistence(timeout: 5),
             "Back should return to the root view"
         )
+    }
+}
+
+extension XCUIElement {
+    /// Waits for the element to become hittable, as `waitForExistence` does
+    /// for existence.
+    func waitUntilHittable(timeout: TimeInterval) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isHittable == true"), object: self
+        )
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
 }

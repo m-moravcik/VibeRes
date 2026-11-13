@@ -240,4 +240,23 @@ struct CLIIntegrationTests {
         #expect(result.stderr.contains("2 profiles are named"))
         #expect(result.stderr.contains("address it by id"))
     }
+
+    @Test("Rename and delete report write failures without success output", arguments: ["rename", "delete"])
+    func failedWriteIsReported(command: String) throws {
+        let dir = try temporaryDirectory()
+        let original = profile("Desk")
+        try writeCatalog([original], to: dir)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: dir.path)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
+        }
+        let arguments = command == "rename"
+            ? ["profile", command, "Desk", "Other"] : ["profile", command, "Desk"]
+        let result = try run(arguments, profileDirectory: dir)
+        #expect(result.status == 1)
+        #expect(result.stdout.isEmpty)
+        #expect(result.stderr.contains("Failed to save profiles."))
+        let persisted = try JSONDecoder().decode([Profile].self, from: Data(contentsOf: dir.appendingPathComponent("profiles.json")))
+        #expect(persisted == [original])
+    }
 }

@@ -108,6 +108,8 @@ func failOnRejection(_ result: ProfileStore.SaveResult) {
     switch result {
     case .saved, .savedWithMissingDisplays:
         return
+    case .failedToSave:
+        fail(UserFacingProblem.profilesNotSaved.englishDescription)
     case .rejectedEmptyName:
         fail("a profile name cannot be blank")
     case .rejectedDuplicateName(let name):
@@ -373,7 +375,7 @@ func cmdProfileApply(_ name: String) {
 func cmdProfileDelete(_ name: String) {
     let store = ProfileStore()
     let profile = requireProfile(name, in: store)
-    store.delete(profile)
+    failOnRejection(store.delete(profile))
     print("deleted profile \"\(profile.name)\"")
 }
 
@@ -385,7 +387,7 @@ func cmdProfileUpdate(_ name: String) {
     if let updated = store.updateFromCurrent(profile, displays: displays) {
         print("updated \"\(updated.name)\" with current setup (\(updated.entries.count) entries)")
     } else {
-        fail("could not update — profile not found in store")
+        fail(store.lastError?.englishDescription ?? "could not update - profile not found in store")
     }
 }
 
@@ -399,6 +401,8 @@ func cmdProfileFlex(_ name: String) {
         print("\"\(profile.name)\" is now flexible (any external)")
     case .madeSpecific:
         print("\"\(profile.name)\" is now specific (locked to monitors)")
+    case .failedToSave:
+        fail(UserFacingProblem.profilesNotSaved.englishDescription)
     case .blockedNoExternal:
         fail("can't lock \"\(profile.name)\" — connect the external monitor first")
     }

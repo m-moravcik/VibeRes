@@ -85,6 +85,7 @@ enum ScreenshotHarness {
                 try write(detail, to: output.appendingPathComponent("detail\(suffix).png"))
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
                 try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
+                try write(panel(OnboardingView(step: 1)), to: output.appendingPathComponent("onboarding-profile\(suffix).png"))
                 try write(
                     render(HeroScene(popover: root, scheme: scheme, banner: false)),
                     to: output.appendingPathComponent("hero\(suffix).png")

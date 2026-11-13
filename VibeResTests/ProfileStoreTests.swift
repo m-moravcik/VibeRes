@@ -87,4 +87,49 @@ struct ProfileStoreTests {
         #expect(reloaded.profiles.isEmpty)
         #expect(reloaded.lastError != nil)
     }
+
+    @Test("Failed catalog mutations preserve the last saved state", arguments: [
+        "add", "update", "replaceEntries", "updateFromCurrent", "toggleFlexible", "delete"
+    ])
+    func failedMutations(operation: String) throws {
+        let (store, dir) = makeTempStore()
+        let entry = Profile.Entry(matcher: .edid(vendor: 1, model: 2, serial: 3),
+                                  displayName: "Monitor", pointWidth: 1920, pointHeight: 1080,
+                                  refreshHz: 60, isHiDPI: false)
+        let original = Profile(name: "Desk", entries: [entry])
+        #expect(store.add(original) == .saved)
+        let catalog = dir.appendingPathComponent("profiles.json")
+        let backup = dir.appendingPathComponent("saved.json")
+        try FileManager.default.moveItem(at: catalog, to: backup)
+        try FileManager.default.createDirectory(at: catalog, withIntermediateDirectories: true)
+
+        switch operation {
+        case "add":
+            #expect(store.add(Profile(name: "Other", entries: [entry])) == .failedToSave)
+        case "update":
+            var changed = original
+            changed.name = "Other"
+            #expect(store.update(changed) == .failedToSave)
+        case "replaceEntries":
+            var changed = entry
+            changed.pointWidth = 2560
+            #expect(store.replaceEntries(original, with: [changed]) == .failedToSave)
+        case "updateFromCurrent":
+            #expect(store.updateFromCurrent(original, displays: []) == nil)
+        case "toggleFlexible":
+            if case .failedToSave = store.toggleFlexible(original, displays: []) {} else {
+                Issue.record("An unwritten matcher change was reported as saved")
+            }
+        case "delete":
+            #expect(store.delete(original) == .failedToSave)
+        default:
+            Issue.record("Unknown operation")
+        }
+
+        #expect(store.lastError == .profilesNotSaved)
+        #expect(store.profiles == [original])
+        try FileManager.default.moveItem(at: catalog, to: dir.appendingPathComponent("blocked"))
+        try FileManager.default.moveItem(at: backup, to: catalog)
+        #expect(ProfileStore(directory: dir).profiles == [original])
+    }
 }
