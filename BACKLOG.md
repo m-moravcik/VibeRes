@@ -21,31 +21,27 @@ presentation).
 - One CG API call: `CGConfigureDisplayMirrorOfDisplay(config, slave, master)`.
   Drops into the existing apply transaction cleanly.
 
-**Why it's deferred**
-- Scope creep risk. Resolution + Hz is a clean narrative; mirror would
-  pull arrangement next, then primary swap, then rotation. The menubar
-  resolution switcher becomes a "display config manager", which is a
-  different product (BetterDisplay territory).
-- UI complexity. The Save / Edit forms are already dense — adding a
-  third axis (resolution × refresh rate × mirror master) per entry needs
-  a layout redesign before code, not after.
-- Profile semantics get messy. `.anyExternal` + mirror raises questions:
-  if the master is "any external" and you have two externals connected,
-  which one is the mirror target? No clean answer yet.
-- macOS already has mirror in System Settings. Parity with EasyRes, but
-  not unique value VibeRes brings.
+**Decided 2026-11-13: planned as its own release after 1.0.** The scope
+worry above still holds for arrangement, rotation and DDC; mirroring alone
+fits the "plug in the projector, click a profile" story, so it moves out of
+the non-goals. Not bolted onto a patch, and 1.0 does not wait for it.
 
-**If we revisit**
-- Make it a dedicated release with mirror as the single headline feature.
-  Don't bolt it onto a patch. (0.9.0 went to main-display selection
-  instead.) 1.0.0 is not tied to it: 1.0 marks the core (switching,
-  profiles, revert safety, updates, languages, diagnostics) as stable and
-  follows 0.11.0 once that has been in users' hands without regressions.
-- UI exploration first (Figma or whiteboard) for Save / Edit form before
-  any code. Verify the form stays compact.
-- Decide upfront: does mirror replace the slave's resolution in the
-  profile, or coexist with it? (Likely replace — mirroring forces both
-  displays to the same mode anyway.)
+**Agreed spec**
+- `Profile.mirror` is tri-state: `nil` leaves mirroring alone (every
+  existing profile decodes as this), `.off` turns mirroring off, and
+  `.on(source)` mirrors one source to every other display in the profile.
+  The source is one of the profile's entries, so `.anyExternal` resolves to
+  a display exactly as it does for resolution.
+- The source's resolution wins. Mirroring forces one mode, so the target
+  entries' resolution and refresh rate are hidden in the form, not edited.
+- Saving a new profile captures the current mirror state.
+- Apply sets mirroring in the same CG configuration transaction as the
+  resolution, then verifies the result with `CGDisplayMirrorsDisplay`, the
+  way main-display placement is verified.
+- Revert undoes mirroring along with the resolution.
+- UI: one "Mirroring" row in the Save / Edit form (off, or mirror from a
+  chosen display). Sketch the form before code and keep it compact.
+- PRD §2 lists mirroring as planned; the release moves it into §4.
 
 ### Display arrangement preservation
 
@@ -84,11 +80,13 @@ remains deferred; see
 - Niche need — most users don't reshuffle arrangement often enough to
   warrant the complexity.
 
+**Reconfirmed 2026-11-13: Stage 2 stays deferred.** The mirroring release
+(above) ships without it.
+
 **If we revisit**
-- Pair with the mirror release. Both fall under "save the full setup"
-  story, share UI infrastructure (per-entry per-display config), and
-  share the test pattern (CG configuration transaction with rollback).
-- Same decision rule as mirror: dedicated release, UI exploration first.
+- Builds on the mirroring release: same per-display form rows and the same
+  test pattern (CG configuration transaction with rollback).
+- Dedicated release, UI exploration first.
 
 ### Per-app resolution profiles
 
@@ -114,24 +112,35 @@ to 1800×1169 HiDPI".
 - Treat manual mode picks within 60s as "user override, suspend auto-apply
   for this app session" to avoid the fighting-the-user problem.
 
+**Reconfirmed 2026-11-13: not now.** Open question for when it comes back:
+whether people would rather set this up in VibeRes, in one place, than chain
+it together through Shortcuts automations.
+
 ### Hotkey per profile
 
 Bind global keyboard shortcuts to apply a specific profile (e.g.
-⌥⌘1 = Work, ⌥⌘2 = Presentation).
+⌥⌘1 = Work, ⌥⌘2 = Presentation), and one to Revert.
 
-**Why it would help**
-- Power-user feature. Some users live in the keyboard, never click
-  menubar icons.
+**Why it was deferred**
+- Already addressable via Shortcuts.app (the App Intents integration): a
+  keyboard shortcut can run a Shortcut that applies a profile.
 
-**Why it's deferred**
-- Already addressable via macOS Shortcuts.app (the existing AppIntents
-  integration). Users can build their own keyboard shortcut → Run
-  Shortcut chain.
-- Avoiding duplication of macOS-native functionality.
+**Decided 2026-11-13: build it, next after the first-profile onboarding.**
+The Shortcuts route needs one hand-built Shortcut per profile; a shortcut
+field next to the profile is one step, in the place the user already is.
+The App Intents stay for Stream Deck, automations and scripting.
 
-**If we revisit**
-- Only if Shortcuts.app integration proves too cumbersome for end users
-  (e.g. measured friction in feedback).
+**Agreed spec**
+- Optional and unset by default. Nothing is registered until the user sets
+  a shortcut.
+- Per-profile shortcut, set in the profile's Edit form.
+- A global Revert shortcut. Settings offers a suggested combination that the
+  user enables with one click; it is never enabled automatically.
+- Registered with Carbon `RegisterEventHotKey`: no Accessibility permission
+  and no new dependency.
+- Taken or invalid combinations are refused inline when set, not discovered
+  later.
+- Replaces the PRD §2 non-goal "No global hotkeys of its own".
 
 ## Shipped, kept here so they are not re-proposed
 
