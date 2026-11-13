@@ -131,6 +131,11 @@ to 1800×1169 HiDPI".
 whether people would rather set this up in VibeRes, in one place, than chain
 it together through Shortcuts automations.
 
+**Decided 2026-11-13: off mission (VISION.md).** The open question is
+answered: VibeRes does not switch modes on triggers other than the display
+set. Switching by the app in front or the time of day belongs to Shortcuts
+automations through the App Intents.
+
 ### Hotkey per profile
 
 Bind global keyboard shortcuts to apply a specific profile (e.g.
@@ -150,6 +155,39 @@ accepted Carbon limitations are in [PRD §4.11](PRD.md#411-global-shortcuts);
 setup and everyday use are in the [user guide](README.md#keyboard-shortcuts).
 The separate Settings tab was chosen because recording in a normal window
 is sturdier than in the popover and one list shows every shortcut.
+
+## Follows from VISION.md (2026-11-13)
+
+Changes the approved vision asks for that the app does not do yet. None is
+built; each still needs its own design before it ships.
+
+### Confirm resolution changes on by default
+VISION.md: "The confirmation timeout is on by default, so a black screen
+undoes itself even for someone who never opened Settings." Today the setting
+is off by default (`Preferences.confirmDisplayChanges`). The timeout guards a
+size picked by hand only: profiles, profile shortcuts and auto-apply arm no
+countdown. Open: whether existing users who never touched the setting get the
+new default, or only fresh installs.
+
+### HDR as an advanced profile setting
+VISION.md: HDR is the one colour setting in reach, as an advanced control
+that Simple mode keeps out of sight. A profile saved with HDR restores it in
+Simple mode too, and the outcome says HDR changed. Open: which API reads and
+sets HDR per display, and whether it needs a private symbol (allowed only
+behind a fallback that keeps the previous behaviour).
+
+### Bring windows back on screen after a mode change
+VISION.md: an opt-in that asks for the Accessibility permission only when it
+is switched on. Moves windows a mode change left off-screen or under the menu
+bar back into view. Off by default; without the permission it stays off and
+says why.
+
+### Report a problem with a prefilled bug report
+VISION.md: diagnostics leave the Mac only when the user sends them, for
+example as a prefilled bug report the user reads before submitting. A button
+in Settings -> Debug opens a new GitHub issue with the diagnostics in its
+body. Open: URL length limits for the log lines, and falling back to copying
+when the report is too long.
 
 ## Motion and polish audit (2026-11-13)
 

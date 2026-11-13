@@ -7,6 +7,10 @@ This document describes what VibeRes is meant to do and why it is built the way
 it is. It is maintained: when a decision here stops matching the code, one of
 the two is wrong and the discrepancy is a bug in its own right.
 
+[VISION.md](VISION.md) is the acceptance policy above it: what a change has to
+serve, and what the project resists. Where the vision asks for something the
+app does not do yet, the gap is listed in BACKLOG.md.
+
 It replaces the original pre-implementation plan, which had drifted far enough
 to be misleading — it still specified macOS 13, an `NSStatusItem` + `NSPopover`
 shell explicitly instead of `MenuBarExtra`, and no package dependencies, none of
