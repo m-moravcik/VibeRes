@@ -17,19 +17,17 @@ struct ShortcutsSettingsTab: View {
         @Bindable var prefs = preferences
         Form {
             Section {
-                LabeledContent("Revert last change") {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        if preferences.revertHotkey == nil {
-                            Button("Use \(Text(verbatim: KeyCombo.suggestedRevert.localizedDisplayString()))") {
-                                useSuggestedRevertShortcut()
-                            }
-                            .help("Sets the suggested shortcut. Nothing is set until you choose one.")
+                ShortcutRecorder(
+                    owner: .revert,
+                    combo: $prefs.revertHotkey,
+                    savedCombo: preferences.revertHotkey,
+                    title: Text("Revert last change")
+                ) {
+                    if preferences.revertHotkey == nil {
+                        Button("Use \(Text(verbatim: KeyCombo.suggestedRevert.localizedDisplayString()))") {
+                            useSuggestedRevertShortcut()
                         }
-                        ShortcutRecorder(
-                            owner: .revert,
-                            combo: $prefs.revertHotkey,
-                            savedCombo: preferences.revertHotkey
-                        )
+                        .help("Sets the suggested shortcut. Nothing is set until you choose one.")
                     }
                 }
                 if let suggestionProblem {
@@ -55,19 +53,15 @@ struct ShortcutsSettingsTab: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(profiles.profiles) { profile in
-                        LabeledContent {
-                            ShortcutRecorder(
-                                owner: .profile(profile.id),
-                                combo: Binding(
-                                    get: { profile.hotkey },
-                                    set: { profiles.setHotkey($0, for: profile.id) }
-                                ),
-                                savedCombo: profile.hotkey
-                            )
-                        } label: {
-                            Text(verbatim: profile.name)
-                                .lineLimit(1)
-                        }
+                        ShortcutRecorder(
+                            owner: .profile(profile.id),
+                            combo: Binding(
+                                get: { profile.hotkey },
+                                set: { profiles.setHotkey($0, for: profile.id) }
+                            ),
+                            savedCombo: profile.hotkey,
+                            title: Text(verbatim: profile.name)
+                        )
                     }
                 }
                 Text("Applies the profile from any app. Displays it does not include are left as they are.")
