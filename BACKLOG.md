@@ -1,8 +1,8 @@
 # Backlog
 
-Features and improvements that have been discussed but deferred from current
-releases. Not a roadmap — entries here may never ship. Tracked so we don't
-keep re-deciding the same questions every few weeks.
+Product decisions and ideas for future releases, with planned and deferred
+work identified in each entry. Deferred ideas may never ship. Tracked so we
+don't keep re-deciding the same questions every few weeks.
 
 ## Considered
 
@@ -25,8 +25,7 @@ presentation).
 - Profile semantics were unclear when `.anyExternal` matched multiple
   displays. Resolved by the source/target rule in the agreed spec below.
 
-**Decided 2026-11-13: planned as its own release after 1.0.** The scope
-worry above still holds for arrangement, rotation and DDC; mirroring alone
+**Decided 2026-11-13: planned as its own release after 1.0.** Mirroring alone
 fits the "plug in the projector, click a profile" story, so it moves out of
 the non-goals. Not bolted onto a patch, and 1.0 does not wait for it.
 

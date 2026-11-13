@@ -319,9 +319,7 @@ struct ProfilesSection: View {
                     } onDelete: {
                         mode = .confirmingDelete(profileID: profile.id, name: profile.name)
                     }
-                    // ⌘1…⌘9 while the popover has key focus. Not a global
-                    // hotkey — those were rejected in the backlog because they
-                    // collide with whatever the user is actually working in.
+                    // ⌘1…⌘9 require popover key focus.
                     // Only the first nine get one; a tenth profile would need
                     // ⌘0, which reads as "zero" not "tenth".
                     .modifier(ProfileShortcut(index: index))
