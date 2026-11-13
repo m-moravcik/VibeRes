@@ -218,7 +218,7 @@ make test         # the Swift Testing suite
 
 `project.yml` is the source of truth. `*.xcodeproj` is regenerated and not committed.
 
-What the app is meant to do, and why it is built this way, is in [`PRD.md`](PRD.md). Product decisions and deferred ideas are in [`BACKLOG.md`](BACKLOG.md).
+Which changes fit the project and which it resists is in [`VISION.md`](VISION.md). What the app is meant to do, and why it is built this way, is in [`PRD.md`](PRD.md). Product decisions and deferred ideas are in [`BACKLOG.md`](BACKLOG.md).
 
 ### Releasing
 
