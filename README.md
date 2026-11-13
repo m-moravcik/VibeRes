@@ -97,7 +97,13 @@ It is deliberately frugal with that permission: one still per display view you o
 
 ## Profiles
 
-A profile is a named multi-display preset. Save once, switch with one click. The save form is a per-display checklist:
+A profile is a named multi-display preset. Save once, switch with one click.
+
+In step 2 of the welcome tour, keep the suggested name or enter your own, then click **Save profile**. Return in the name field also saves and keeps you on that step. This captures every connected display at its current settings, bound to that specific monitor, and leaves the main display unchanged. **Next** moves on without saving. To try it later, use **Settings → General → Replay welcome tour**.
+
+The tour confirms the saved name inline. A duplicate name or failed write shows an inline error so you can retry; monitors that report the same identity produce a warning because their settings cannot be restored independently.
+
+For more control, the popover's full save form is a per-display checklist:
 
 <p align="center">
   <picture>
@@ -167,7 +173,7 @@ Set `VIBERES_PROFILE_DIR` to read and write profiles somewhere other than
 `~/Library/Application Support/VibeRes` — useful for scripting against a
 throwaway set, and how the CLI's own tests avoid touching yours.
 
-Exit code is `0` for full success, `2` if anything fell back or was skipped. Easy to drop into shell pipelines or git hooks.
+Exit code is `0` for full success, `1` for an error (including a profile write failure), and `2` if anything fell back or was skipped. Easy to drop into shell pipelines or git hooks.
 
 ---
 
