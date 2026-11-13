@@ -523,6 +523,72 @@ struct ShortcutActionTests {
         #expect(r.displays.revert.canRevert)
     }
 
+    @Test("A shortcut does not switch when the live mode already matches despite a stale cached mode")
+    func liveTargetIsAlreadyApplied() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])])
+        r.profiles.add(profile)
+        r.displays.demoSnapshot = {
+            ids.map {
+                DisplayInfo(id: $0, name: "Live \($0)", isMain: false,
+                            modes: modes, currentMode: modes[0], groups: [])
+            }
+        }
+        let setChangeToken = r.displays.setChangeToken
+        let autoApplyToken = r.displays.autoApplyToken
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+
+        #expect(r.batches() == 0)
+        #expect(r.alerts() == 0)
+        #expect(!r.displays.revert.canRevert)
+        #expect(r.displays.displays.allSatisfy { $0.currentMode?.ioDisplayModeID == modes[1].ioDisplayModeID })
+        #expect(r.displays.setChangeToken == setChangeToken)
+        #expect(r.displays.autoApplyToken == autoApplyToken)
+    }
+
+    @Test("A shortcut switches a stale cached target and records the actual live mode for Revert")
+    func liveModeIsRecordedForRevert() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[0], modes: modes)
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])])
+        r.profiles.add(profile)
+        r.displays.demoSnapshot = {
+            ids.map {
+                DisplayInfo(id: $0, name: "Live \($0)", isMain: false,
+                            modes: modes, currentMode: modes[1], groups: [])
+            }
+        }
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+
+        #expect(r.batches() == 1)
+        #expect(r.alerts() == 0)
+        #expect(r.displays.revert.entries.map(\.displayID).sorted() == ids)
+        #expect(r.displays.revert.entries.allSatisfy { $0.before.ioDisplayModeID == modes[1].ioDisplayModeID })
+        #expect(r.displays.displays.allSatisfy { $0.currentMode?.ioDisplayModeID == modes[0].ioDisplayModeID })
+    }
+
+    @Test("Shortcut classification uses live connections when the cached display set is stale",
+          arguments: [false, true])
+    func liveConnectionsDetermineApply(connected: Bool) throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        let connectedDisplays = r.displays.displays
+        if connected { r.displays.showForDemo([]) }
+        r.displays.demoSnapshot = { connected ? connectedDisplays : [] }
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])])
+        r.profiles.add(profile)
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+
+        #expect(r.batches() == (connected ? 1 : 0))
+        #expect(r.alerts() == (connected ? 0 : 1))
+        #expect(r.displays.revert.canRevert == connected)
+        #expect(r.displays.displays.isEmpty == connected)
+    }
+
     @Test("A profile whose displays are all missing does nothing and sounds the alert")
     func disjointDoesNothing() throws {
         let modes = try realModes()

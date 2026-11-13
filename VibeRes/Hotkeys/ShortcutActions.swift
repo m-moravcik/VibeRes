@@ -70,7 +70,7 @@ enum ShortcutActions {
             alert()
             return
         }
-        let live = displays.displays
+        let live = displays.liveSnapshot()
         let classification = DisplaySetClassifier.classify(
             profiles.bindings(of: profile, to: live), against: live
         )

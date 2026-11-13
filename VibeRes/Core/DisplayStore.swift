@@ -313,6 +313,8 @@ final class DisplayStore {
     /// switch would leave it in without switching anything. Debug builds only.
     func showForDemo(_ snapshot: [DisplayInfo]) {
         displays = snapshot
+        lastDisplayIDs = Set(snapshot.map(\.id))
+        demoSnapshot = { snapshot }
     }
 
     /// Demo seam for the profile harness (`ProfileDemo`): what every refresh
@@ -324,7 +326,7 @@ final class DisplayStore {
     #endif
 
     /// The display list as macOS reports it, or the demo's in a harness.
-    private func liveSnapshot() -> [DisplayInfo] {
+    func liveSnapshot() -> [DisplayInfo] {
         #if DEBUG
         if let demoSnapshot { return demoSnapshot() }
         #endif

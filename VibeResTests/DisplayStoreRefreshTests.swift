@@ -4,6 +4,30 @@ import Testing
 
 @Suite("DisplayStore refresh transitions")
 struct DisplayStoreRefreshTests {
+    @Test("A staged demo snapshot also supplies live reads without changing refresh tokens")
+    @MainActor
+    func stagedSnapshotsSupplyLiveReads() {
+        let store = DisplayStore.forTesting()
+        let staged = [DisplayInfo(id: 101, name: "Fake", isMain: true,
+                                  modes: [], currentMode: nil, groups: [])]
+        let token = store.setChangeToken
+        store.showForDemo(staged)
+
+        #expect(store.liveSnapshot() == staged)
+        #expect(store.setChangeToken == token)
+        store.revert.recordBatch([], beforeMain: 101)
+
+        store.refresh()
+
+        #expect(store.revert.canRevert)
+        #expect(store.setChangeToken == token)
+
+        store.showForDemo([])
+
+        #expect(store.liveSnapshot().isEmpty)
+        #expect(store.setChangeToken == token)
+    }
+
     @Test("Main display swap invalidates the popover without triggering auto-apply")
     func mainSwapDoesNotBumpSetChangeToken() {
         let transition = DisplayStore.refreshTransition(

@@ -284,14 +284,15 @@ struct ProfilesSection: View {
                         // the inline confirmation panel so the user sees
                         // what will be skipped or left alone before the
                         // apply mutates display state.
+                        let live = displays.liveSnapshot()
                         let classification = DisplaySetClassifier.classify(
-                            profiles.bindings(of: profile, to: displays.displays),
-                            against: displays.displays
+                            profiles.bindings(of: profile, to: live),
+                            against: live
                         )
                         if DisplaySetClassifier.isCleanApply(classification) {
                             commitApply(profile)
                         } else {
-                            let preview = profiles.previewApply(profile, against: displays.displays)
+                            let preview = profiles.previewApply(profile, against: live)
                             mode = .confirmingApply(ConfirmApplyState(
                                 profileID: profile.id,
                                 profileName: profile.name,
@@ -453,10 +454,11 @@ struct ProfilesSection: View {
     /// `CGDisplayMode`. Measured in the 2026-08-01 audit: scoring three
     /// displays against a real 60-mode list takes 86 µs.
     private func commitApply(_ profile: Profile) {
+        let live = displays.liveSnapshot()
         displays.endPendingConfirmation()
         let result = profiles.applyDetailed(
             profile,
-            displays: displays.displays,
+            displays: live,
             revert: displays.revert
         )
         // A profile that moved the main display keeps the popover open, so the
