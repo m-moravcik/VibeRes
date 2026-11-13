@@ -145,36 +145,11 @@ The Shortcuts route needs one hand-built Shortcut per profile; a shortcut
 field next to the profile is one step, in the place the user already is.
 The App Intents stay for Stream Deck, automations and scripting.
 
-**Agreed spec**
-- Optional and unset by default. Nothing is registered until the user sets
-  a shortcut.
-- Per-profile shortcut, set in the profile's Edit form.
-- A global Revert shortcut. Settings offers a suggested combination that the
-  user enables with one click; it is never enabled automatically.
-- Registered with Carbon `RegisterEventHotKey`: no Accessibility permission
-  and no new dependency.
-- Taken or invalid combinations are refused inline when set, not discovered
-  later.
-- Replaces the PRD §2 non-goal "No global hotkeys of its own".
-
-**Built 2026-11-13, for the next release.** As specified, with these
-decisions made while building it (PRD §4.11 has the full behaviour):
-- Settings has its own **Shortcuts** tab (Revert plus every profile) rather
-  than a row in General: recording in a normal window is sturdier than in the
-  popover, and one list shows every shortcut.
-- Two modifiers, one of them ⌃, ⌥ or ⌘, instead of one: a single modifier
-  takes a menu command, a typed character or a terminal key from every app.
-- A profile shortcut applies without the popover's confirmation, like the CLI,
-  and uses the alert sound when it missed something.
-- Carbon reports only exclusive registrations, so a clash with an app that
-  registered the same combination without exclusivity is not detected.
-- Carbon consumes another app's combination before the recorder sees it, so
-  that app's action runs while recording. After the modifiers are released
-  without a recorded key, a hint suggests trying another combination. This
-  limit is accepted rather than requesting Accessibility or Input Monitoring
-  permission or adding an event tap.
-- An incomplete Revert sounds the alert even when some displays restored;
-  profile shortcut save failures are visible in Settings as well as the menu.
+**Built 2026-11-13, for the next release.** The maintained contract and
+accepted Carbon limitations are in [PRD §4.11](PRD.md#411-global-shortcuts);
+setup and everyday use are in the [user guide](README.md#keyboard-shortcuts).
+The separate Settings tab was chosen because recording in a normal window
+is sturdier than in the popover and one list shows every shortcut.
 
 ## Shipped, kept here so they are not re-proposed
 

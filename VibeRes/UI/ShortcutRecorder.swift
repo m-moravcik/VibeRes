@@ -32,10 +32,10 @@ struct ShortcutRecorder: View {
             Button(action: toggleRecording) {
                 label
                     .lineLimit(1)
-                    // One width for every recorder, so a column of them lines
-                    // up whether a field is empty, recording or set, and the
-                    // remove button has room inside the field.
-                    .frame(width: controlSize == .small ? 112 : 128)
+                    // Keep short labels stable and leave room for the remove
+                    // button, while allowing longer translations to fit.
+                    .frame(minWidth: controlSize == .small ? 112 : 128)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .controlSize(controlSize)
             .accessibilityLabel(isRecording ? Text("Recording shortcut") : Text("Shortcut"))

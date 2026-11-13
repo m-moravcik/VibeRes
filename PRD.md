@@ -99,7 +99,7 @@ argued through, and why.
 | Language | Swift 6.0, `SWIFT_STRICT_CONCURRENCY: complete` on **every** target | The app drives WindowServer from several event sources — timers, CG callbacks, wake notifications. Data races here corrupt display state |
 | Deployment target | macOS 26.0 | The code leans on `@Observable`, `MenuBarExtra(.window)`, `NavigationStack`, `SMAppService`, App Intents and ScreenCaptureKit at once. See §7 for what a backport costs |
 | UI | SwiftUI in `MenuBarExtra(.window)` | The original plan specified `NSStatusItem` + `NSPopover` and rejected `MenuBarExtra`. `MenuBarExtra` won on the amount of AppKit it removes; the cost is its cached panel geometry, which the app works around explicitly (`DisplayStore.dismissStaleMenuBarPopover`) |
-| Architecture | `VibeRes/Core` is Foundation + CoreGraphics only, with no AppKit and no bundle assumptions | It is compiled into the `viberes` CLI target verbatim. This is why user-facing copy in Core stays English and is localised in `VibeRes/UI` — see §4.12 |
+| Architecture | `VibeRes/Core` is shared verbatim with the CLI; it also uses AppKit, SwiftUI and Carbon.HIToolbox, without requiring an app bundle | User-facing copy in Core stays English and is localised in `VibeRes/UI`; see §4.12 |
 | Dependencies | Sparkle, pinned by exact version. Nothing else | An updater is the one dependency whose compromise is arbitrary code execution, so it is pinned and watched (§8) |
 | Project file | `project.yml` via XcodeGen; `*.xcodeproj` is generated and gitignored | One reviewable source of truth for build settings |
 | Binary | Universal (arm64 + x86_64) | macOS 26 still supports a handful of Intel Macs, and the slice costs nothing but download size |
@@ -204,9 +204,9 @@ against the code. "Evidence" names where it lives.
   are reported, never guessed between.
 - Applying a profile reports per display what happened: exact match, closest
   available, not connected, no usable mode, or failed.
-- A profile whose displays do not exactly match what is connected routes
-  through an inline confirmation showing what will be skipped and what will be
-  left alone.
+- In the popover, a profile whose saved displays do not exactly match the
+  connected set routes through an inline confirmation showing what will be
+  skipped and what will be left alone. Global shortcuts follow §4.11.
 - Deleting a profile asks first. There is no undo for it.
 
 *Evidence:* `Core/Profile.swift`, `Core/ProfileStore.swift`,
@@ -223,6 +223,9 @@ room to negotiate.
 - **Confirm resolution changes** (opt-in) applies for the session only and
   undoes it after 12 seconds unless confirmed. The *timeout* is the safety net,
   not the button: someone looking at a black screen cannot click anything.
+  Explicit Revert ends that confirmation. Applying a profile ends it only
+  when the profile changes something, so an unsuccessful or unchanged apply
+  keeps the original safety net.
 - Revert history is dropped when it would reference a display that is no longer
   attached.
 
@@ -301,8 +304,9 @@ room to negotiate.
   another app holds exclusively, when the key reaches the recorder. Carbon
   consumes a combination held by another app before VibeRes sees it: while
   recording, that app's action runs and the recorder shows a hint after the
-  modifiers are released instead of refusing it. Avoiding this would require
-  Accessibility permission, which VibeRes deliberately does not request.
+  modifiers are released instead of refusing it. This is an accepted limit:
+  VibeRes does not request Accessibility or Input Monitoring permission or
+  install an event tap to capture those combinations.
   Carbon reports only exclusive registrations, so a clash with an app that
   registered without exclusivity goes unnoticed.
 - A saved shortcut that cannot be registered at launch (taken since, or
@@ -315,9 +319,11 @@ room to negotiate.
   Revert. A profile that binds no connected display does nothing. The alert
   sound marks a press that missed something (nothing to revert, a display not
   connected, a failed switch); a fallback rate stays quiet.
-- Stored in the profile as `{"keyCode", "modifiers"}`. An unreadable shortcut
-  is dropped on load, never the profile. `viberes profile list` and `show`
-  print it.
+- The optional profile `hotkey` field uses `KeyCombo`'s Codable format; Revert
+  is stored in Preferences (UserDefaults). An unreadable profile shortcut is
+  dropped on load, never the profile. `viberes profile list` and `show` print
+  it. Recording and conflict limitations are covered in the
+  [user guide](README.md#keyboard-shortcuts).
 
 *Evidence:* `Core/KeyCombo.swift`, `Hotkeys/HotkeyCenter.swift`,
 `Hotkeys/CarbonHotkeyRegistrar.swift`, `Hotkeys/ShortcutActions.swift`,

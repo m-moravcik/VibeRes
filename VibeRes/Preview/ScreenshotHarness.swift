@@ -239,11 +239,6 @@ enum ScreenshotHarness {
     }
 }
 
-/// The popover's frame, as `MenuContent` sets it up.
-///
-/// The real popover sits on `.ultraThinMaterial` over the desktop, which an
-/// off-screen window has nothing to blur. A solid fill in the material's
-/// resting colour keeps the contrast what the eye sees.
 /// The profile Edit form for one seeded profile, as the pill's Edit… opens it,
 /// minus the live mode pickers: the shot is about the form's layout.
 private struct DemoEditForm: View {
@@ -276,6 +271,11 @@ private struct DemoEditForm: View {
     }
 }
 
+/// The popover's frame, as `MenuContent` sets it up.
+///
+/// The real popover sits on `.ultraThinMaterial` over the desktop, which an
+/// off-screen window has nothing to blur. A solid fill in the material's
+/// resting colour keeps the contrast what the eye sees.
 private struct PopoverPanel<Content: View>: View {
     let scheme: ColorScheme
     @ViewBuilder let content: Content

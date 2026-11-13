@@ -29,7 +29,7 @@ struct KeyCombo: Hashable, Sendable {
         }
     }
 
-    /// Virtual key codes stop at 0x7F (`kVK_F20` is 0x5A, the highest used).
+    /// Rejects out-of-range persisted values before Carbon receives them.
     static let keyCodeRange: ClosedRange<UInt32> = 0...0x7F
 
     let keyCode: UInt32

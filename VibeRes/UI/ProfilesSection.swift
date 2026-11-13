@@ -742,8 +742,8 @@ struct ProfilesSection: View {
                 fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
                 fresh.hotkey = s.hotkey
                 guard profiles.update(fresh) == .saved else {
-                    // The entries are already saved; only the name and main
-                    // pick did not land. Say so rather than claim an update.
+                    // The entries are already saved; the name, main pick and
+                    // shortcut did not land. Say so rather than claim an update.
                     announce("Entries saved, but the name could not be changed.", tone: .problem)
                     return
                 }
