@@ -21,9 +21,18 @@ presentation).
 - One CG API call: `CGConfigureDisplayMirrorOfDisplay(config, slave, master)`.
   Drops into the existing apply transaction cleanly.
 
-**Why it was deferred**
+**Why it was deferred** (kept as history; how the spec answers each)
+- Scope creep risk: mirror would pull arrangement, primary swap and
+  rotation after it, and the resolution switcher would become a display
+  configuration manager (BetterDisplay territory). Still true for those;
+  mirroring alone is admitted, the rest stays out (PRD §2).
+- UI complexity: the Save / Edit forms are dense. Answered by a single
+  "Mirroring" row and hiding the targets' resolution instead of adding a
+  per-entry axis.
 - Profile semantics were unclear when `.anyExternal` matched multiple
-  displays. Resolved by the source/target rule in the agreed spec below.
+  displays. Answered by the source/target rule below.
+- macOS already has mirroring in System Settings. True, but reaching it
+  breaks the menu bar flow, which is the use case above.
 
 **Decided 2026-11-13: planned as its own release after 1.0.** Mirroring alone
 fits the "plug in the projector, click a profile" story, so it moves out of
