@@ -102,6 +102,27 @@ struct Profile: Identifiable, Codable, Hashable {
     /// live displays at apply time and honoured only when it binds to exactly
     /// one of them; no geometry is stored.
     var mainDisplay: DisplayMatcher?
+    /// Global keyboard shortcut that applies this profile from any app. `nil`
+    /// (the default, and what every earlier profile decodes to) registers
+    /// nothing: shortcuts exist only once the user records one.
+    var hotkey: KeyCombo?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, entries, createdAt, mainDisplay, hotkey
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        entries = try c.decode([Entry].self, forKey: .entries)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        mainDisplay = try c.decodeIfPresent(DisplayMatcher.self, forKey: .mainDisplay)
+        // A shortcut the app cannot read is dropped, not fatal: refusing it
+        // would make the whole catalog unreadable over the one field that is
+        // purely a convenience. The next save writes the profile without it.
+        hotkey = (try? c.decodeIfPresent(KeyCombo.self, forKey: .hotkey)) ?? nil
+    }
 
     /// Per-display target. The matcher decides which live display this entry
     /// applies to; the resolution fields decide what mode to switch it into.
@@ -261,13 +282,15 @@ struct Profile: Identifiable, Codable, Hashable {
         name: String,
         entries: [Entry],
         createdAt: Date = Date(),
-        mainDisplay: DisplayMatcher? = nil
+        mainDisplay: DisplayMatcher? = nil,
+        hotkey: KeyCombo? = nil
     ) {
         self.id = id
         self.name = name
         self.entries = entries
         self.createdAt = createdAt
         self.mainDisplay = mainDisplay
+        self.hotkey = hotkey
     }
 }
 

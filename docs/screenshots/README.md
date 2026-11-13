@@ -12,6 +12,7 @@ in the old terms.
 | `root-v3-{light,dark}.png` | Root popover: profile pills and display cards |
 | `detail-v3-{light,dark}.png` | Per-display detail: current-mode card, Scaled/Native toggle, size rows, hover preview |
 | `save-v3-{light,dark}.png` | Inline "Save profile" form with per-display checkboxes |
+| `settings-shortcuts-v1-{light,dark}.png` | Settings → Shortcuts: Revert and one shortcut field per profile, one of them set |
 
 ## Retaking them
 
@@ -23,8 +24,9 @@ scripts/screenshots.sh sk     # Slovak, for the web.pexelo portfolio
 The script builds Debug and runs the harness in
 `VibeRes/Preview/ScreenshotHarness.swift`, which renders the real views at 2x
 and exits. It also writes `banner-{light,dark}.png`, the 1920x1080 portfolio
-image, which is not used here, and `onboarding-profile-{light,dark}.png`,
-showing the welcome tour's profile step.
+image, which is not used here, `onboarding-profile-{light,dark}.png`,
+showing the welcome tour's profile step, and `edit-{light,dark}.png`, a
+profile's Edit form with its shortcut field.
 
 - The displays are the ones connected to the Mac that renders. Their names and
   modes are hardware, not personal data, but plug in the same pair (a Retina

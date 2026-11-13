@@ -62,6 +62,7 @@ enum Diagnostics {
                 ("Auto-apply matching profile", onOff(preferences.autoApplyOnDisplayChange)),
                 ("Live preview on hover", onOff(preferences.livePreviewEnabled)),
                 ("Launch at login", onOff(preferences.launchAtLoginIntent ?? false)),
+                ("Revert shortcut", onOff(preferences.revertHotkey != nil)),
                 ("Debug log", preferences.debugLogEnabled ? preferences.debugLogLevel.label.lowercased() : "off"),
             ],
             displays: displays.map(summarise),

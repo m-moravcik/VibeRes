@@ -157,6 +157,18 @@ The App Intents stay for Stream Deck, automations and scripting.
   later.
 - Replaces the PRD §2 non-goal "No global hotkeys of its own".
 
+**Built 2026-11-13, for the next release.** As specified, with these
+decisions made while building it (PRD §4.11 has the full behaviour):
+- Settings has its own **Shortcuts** tab (Revert plus every profile) rather
+  than a row in General: recording in a normal window is sturdier than in the
+  popover, and one list shows every shortcut.
+- Two modifiers, one of them ⌃, ⌥ or ⌘, instead of one: a single modifier
+  takes a menu command, a typed character or a terminal key from every app.
+- A profile shortcut applies without the popover's confirmation, like the CLI,
+  and uses the alert sound when it missed something.
+- Carbon reports only exclusive registrations, so a clash with an app that
+  registered the same combination without exclusivity is not detected.
+
 ## Shipped, kept here so they are not re-proposed
 
 ### Sparkle in-app updates — shipped in 0.8.2
@@ -165,7 +177,7 @@ Deferred here until "monthly non-brew downloads pass ~100"; shipped earlier
 because the manual "download the ZIP and replace the .app" step was the only
 update path for anyone not using Homebrew. EdDSA signing, a signed feed, and a
 gate that refuses to self-update anything not Developer ID signed by this
-project. See `PRD.md` §4.12.
+project. See `PRD.md` §4.13.
 
 ### Hover preview double-click — resolved by dropping the popover
 

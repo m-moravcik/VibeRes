@@ -84,10 +84,9 @@ argued through, and why.
   VibeRes list the modes System Settings lists. Sandboxing the app would
   remove the feature it exists for. Distribution is Developer ID signed,
   notarized builds through GitHub Releases and Homebrew.
-- **No global hotkeys by default.** Planned: an optional shortcut per profile
-  and for Revert, all unset until the user sets one (spec in BACKLOG.md).
-  The App Intents stay for Shortcuts, Stream Deck, BetterTouchTool and
-  Loupedeck.
+- **No global hotkeys by default.** A shortcut per profile and one for Revert
+  exist (§4.11), but none is set until the user records one. The App Intents
+  stay for Shortcuts, Stream Deck, BetterTouchTool and Loupedeck.
 - **No full arrangement storage.** A profile pins *which display is main*
   (§4.5) but stores no geometry. Stage 2 remains deferred.
 
@@ -100,7 +99,7 @@ argued through, and why.
 | Language | Swift 6.0, `SWIFT_STRICT_CONCURRENCY: complete` on **every** target | The app drives WindowServer from several event sources — timers, CG callbacks, wake notifications. Data races here corrupt display state |
 | Deployment target | macOS 26.0 | The code leans on `@Observable`, `MenuBarExtra(.window)`, `NavigationStack`, `SMAppService`, App Intents and ScreenCaptureKit at once. See §7 for what a backport costs |
 | UI | SwiftUI in `MenuBarExtra(.window)` | The original plan specified `NSStatusItem` + `NSPopover` and rejected `MenuBarExtra`. `MenuBarExtra` won on the amount of AppKit it removes; the cost is its cached panel geometry, which the app works around explicitly (`DisplayStore.dismissStaleMenuBarPopover`) |
-| Architecture | `VibeRes/Core` is Foundation + CoreGraphics only, with no AppKit and no bundle assumptions | It is compiled into the `viberes` CLI target verbatim. This is why user-facing copy in Core stays English and is localised in `VibeRes/UI` — see §4.11 |
+| Architecture | `VibeRes/Core` is Foundation + CoreGraphics only, with no AppKit and no bundle assumptions | It is compiled into the `viberes` CLI target verbatim. This is why user-facing copy in Core stays English and is localised in `VibeRes/UI` — see §4.12 |
 | Dependencies | Sparkle, pinned by exact version. Nothing else | An updater is the one dependency whose compromise is arbitrary code execution, so it is pinned and watched (§8) |
 | Project file | `project.yml` via XcodeGen; `*.xcodeproj` is generated and gitignored | One reviewable source of truth for build settings |
 | Binary | Universal (arm64 + x86_64) | macOS 26 still supports a handful of Intel Macs, and the slice costs nothing but download size |
@@ -287,7 +286,39 @@ room to negotiate.
 
 *Evidence:* `Shortcuts/SetResolutionIntent.swift`, `Core/ModeScoring.swift`.
 
-### 4.11 Language
+### 4.11 Global shortcuts
+
+- Optional: each profile can have a global shortcut that applies it, and Revert
+  can have one. Nothing is registered until the user records a shortcut;
+  Settings offers ⌃⌥⌘R for Revert with one click and never sets it on its own.
+- Set in the profile's Edit form or in **Settings → Shortcuts**, which lists
+  Revert and every profile.
+- A shortcut needs two modifiers, one of them ⌃, ⌥ or ⌘; F1–F20 work alone. A
+  single modifier would take a menu command (⌘), a typed character (⌥) or a
+  terminal key (⌃) from every other app.
+- Refused when set, with the reason inline: a combination macOS uses (System
+  Settings → Keyboard Shortcuts), one another VibeRes shortcut has, or one
+  another app holds exclusively. Carbon reports only exclusive registrations,
+  so a clash with an app that registered without exclusivity goes unnoticed.
+- A saved shortcut that cannot be registered at launch (taken since, or
+  hand-edited) is shown as not active next to its field, never silently dead.
+- Registered with Carbon `RegisterEventHotKey`, exclusively: no Accessibility
+  permission, no dependency. Every shortcut is released while one is being
+  recorded, so an existing combination can be recorded again.
+- A profile shortcut applies like `viberes profile apply`: no confirmation,
+  since the popover may be closed. It applies what binds and records it for
+  Revert. A profile that binds no connected display does nothing. The alert
+  sound marks a press that missed something (nothing to revert, a display not
+  connected, a failed switch); a fallback rate stays quiet.
+- Stored in the profile as `{"keyCode", "modifiers"}`. An unreadable shortcut
+  is dropped on load, never the profile. `viberes profile list` and `show`
+  print it.
+
+*Evidence:* `Core/KeyCombo.swift`, `Hotkeys/HotkeyCenter.swift`,
+`Hotkeys/CarbonHotkeyRegistrar.swift`, `Hotkeys/ShortcutActions.swift`,
+`UI/ShortcutRecorder.swift`, `UI/ShortcutsSettingsTab.swift`.
+
+### 4.12 Language
 
 - The interface ships in English, Slovak, Czech, German, Spanish and French,
   from a String Catalog. Every key must carry all six languages; the coverage
@@ -305,7 +336,7 @@ room to negotiate.
 `UI/AppLocale.swift`, `UI/ProblemCopy.swift`, `UI/ProfilePreviewCopy.swift`,
 `scripts/check-localisation.sh`.
 
-### 4.12 Updates
+### 4.13 Updates
 
 - Sparkle, with the appcast served from a stable path in the repository and a
   signed feed (`SURequireSignedFeed` + `SUVerifyUpdateBeforeExtraction`).
@@ -318,14 +349,15 @@ room to negotiate.
 
 *Evidence:* `UI/Updater.swift`, `UI/UpdaterGate.swift`, `appcast.xml`.
 
-### 4.13 Everything else
+### 4.14 Everything else
 
 - Launch at login via `SMAppService`, with the user's *intent* stored
   separately so a registration invalidated by an update or a move is
   re-registered rather than silently forgotten.
 - A three-step welcome tour on first launch, replayable from Settings. Its
   profile step offers the [first-profile workflow](README.md#profiles).
-- Settings in a standard `⌘,` scene: General, Display, Updates, Debug.
+- Settings in a standard `⌘,` scene: General, Display, Shortcuts, Updates,
+  Debug.
 - `⌘1`…`⌘9` apply the first nine profiles while the popover has focus.
 
 *Evidence:* `Core/LoginItem.swift`, `Core/Preferences.swift`,
@@ -415,6 +447,7 @@ Lowering the deployment target is mostly one line in `project.yml`:
 
 | Date | Change |
 |---|---|
+| 2026-11-13 | §4.11 Global shortcuts: optional per-profile and Revert shortcuts, unset by default |
 | 2026-11-13 | Version brought up to 0.11.1. Mirroring (after 1.0) and opt-in global hotkeys moved out of the non-goals |
 | 2026-09-21 | Rewritten as a maintained PRD. The original pre-implementation plan is in git history |
 | 2026-08-03 | 0.9.0: main display in profiles (Stage 1 of arrangement support) |

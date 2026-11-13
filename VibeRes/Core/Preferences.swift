@@ -14,6 +14,7 @@ final class Preferences {
     private static let launchAtLoginKey = "VibeRes.LaunchAtLogin"
     private static let confirmChangesKey = "VibeRes.ConfirmDisplayChanges"
     private static let livePreviewHintDismissedKey = "VibeRes.LivePreviewHintDismissed"
+    static let revertHotkeyKey = "VibeRes.RevertHotkey"
     static let debugLogEnabledKey = "VibeRes.DebugLogEnabled"
     static let debugLogLevelKey = "VibeRes.DebugLogLevel"
 
@@ -118,6 +119,19 @@ final class Preferences {
         }
     }
 
+    /// Global shortcut for Revert. `nil` until the user records one or takes
+    /// the suggestion in Settings: VibeRes never claims a key combination
+    /// nobody asked it to.
+    var revertHotkey: KeyCombo? {
+        didSet {
+            if let revertHotkey, let data = try? JSONEncoder().encode(revertHotkey) {
+                UserDefaults.standard.set(data, forKey: Self.revertHotkeyKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.revertHotkeyKey)
+            }
+        }
+    }
+
     /// The sink the debug log choice drives; nil writes no file whatever the toggle says.
     private let logSink: LogSink?
 
@@ -160,6 +174,9 @@ final class Preferences {
         self.debugLogEnabled = UserDefaults.standard.bool(forKey: Self.debugLogEnabledKey)
         self.debugLogLevel = (UserDefaults.standard.object(forKey: Self.debugLogLevelKey) as? Int)
             .flatMap(LogLevel.init(rawValue:)) ?? .info
+        // Unreadable data reads as "no shortcut" rather than taking a guess.
+        self.revertHotkey = UserDefaults.standard.data(forKey: Self.revertHotkeyKey)
+            .flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) }
         // didSet does not run in init, so hand the stored choice to the sink here.
         applyDebugLog()
     }

@@ -131,6 +131,8 @@ struct ProfilesSection: View {
         var entries: [EntryEdit]
         /// Row whose display becomes main on apply; nil = don't change.
         var mainRowID: UUID?
+        /// Global shortcut, saved with the rest of the form.
+        var hotkey: KeyCombo?
     }
 
     struct EntryEdit: Equatable, Identifiable {
@@ -687,6 +689,7 @@ struct ProfilesSection: View {
         // already stores. A hand-edited mainDisplay matching no row shows as
         // "Don't change" and is dropped on save — the edit form owns the field.
         state.mainRowID = entries.first(where: { profile.mainDisplay == rowMatcher($0) })?.id
+        state.hotkey = profile.hotkey
         return state
     }
 
@@ -732,6 +735,7 @@ struct ProfilesSection: View {
             if var fresh = profiles.profiles.first(where: { $0.id == s.profileID }) {
                 fresh.name = trimmed
                 fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
+                fresh.hotkey = s.hotkey
                 guard profiles.update(fresh) == .saved else {
                     // The entries are already saved; only the name and main
                     // pick did not land. Say so rather than claim an update.

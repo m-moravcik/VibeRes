@@ -86,12 +86,11 @@ final class ProfileStore {
     nonisolated static func capped(_ profiles: [Profile]) -> [Profile] {
         profiles.prefix(maximumProfiles).map { profile in
             guard profile.entries.count > maximumEntriesPerProfile else { return profile }
-            return Profile(
-                id: profile.id,
-                name: profile.name,
-                entries: Array(profile.entries.prefix(maximumEntriesPerProfile)),
-                createdAt: profile.createdAt
-            )
+            // Trim in place: rebuilding the profile field by field dropped
+            // every field added since (the main display, the shortcut).
+            var trimmed = profile
+            trimmed.entries = Array(profile.entries.prefix(maximumEntriesPerProfile))
+            return trimmed
         }
     }
 
@@ -402,6 +401,20 @@ final class ProfileStore {
         updated.entries = newEntries
         var catalog = profiles
         catalog[i] = updated
+        return save(catalog)
+    }
+
+    /// Sets or clears the profile's global shortcut and saves.
+    ///
+    /// The store does not police clashes between shortcuts: whether a
+    /// combination is free depends on macOS and on other apps, which only the
+    /// app can ask, so `HotkeyCenter.problem(with:for:)` checks before anything
+    /// reaches here.
+    @discardableResult
+    func setHotkey(_ hotkey: KeyCombo?, for id: UUID) -> SaveResult {
+        guard let i = profiles.firstIndex(where: { $0.id == id }) else { return .rejectedNotFound }
+        var catalog = profiles
+        catalog[i].hotkey = hotkey
         return save(catalog)
     }
 

@@ -127,6 +127,21 @@ When you click a pill, a note under the pills shows the outcome. A green check m
 
 Right-click any pill to apply, update, rename, or delete. Delete asks first — there is no undo for a profile, and `⌘Z` undoes display changes, not profile ones. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile. When saving or editing, you can optionally choose which display becomes main (hosts the menu bar) when the profile applies; the default "Don't change" keeps today's behaviour. For a one-off change without a profile, drill into a display and hit **Make main display** — the menu bar moves there, relative positions stay put, and Revert takes it back.
 
+### Keyboard shortcuts
+
+Give a profile a global shortcut and it applies from any app, without opening VibeRes. Set one in the profile's Edit form (right-click the pill, **Edit…**) or in **Settings → Shortcuts**, which lists every profile and **Revert last change**. Nothing is set until you record one; for Revert, Settings offers ⌃⌥⌘R with one click.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-shortcuts-v1-dark.png">
+    <img src="docs/screenshots/settings-shortcuts-v1-light.png" width="470" alt="Settings, Shortcuts tab: Revert last change with a Use ⌃⌥⌘R button and a Record Shortcut field, and one shortcut field per profile">
+  </picture>
+</p>
+
+Click the field and press the keys: Esc cancels, Delete removes the shortcut. Use two modifier keys, one of them ⌃, ⌥ or ⌘ (F1–F20 work on their own). A combination macOS already uses, another VibeRes shortcut has, or another app holds is refused on the spot with the reason. If a saved shortcut stops working because something else took it, its field says *Not active* and why.
+
+A profile shortcut applies what the profile can apply right now, with no confirmation, and Revert (or its shortcut) takes it back. When the press missed something, such as a display that isn't connected or nothing left to revert, you hear the alert sound. No permission is needed.
+
 ---
 
 ## Command-line companion
@@ -186,7 +201,7 @@ Two AppIntents auto-register with Shortcuts, Spotlight, and Siri:
 
 Both actions return the resolution as text like `2560 × 1440 @ 160 Hz`. When a display that offers both a variable and a fixed mode at that rate runs the variable one, the text reads `2560 × 1440 @ 160 Hz VRR`, so a Shortcut comparing the text can tell Variable from fixed. A variable mode without a fixed twin, such as ProMotion's 120 Hz, keeps the plain `@ 120 Hz`.
 
-Once registered, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings — pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
+For a profile or Revert, VibeRes has [its own shortcuts](#keyboard-shortcuts). For anything else, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings — pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
 
 ---
 

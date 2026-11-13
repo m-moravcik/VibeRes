@@ -26,7 +26,7 @@ struct SettingsView: View {
     @State private var selectedTab: SettingsTab = .general
 
     enum SettingsTab: Hashable {
-        case general, display, updates, debug
+        case general, display, shortcuts, updates, debug
     }
 
     var body: some View {
@@ -39,6 +39,10 @@ struct SettingsView: View {
             displayTab(prefs: $prefs)
                 .tabItem { Label("Display", systemImage: "display") }
                 .tag(SettingsTab.display)
+
+            ShortcutsSettingsTab()
+                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                .tag(SettingsTab.shortcuts)
 
             updatesTab
                 .tabItem { Label("Updates", systemImage: "arrow.down.circle") }

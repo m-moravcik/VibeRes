@@ -51,6 +51,14 @@ enum ScreenshotHarness {
         // anything to the app's real preferences.
         let preferences = Preferences()
         let updater = makeUpdaterController()
+        // Never given bindings, so it registers no shortcut; the recorders
+        // only need it to exist.
+        let hotkeys = HotkeyCenter(registrar: CarbonHotkeyRegistrar())
+        // One profile with a shortcut, so the Shortcuts tab shows both states.
+        if let desk = profiles.profiles.first {
+            // ⌃⌥W: a letter, so the shot reads the same on every keyboard layout.
+            profiles.setHotkey(KeyCombo(keyCode: 0x0D, modifiers: [.control, .option]), for: desk.id)
+        }
 
         guard let builtIn = displays.displays.first(where: \.isMain) ?? displays.displays.first else {
             fail("no display to render")
@@ -68,6 +76,7 @@ enum ScreenshotHarness {
                             .environment(displays)
                             .environment(profiles)
                             .environment(preferences)
+                            .environment(hotkeys)
                             .environment(\.updater, updater)
                             .environment(updater.updateStatus),
                         scheme: scheme
@@ -86,6 +95,27 @@ enum ScreenshotHarness {
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
                 try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
                 try write(panel(OnboardingView(step: 1)), to: output.appendingPathComponent("onboarding-profile\(suffix).png"))
+                if let desk = profiles.profiles.first {
+                    try write(panel(DemoEditForm(profile: desk)), to: output.appendingPathComponent("edit\(suffix).png"))
+                }
+                try write(
+                    capture(
+                        // The tab's content at the window's content size;
+                        // the tab bar is the window toolbar's, not ours.
+                        ShortcutsSettingsTab()
+                            .frame(width: 470, height: 400)
+                            .environment(profiles)
+                            .environment(preferences)
+                            .environment(hotkeys)
+                            .background(scheme == .dark
+                                        ? Color(red: 0.16, green: 0.16, blue: 0.17)
+                                        : Color(red: 0.95, green: 0.95, blue: 0.96))
+                            .environment(\.colorScheme, scheme)
+                            .environment(\.locale, .appLanguage),
+                        scheme: scheme
+                    ),
+                    to: output.appendingPathComponent("settings-shortcuts\(suffix).png")
+                )
                 try write(
                     render(HeroScene(popover: root, scheme: scheme, banner: false)),
                     to: output.appendingPathComponent("hero\(suffix).png")
@@ -108,6 +138,7 @@ enum ScreenshotHarness {
                             .environment(displays)
                             .environment(profiles)
                             .environment(preferences)
+                            .environment(hotkeys)
                             .environment(\.updater, updater)
                             .environment(updater.updateStatus),
                         scheme: scheme
@@ -213,6 +244,38 @@ enum ScreenshotHarness {
 /// The real popover sits on `.ultraThinMaterial` over the desktop, which an
 /// off-screen window has nothing to blur. A solid fill in the material's
 /// resting colour keeps the contrast what the eye sees.
+/// The profile Edit form for one seeded profile, as the pill's Edit… opens it,
+/// minus the live mode pickers: the shot is about the form's layout.
+private struct DemoEditForm: View {
+    @State var state: ProfilesSection.EditFormState
+
+    init(profile: Profile) {
+        let entries = profile.entries.map { entry in
+            ProfilesSection.EntryEdit(
+                id: UUID(),
+                matcherKind: entry.matcher == .anyExternal ? .anyExternal : .specific,
+                isBuiltIn: { if case .builtIn = entry.matcher { return true } else { return false } }(),
+                vendor: 0, model: 0, serial: 0,
+                displayName: entry.displayName,
+                pointWidth: entry.pointWidth,
+                pointHeight: entry.pointHeight,
+                refreshHz: entry.refreshHz,
+                isHiDPI: entry.isHiDPI,
+                isIncluded: true,
+                availableModes: []
+            )
+        }
+        var state = ProfilesSection.EditFormState(profileID: profile.id, name: profile.name, entries: entries)
+        state.hotkey = profile.hotkey
+        _state = State(initialValue: state)
+    }
+
+    var body: some View {
+        ProfileEditForm(state: $state, save: {}, cancel: {})
+            .padding(.vertical, Design.Spacing.s)
+    }
+}
+
 private struct PopoverPanel<Content: View>: View {
     let scheme: ColorScheme
     @ViewBuilder let content: Content

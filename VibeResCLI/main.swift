@@ -268,6 +268,9 @@ func cmdProfileList() {
         if let main = p.mainDisplay {
             print("  main: \(mainKindLabel(main))")
         }
+        if let hotkey = p.hotkey {
+            print("  shortcut: \(hotkey.displayString)")
+        }
     }
 }
 
@@ -335,6 +338,9 @@ func cmdProfileShow(_ name: String) {
     }
     if let main = p.mainDisplay {
         print("  main: \(mainKindLabel(main))")
+    }
+    if let hotkey = p.hotkey {
+        print("  shortcut: \(hotkey.displayString)")
     }
 }
 
