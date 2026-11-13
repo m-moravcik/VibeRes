@@ -75,4 +75,81 @@ struct RevertFailureTests {
         #expect(store.revert.canRevert, "the undo must survive")
         #expect(store.lastError != nil)
     }
+
+    @Test("Explicit Revert ends confirmation and a late Keep cannot reapply or clear recovery",
+          arguments: [false, true])
+    func explicitRevertEndsConfirmation(restoreFails: Bool) throws {
+        let store = DisplayStore.forTesting()
+        let mode = try aRealMode()
+        store.revert.record(displayID: 1, displayName: "Fake", before: mode)
+        store.armConfirmationForTesting(mode: mode, display: 1)
+        var calls = 0
+        store.applyMode = { _, _, _ in
+            calls += 1
+            if restoreFails { throw ResolutionSwitcher.Failure.applyMode(.cannotComplete) }
+        }
+
+        store.performRevert()
+        store.confirmDisplayChange()
+        store.updateConfirmation(at: .distantFuture)
+
+        #expect(store.confirmationSecondsRemaining == nil)
+        #expect(calls == 1)
+        #expect(store.revert.canRevert == restoreFails)
+    }
+
+    @Test("Ending an old confirmation protects newer history from Keep and timeout")
+    func endedConfirmationLeavesNewHistoryAlone() throws {
+        let store = DisplayStore.forTesting()
+        let mode = try aRealMode()
+        store.armConfirmationForTesting(mode: mode, display: 1)
+        store.endPendingConfirmation()
+        store.revert.record(displayID: 2, displayName: "New action", before: mode)
+        var calls = 0
+        store.applyMode = { _, _, _ in calls += 1 }
+
+        store.confirmDisplayChange()
+        store.updateConfirmation(at: .distantFuture)
+
+        #expect(store.confirmationSecondsRemaining == nil)
+        #expect(calls == 0)
+        #expect(store.revert.entries.map(\.displayID) == [2])
+    }
+
+    @Test("Without a newer action the confirmation deadline still restores the mode")
+    func pendingConfirmationStillExpires() throws {
+        let store = DisplayStore.forTesting()
+        let mode = try aRealMode()
+        store.revert.record(displayID: 1, displayName: "Fake", before: mode)
+        store.armConfirmationForTesting(mode: mode, display: 1)
+        var restored: [CGDirectDisplayID] = []
+        store.applyMode = { _, display, _ in restored.append(display) }
+
+        store.updateConfirmation(at: .distantFuture)
+
+        #expect(restored == [1])
+        #expect(store.confirmationSecondsRemaining == nil)
+        #expect(!store.revert.canRevert)
+    }
+
+    @Test("Keeping a pending change still commits it and clears the safety net")
+    func successfulConfirmation() throws {
+        let store = DisplayStore.forTesting()
+        let mode = try aRealMode()
+        store.revert.record(displayID: 1, displayName: "Fake", before: mode)
+        store.armConfirmationForTesting(mode: mode, display: 1)
+        var permanentCommits = 0
+        store.applyMode = { _, display, scope in
+            #expect(display == 1)
+            #expect(scope == .permanently)
+            permanentCommits += 1
+        }
+
+        store.confirmDisplayChange()
+        store.updateConfirmation(at: .distantFuture)
+
+        #expect(permanentCommits == 1)
+        #expect(store.confirmationSecondsRemaining == nil)
+        #expect(!store.revert.canRevert)
+    }
 }

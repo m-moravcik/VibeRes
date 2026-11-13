@@ -115,12 +115,17 @@ struct KeyCombo: Hashable, Sendable {
     /// "⌃⌥⌘R", modifiers in the order macOS menus print them.
     @MainActor
     var displayString: String {
+        displayString(spaceName: "Space")
+    }
+
+    @MainActor
+    func displayString(spaceName: String) -> String {
         var text = ""
         if modifiers.contains(.control) { text += "⌃" }
         if modifiers.contains(.option) { text += "⌥" }
         if modifiers.contains(.shift) { text += "⇧" }
         if modifiers.contains(.command) { text += "⌘" }
-        return text + Self.keyName(for: keyCode)
+        return text + (keyCode == UInt32(kVK_Space) ? spaceName : Self.keyName(for: keyCode))
     }
 
     /// What the key is called on the current keyboard layout, upper-cased the

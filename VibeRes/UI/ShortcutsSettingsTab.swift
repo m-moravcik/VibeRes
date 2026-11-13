@@ -20,7 +20,7 @@ struct ShortcutsSettingsTab: View {
                 LabeledContent("Revert last change") {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         if preferences.revertHotkey == nil {
-                            Button("Use \(Text(verbatim: KeyCombo.suggestedRevert.displayString))") {
+                            Button("Use \(Text(verbatim: KeyCombo.suggestedRevert.localizedDisplayString()))") {
                                 useSuggestedRevertShortcut()
                             }
                             .help("Sets the suggested shortcut. Nothing is set until you choose one.")

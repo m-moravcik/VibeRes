@@ -62,6 +62,18 @@ struct KeyComboTests {
         #expect(KeyCombo(keyCode: keySpace, modifiers: [.control, .option]).displayString == "⌃⌥Space")
     }
 
+    @Test("The UI localizes Space while the CLI keeps its English name",
+          arguments: [("en", "Space"), ("sk", "Medzerník"), ("cs", "Mezerník"),
+                      ("de", "Leertaste"), ("es", "Espacio"), ("fr", "Espace")])
+    @MainActor
+    func localizedSpace(language: String, name: String) {
+        let combo = KeyCombo(keyCode: keySpace, modifiers: [.control, .option])
+        #expect(combo.localizedDisplayString(locale: Locale(identifier: language)) == "⌃⌥" + name)
+        #expect(combo.displayString == "⌃⌥Space")
+        #expect(KeyCombo.suggestedRevert.localizedDisplayString(locale: Locale(identifier: language)) == "⌃⌥⌘R")
+        #expect(KeyCombo(keyCode: keyF5, modifiers: []).localizedDisplayString(locale: Locale(identifier: language)) == "F5")
+    }
+
     @Test("Enabled system shortcuts are reserved; disabled ones and keyless entries are not")
     func reservedFromSymbolicHotKeys() {
         // Shaped like CopySymbolicHotKeys output on macOS 27.
@@ -550,17 +562,22 @@ struct ShortcutActionTests {
         #expect(r.alerts() == 1)
     }
 
-    @Test("Revert with nothing to undo sounds the alert and touches nothing")
-    func revertWithNothingToUndo() throws {
+    @Test("Revert with nothing to undo sounds the alert and ends any confirmation",
+          arguments: [false, true])
+    func revertWithNothingToUndo(pendingConfirmation: Bool) throws {
         let modes = try realModes()
         let r = rig(current: modes[1], modes: modes)
         var restores = 0
         r.displays.applyMode = { _, _, _ in restores += 1 }
+        if pendingConfirmation {
+            r.displays.armConfirmationForTesting(mode: modes[0], display: 101)
+        }
 
         ShortcutActions.perform(.revert, displays: r.displays, profiles: r.profiles)
 
         #expect(restores == 0)
         #expect(r.alerts() == 1)
+        #expect(r.displays.confirmationSecondsRemaining == nil)
     }
 
     @Test("Revert undoes what a profile shortcut applied")
@@ -578,6 +595,47 @@ struct ShortcutActionTests {
         #expect(restored.sorted() == ids)
         #expect(r.alerts() == 0)
         #expect(!r.displays.revert.canRevert)
+    }
+
+    @Test("A profile shortcut ends old confirmation and its history survives Keep and timeout")
+    func profileSupersedesConfirmation() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])])
+        r.profiles.add(profile)
+        r.displays.revert.record(displayID: 999, displayName: "Old action", before: modes[0])
+        r.displays.armConfirmationForTesting(mode: modes[1], display: 999)
+        var commits = 0
+        r.displays.applyMode = { _, _, _ in commits += 1 }
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+        r.displays.confirmDisplayChange()
+        r.displays.updateConfirmation(at: .distantFuture)
+
+        #expect(r.displays.confirmationSecondsRemaining == nil)
+        #expect(r.batches() == 1)
+        #expect(r.alerts() == 0)
+        #expect(commits == 0)
+        #expect(r.displays.revert.entries.map(\.displayID).sorted() == ids)
+    }
+
+    @Test("A global Revert ends old confirmation before a late Keep")
+    func globalRevertSupersedesConfirmation() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        r.displays.revert.record(displayID: 101, displayName: "Fake", before: modes[0])
+        r.displays.armConfirmationForTesting(mode: modes[1], display: 101)
+        var committedModes: [Int32] = []
+        r.displays.applyMode = { mode, _, _ in committedModes.append(mode.ioDisplayModeID) }
+
+        ShortcutActions.perform(.revert, displays: r.displays, profiles: r.profiles)
+        r.displays.confirmDisplayChange()
+        r.displays.updateConfirmation(at: .distantFuture)
+
+        #expect(committedModes == [modes[0].ioDisplayModeID])
+        #expect(r.displays.confirmationSecondsRemaining == nil)
+        #expect(!r.displays.revert.canRevert)
+        #expect(r.alerts() == 0)
     }
 
     @Test("Revert sounds one alert when one display fails and keeps it retryable")

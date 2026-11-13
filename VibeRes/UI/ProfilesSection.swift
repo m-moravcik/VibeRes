@@ -453,6 +453,7 @@ struct ProfilesSection: View {
     /// `CGDisplayMode`. Measured in the 2026-08-01 audit: scoring three
     /// displays against a real 60-mode list takes 86 µs.
     private func commitApply(_ profile: Profile) {
+        displays.endPendingConfirmation()
         let result = profiles.applyDetailed(
             profile,
             displays: displays.displays,

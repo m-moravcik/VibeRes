@@ -55,11 +55,6 @@ enum ShortcutActions {
     /// Undoes the last change, as the popover's Revert row does. With nothing
     /// to undo, the alert sound says the press was heard and did nothing.
     private static func revert(displays: DisplayStore) {
-        guard displays.revert.canRevert else {
-            Log.apply.info("shortcut: revert pressed with nothing to revert")
-            alert()
-            return
-        }
         Log.apply.info("shortcut: revert")
         if displays.performRevert() == 0 || displays.revert.canRevert {
             alert()
@@ -85,6 +80,7 @@ enum ShortcutActions {
             return
         }
         Log.apply.info("shortcut: applying profile", detail: "profile '\(profile.name)'")
+        displays.endPendingConfirmation()
         let result = profiles.applyDetailed(profile, displays: live, revert: displays.revert)
         if result.mainChange?.didChange == true {
             displays.expectOwnMainChange()

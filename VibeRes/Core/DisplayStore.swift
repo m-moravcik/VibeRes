@@ -643,41 +643,47 @@ final class DisplayStore {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
                 guard let self, !Task.isCancelled else { return }
-                switch self.countdown.state(at: Date()) {
-                case .waiting(let seconds):
-                    self.confirmationSecondsRemaining = seconds
-                case .expired:
-                    // The timeout is the actual safety net: a user staring at a
-                    // black screen cannot click anything.
-                    self.revertUnconfirmedChange()
-                    return
-                case .inactive:
-                    return
-                }
+                self.updateConfirmation(at: Date())
             }
         }
+    }
+
+    func updateConfirmation(at now: Date) {
+        switch countdown.state(at: now) {
+        case .waiting(let seconds):
+            confirmationSecondsRemaining = seconds
+        case .expired:
+            Log.apply.info("confirm: window expired, reverting")
+            performRevert()
+        case .inactive:
+            return
+        }
+    }
+
+    func endPendingConfirmation() {
+        countdownTask?.cancel()
+        countdownTask = nil
+        countdown.confirm()
+        confirmationSecondsRemaining = nil
+        pendingConfirmation = nil
     }
 
     /// The user can see the screen and wants to keep it. Re-applies the same mode
     /// permanently so the choice survives a reboot.
     func confirmDisplayChange() {
-        if let pending = pendingConfirmation {
-            do {
-                try applyMode(pending.mode, pending.display, .permanently)
-            } catch {
-                // The mode is still session-scoped and the screen may be
-                // unreadable. Tearing down the countdown here would remove the
-                // only automatic way back, so leave the safety net armed and
-                // say what went wrong.
-                lastError = error.asUserFacingProblem
-                return
-            }
+        guard let pending = pendingConfirmation else { return }
+        do {
+            try applyMode(pending.mode, pending.display, .permanently)
+        } catch {
+            // The mode is still session-scoped and the screen may be
+            // unreadable. Tearing down the countdown here would remove the
+            // only automatic way back, so leave the safety net armed and
+            // say what went wrong.
+            lastError = error.asUserFacingProblem
+            return
         }
         Log.apply.info("confirm: change kept")
-        countdownTask?.cancel()
-        countdown.confirm()
-        confirmationSecondsRemaining = nil
-        pendingConfirmation = nil
+        endPendingConfirmation()
         // Keeping the change means there is nothing left to undo by accident.
         revert.clear()
     }
@@ -688,21 +694,13 @@ final class DisplayStore {
         armConfirmation(mode: mode, display: display)
     }
 
-    private func revertUnconfirmedChange() {
-        Log.apply.info("confirm: window expired, reverting")
-        countdownTask?.cancel()
-        countdown.confirm()
-        confirmationSecondsRemaining = nil
-        pendingConfirmation = nil
-        performRevert()
-    }
-
     /// Re-apply each display's `before` mode, then — if the recorded batch
     /// also moved the menu bar — translate the live arrangement back so the
     /// previous main hosts it again. Returns the count of restorations so the
     /// caller can surface a toast.
     @discardableResult
     func performRevert() -> Int {
+        endPendingConfirmation()
         let snapshot = revert.consume()
         var failed: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
         var restoredModes = 0

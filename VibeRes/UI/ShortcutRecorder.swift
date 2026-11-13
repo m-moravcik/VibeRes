@@ -39,7 +39,7 @@ struct ShortcutRecorder: View {
             }
             .controlSize(controlSize)
             .accessibilityLabel(isRecording ? Text("Recording shortcut") : Text("Shortcut"))
-            .accessibilityValue(combo.map { Text(verbatim: $0.displayString) } ?? Text("None"))
+            .accessibilityValue(combo.map { Text(verbatim: $0.localizedDisplayString()) } ?? Text("None"))
             .accessibilityHint(Text("Press to record a new shortcut."))
             .overlay(alignment: .trailing) {
                 if combo != nil, !isRecording {
@@ -92,7 +92,7 @@ struct ShortcutRecorder: View {
             Text("Type shortcut…")
                 .foregroundStyle(.secondary)
         } else if let combo {
-            Text(verbatim: combo.displayString)
+            Text(verbatim: combo.localizedDisplayString())
         } else {
             Text("Record Shortcut")
         }
@@ -192,6 +192,13 @@ struct ModifierOnlyPress {
 
     mutating func keyPressed() {
         receivedKey = !modifiers.isEmpty
+    }
+}
+
+extension KeyCombo {
+    @MainActor
+    func localizedDisplayString(locale: Locale = .appLanguage) -> String {
+        displayString(spaceName: String(localized: LocalizedStringResource("Space", locale: locale)))
     }
 }
 
