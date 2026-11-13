@@ -224,8 +224,11 @@ room to negotiate.
 - **Revert** (`⌘Z`, or the footer row) undoes the last action — one display or
   a whole profile, including the main-display change. A revert that fails keeps
   the entry so it can be tried again, and reports only what actually came back.
-- **Confirm resolution changes** (opt-in) applies for the session only and
-  undoes it after 12 seconds unless confirmed. The *timeout* is the safety net,
+- **Confirm resolution changes** applies a size or rate picked by hand for the
+  session only and undoes it after 12 seconds unless confirmed. On for a fresh
+  install, where the welcome tour shows the switch; an install from before
+  this default keeps its setting. Profiles, shortcuts and auto-apply arm no
+  countdown. The *timeout* is the safety net,
   not the button: someone looking at a black screen cannot click anything.
   Explicit Revert ends that confirmation. Applying a profile ends it only
   when the profile changes something, so an unsuccessful or unchanged apply

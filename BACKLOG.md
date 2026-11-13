@@ -162,12 +162,10 @@ Changes the approved vision asks for that the app does not do yet. None is
 built; each still needs its own design before it ships.
 
 ### Confirm resolution changes on by default
-VISION.md: "The confirmation timeout is on by default, so a black screen
-undoes itself even for someone who never opened Settings." Today the setting
-is off by default (`Preferences.confirmDisplayChanges`). The timeout guards a
-size picked by hand only: profiles, profile shortcuts and auto-apply arm no
-countdown. Open: whether existing users who never touched the setting get the
-new default, or only fresh installs.
+**Built 2026-11-13.** On for a fresh install (no welcome tour finished yet),
+with the switch in the tour's last step so the user chooses before the first
+"Keep?" row appears. An install from before keeps what it had, which is off
+for anyone who never touched it. Guards a size or rate picked by hand only.
 
 ### HDR as an advanced profile setting
 VISION.md: HDR is the one colour setting in reach, as an advanced control

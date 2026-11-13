@@ -89,11 +89,18 @@ final class Preferences {
     /// When true, a resolution change is applied for the session only and undone
     /// after a short window unless the user confirms it.
     ///
-    /// Off by default, deliberately. It is the only protection against a mode
-    /// that leaves the screen unreadable — the popover is on that screen, so a
-    /// button nobody can see is useless and the timeout is what saves them — but
-    /// it also interrupts the app's core action, which is fine for the vast
-    /// majority of changes. Opt-in keeps the default flow untouched.
+    /// It is the only protection against a mode that leaves the screen
+    /// unreadable: the popover is on that screen, so a button nobody can see is
+    /// useless and the timeout is what saves them. VISION.md therefore wants it
+    /// on by default. A fresh install starts with it on and the welcome tour
+    /// shows the switch, so the "Keep?" row never comes as a surprise. An
+    /// install from before this default keeps what it had, which for anyone who
+    /// never touched it is off: an update must not start reverting changes
+    /// someone did not confirm. See `initialConfirmDisplayChanges`.
+    ///
+    /// It guards a size or rate picked by hand only. Profiles, shortcuts and
+    /// auto-apply apply modes the user saved after seeing them work, and arm no
+    /// countdown.
     var confirmDisplayChanges: Bool {
         didSet {
             UserDefaults.standard.set(confirmDisplayChanges, forKey: Self.confirmChangesKey)
@@ -139,9 +146,24 @@ final class Preferences {
         logSink?.configure(enabled: debugLogEnabled, verbosity: debugLogLevel)
     }
 
+    /// The confirmation setting at launch, settled once and written down.
+    ///
+    /// A stored answer wins. Without one, a fresh install (no welcome tour
+    /// finished yet) gets the new default, on, and an install that has been
+    /// through the tour keeps the old one, off. The result is persisted so the
+    /// answer does not flip once the tour sets `onboardingShown`.
+    static func initialConfirmDisplayChanges(_ defaults: UserDefaults) -> Bool {
+        if let stored = defaults.object(forKey: confirmChangesKey) as? Bool {
+            return stored
+        }
+        let freshInstall = defaults.object(forKey: onboardingShownKey) == nil
+        defaults.set(freshInstall, forKey: confirmChangesKey)
+        return freshInstall
+    }
+
     init(logSink: LogSink? = nil) {
         self.logSink = logSink
-        self.confirmDisplayChanges = UserDefaults.standard.bool(forKey: Self.confirmChangesKey)
+        self.confirmDisplayChanges = Self.initialConfirmDisplayChanges(UserDefaults.standard)
         // Read before the didSet observers can fire.
         self.launchAtLoginIntent = UserDefaults.standard.object(forKey: Self.launchAtLoginKey) as? Bool
 

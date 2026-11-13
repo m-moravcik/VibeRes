@@ -95,6 +95,7 @@ enum ScreenshotHarness {
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
                 try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
                 try write(panel(OnboardingView(step: 1)), to: output.appendingPathComponent("onboarding-profile\(suffix).png"))
+                try write(panel(OnboardingView(step: 2)), to: output.appendingPathComponent("onboarding-confirm\(suffix).png"))
                 if let desk = profiles.profiles.first {
                     try write(panel(DemoEditForm(profile: desk)), to: output.appendingPathComponent("edit\(suffix).png"))
                 }

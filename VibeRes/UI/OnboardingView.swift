@@ -139,13 +139,31 @@ struct OnboardingView: View {
         }
     }
 
+    /// Simple Mode and the safety net that goes with clicking a size: the
+    /// confirmation is on for a fresh install, and this is where the user
+    /// meets it and can say no, before the first "Keep?" row ever appears.
     @ViewBuilder
     private var stepSimple: some View {
-        StepCard(
-            symbol: "slider.horizontal.3",
-            title: String(localized: "onboarding.simple.title"),
-            bodyText: String(localized: "onboarding.simple.body")
-        )
+        @Bindable var prefs = preferences
+        VStack(spacing: 12) {
+            StepCard(
+                symbol: "slider.horizontal.3",
+                title: String(localized: "onboarding.simple.title"),
+                bodyText: String(localized: "onboarding.simple.body")
+            )
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle(isOn: $prefs.confirmDisplayChanges) {
+                    Text("Undo a size I don't keep within \(DisplayStore.confirmationWindowSeconds) s")
+                        .font(.callout)
+                }
+                .toggleStyle(.checkbox)
+                Text("If a new size leaves the screen unreadable, it goes back on its own. Profiles and shortcuts never ask.")
+                    .font(Design.Typography.note)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func finish() {
