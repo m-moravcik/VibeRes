@@ -206,7 +206,7 @@ effort; none is built yet.
   and the glyph plays its switch moment.
 - **Technique:** a short "no" moment on the status glyph, a small horizontal
   shake of the window glyph (~0.5 s), drawn through `MenuBarIconAnimator`
-  frames per `status-glyphs.md`.
+  frames per the motion-polish skill's `status-glyphs.md`.
 - **Reduce Motion:** a brief dim of the glyph instead of the shake.
 - **Effort:** M. Needs glyph frames and their size tests.
 
