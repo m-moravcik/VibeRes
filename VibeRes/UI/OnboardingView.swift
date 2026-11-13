@@ -51,7 +51,10 @@ struct OnboardingView: View {
                         .offset(x: index == step ? 0 : (index > step ? 16 : -16))
                         .allowsHitTesting(index == step)
                         .disabled(index != step)
-                        .accessibilityHidden(index != step)
+                        // Ignore inactive children without toggling
+                        // accessibilityHidden on the live subtree: that makes
+                        // SwiftUI expand Save's AX frame across the name field.
+                        .accessibilityElement(children: index == step ? .contain : .ignore)
                 }
             }
             .padding(.horizontal, 18)

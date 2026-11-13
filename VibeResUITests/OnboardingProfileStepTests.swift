@@ -71,6 +71,14 @@ final class OnboardingProfileStepTests: XCTestCase {
         XCTAssertTrue(popover.textFields.firstMatch.isEnabled, "a failed save must allow retry")
     }
 
+    func testInactiveProfileControlsAreNotAccessible() throws {
+        let popover = try openProfileStep()
+        popover.buttons["Next"].click()
+        XCTAssertTrue(popover.buttons["Done"].waitForExistence(timeout: 5))
+        XCTAssertFalse(popover.textFields.firstMatch.exists, "the inactive profile step must not expose its field")
+        XCTAssertFalse(popover.buttons["Save profile"].exists, "the inactive profile step must not expose Save")
+    }
+
     // MARK: - Helpers
 
     private func openProfileStep() throws -> XCUIElement {
@@ -83,6 +91,8 @@ final class OnboardingProfileStepTests: XCTestCase {
         let popover = app.dialogs.firstMatch
         XCTAssertTrue(popover.waitForExistence(timeout: 10), "the popover never opened")
         XCTAssertTrue(popover.buttons["Next"].waitForExistence(timeout: 5), "the welcome tour is not on screen")
+        XCTAssertFalse(popover.textFields.firstMatch.exists, "the inactive profile step must not expose its field")
+        XCTAssertFalse(popover.buttons["Save profile"].exists, "the inactive profile step must not expose Save")
         popover.buttons["Next"].click()
         XCTAssertTrue(
             popover.textFields.firstMatch.waitForExistence(timeout: 5),
@@ -92,6 +102,15 @@ final class OnboardingProfileStepTests: XCTestCase {
         XCTAssertFalse(
             staticText(in: popover, beginningWith: "Some monitors report the same identity.").exists,
             "an unsaved profile must not announce an ambiguity warning"
+        )
+        // The AX click uses the button's frame centre. After Next, SwiftUI
+        // must keep that frame beside the name field, not across the row.
+        let fieldFrame = popover.textFields.firstMatch.frame
+        let saveFrame = popover.buttons["Save profile"].frame
+        XCTAssertFalse(saveFrame.isEmpty, "Save must have an accessibility frame")
+        XCTAssertLessThanOrEqual(
+            fieldFrame.maxX, saveFrame.minX,
+            "Save's accessibility frame overlaps the name field"
         )
         return popover
     }
