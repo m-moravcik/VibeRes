@@ -151,6 +151,100 @@ setup and everyday use are in the [user guide](README.md#keyboard-shortcuts).
 The separate Settings tab was chosen because recording in a normal window
 is sturdier than in the popover and one list shows every shortcut.
 
+## Motion and polish audit (2026-11-13)
+
+A pass over the whole app with the motion-polish checklist. The popover
+already moves with a job per animation (`Design.Motion`, popover motion v2):
+press feedback, rows making room, notes, rolling numbers, the changed-glow,
+the travelling MAIN badge and rate highlight, the pill checkmark bounce, the
+menu bar glyph moment, Reduce Motion handled throughout. What is left sits
+around it: the hover preview, the safety countdown, the global shortcuts that
+run with the popover closed, and the Settings window. Ranked by value for
+effort; none is built yet.
+
+### 1. Hover preview morphs between sizes
+- **Moment:** moving the pointer down the size list in a display's detail.
+  The proposed rectangle in the preview box jumps from size to size, and the
+  box itself pops in and out.
+- **Job:** connect. The eye should see "bigger" or "smaller" as a change, on
+  the feature VibeRes has that the alternatives do not.
+- **Technique:** the proposed rectangle springs to its new frame
+  (`.animation(Design.Motion.chip, value: proposed size)`), and the box fades
+  and scales in from 0.96 on first hover (`rowIn` timing), out with `rowOut`.
+- **Reduce Motion:** the rectangle crossfades (`quick`); the box fades only.
+- **Effort:** S. `PreviewBox.swift`, `DisplayDetailView` overlay.
+
+### 2. The safety countdown drains
+- **Moment:** "Keep this resolution? Reverting in 12s" with Confirm
+  resolution changes on.
+- **Job:** progress. A draining bar reads at a glance on a screen that may be
+  barely legible; the rolling seconds need reading.
+- **Technique:** a thin bar along the row's bottom edge in the warning tint,
+  `ProgressView(timerInterval:)` or a width driven by `TimelineView`, linear
+  over the window.
+- **Reduce Motion:** the bar steps once a second with the digits instead of
+  sliding.
+- **Effort:** S. `MenuContent.swift` countdown row.
+
+### 3. The shortcut recorder shows its state
+- **Moment:** recording a shortcut in Settings or the Edit form.
+- **Jobs:** progress (listening), confirm (accepted), and a clear "no".
+- **Technique:** while listening the field carries an accent border that
+  breathes (opacity loop, period ~1.2 s, stops when recording stops); an
+  accepted combination lands with the existing `changedGlow`; a refusal gives
+  one short horizontal shake (~0.3 s, three small offsets, `keyframeAnimator`).
+- **Reduce Motion:** the border is static; no shake, the border turns orange
+  for the refusal instead. The reason text stays the real signal.
+- **Effort:** S. `ShortcutRecorder.swift`.
+
+### 4. The menu bar glyph answers a missed shortcut
+- **Moment:** a global shortcut pressed with the popover closed that did
+  nothing (no profile display connected, nothing to revert, a failed switch).
+  Today the only answer is the alert sound, which is off for anyone with
+  muted alerts.
+- **Job:** confirm, negatively. Success already answers: the displays change
+  and the glyph plays its switch moment.
+- **Technique:** a short "no" moment on the status glyph, a small horizontal
+  shake of the window glyph (~0.5 s), drawn through `MenuBarIconAnimator`
+  frames per the motion-polish skill's `status-glyphs.md`.
+- **Reduce Motion:** a brief dim of the glyph instead of the shake.
+- **Effort:** M. Needs glyph frames and their size tests.
+
+### 5. Onboarding marks the first saved profile
+- **Moment:** the welcome tour's profile step after **Save profile**. The
+  confirmation crossfades in.
+- **Job:** celebrate, quietly. The first profile is the one milestone in the
+  app; the pill checkmark already bounces once on activation, so the same
+  system bounce on the confirmation's checkmark ties the two together.
+- **Technique:** `.symbolEffect(.bounce, value: savedName)` on the
+  confirmation symbol. No confetti.
+- **Reduce Motion:** no bounce, the crossfade stays.
+- **Effort:** XS. `OnboardingView.swift`.
+
+### 6. "Copied" in Settings swaps in place
+- **Moment:** Settings → Debug → Copy diagnostics.
+- **Job:** confirm.
+- **Technique:** `.contentTransition(.symbolEffect(.replace))` on the label so
+  the checkmark replaces the text instead of cutting.
+- **Reduce Motion:** crossfade.
+- **Effort:** XS. `SettingsView.swift`.
+
+### Product suggestions (not motion)
+- **The Revert row wraps onto two lines.** "Revert Built-in Retina Display →
+  1512×982" is too long for the popover footer and breaks the menu-like row.
+  Shorter label ("Revert to 1512×982"), the display name in the tooltip and
+  the accessibility label. A UI defect, worth fixing before the motion items.
+- **VoiceOver hears a shortcut's result.** With the popover closed a profile
+  or Revert shortcut is silent for a screen reader user. Post an
+  accessibility announcement ("Applied Work", "Nothing to revert") through
+  `NSAccessibility.post(element:notification: .announcementRequested)`.
+- **A hint for a profile that can never apply here.** A pill whose displays
+  are all missing applies nothing; its tooltip could say which monitor it is
+  waiting for, as the confirmation panel already does.
+- **No new sounds.** macOS has no silent mode to respect and the menu bar
+  utility should stay quiet; the alert sound for a missed shortcut is the
+  one sound worth having.
+
 ## Shipped, kept here so they are not re-proposed
 
 ### Sparkle in-app updates — shipped in 0.8.2
