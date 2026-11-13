@@ -4,6 +4,30 @@ import Testing
 
 @Suite("DisplayStore refresh transitions")
 struct DisplayStoreRefreshTests {
+    @Test("A staged demo snapshot also supplies live reads without changing refresh tokens")
+    @MainActor
+    func stagedSnapshotsSupplyLiveReads() {
+        let store = DisplayStore.forTesting()
+        let staged = [DisplayInfo(id: 101, name: "Fake", isMain: true,
+                                  modes: [], currentMode: nil, groups: [])]
+        let token = store.setChangeToken
+        store.showForDemo(staged)
+
+        #expect(store.liveSnapshot() == staged)
+        #expect(store.setChangeToken == token)
+        store.revert.recordBatch([], beforeMain: 101)
+
+        store.refresh()
+
+        #expect(store.revert.canRevert)
+        #expect(store.setChangeToken == token)
+
+        store.showForDemo([])
+
+        #expect(store.liveSnapshot().isEmpty)
+        #expect(store.setChangeToken == token)
+    }
+
     @Test("Main display swap invalidates the popover without triggering auto-apply")
     func mainSwapDoesNotBumpSetChangeToken() {
         let transition = DisplayStore.refreshTransition(
@@ -16,11 +40,10 @@ struct DisplayStoreRefreshTests {
         #expect(transition.setChanged == false)
         #expect(transition.mainSwapped == true)
         #expect(transition.shouldBumpSetChangeToken == false)
-        #expect(transition.shouldClearRevertHistory == false)
         #expect(transition.shouldDismissMenuBarPopover == true)
     }
 
-    @Test("Display set changes trigger auto-apply and clear stale revert history")
+    @Test("Display set changes trigger auto-apply and dismiss the popover")
     func displaySetChangeBumpsToken() {
         let transition = DisplayStore.refreshTransition(
             previousIDs: [1],
@@ -32,8 +55,52 @@ struct DisplayStoreRefreshTests {
         #expect(transition.setChanged == true)
         #expect(transition.mainSwapped == false)
         #expect(transition.shouldBumpSetChangeToken == true)
-        #expect(transition.shouldClearRevertHistory == true)
         #expect(transition.shouldDismissMenuBarPopover == true)
+    }
+
+    @Test("Adding a display preserves history whose mode and main references are still attached",
+          arguments: [false, true])
+    @MainActor
+    func additionalDisplayPreservesHistory(triggeredByCallback: Bool) throws {
+        let store = DisplayStore.forTesting()
+        let mode = try #require((CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode])?.first)
+        let original = DisplayInfo(id: 101, name: "Original", isMain: true,
+                                   modes: [mode], currentMode: mode, groups: [])
+        let connected = DisplayInfo(id: 102, name: "Connected", isMain: false,
+                                    modes: [mode], currentMode: mode, groups: [])
+        store.showForDemo([original])
+        store.revert.recordBatch([(id: 101, name: "Original", before: mode)], beforeMain: 101)
+
+        let transition = store.applySnapshot([original, connected], triggeredByCallback: triggeredByCallback)
+
+        #expect(transition.setChanged)
+        #expect(store.revert.entries.map(\.displayID) == [101])
+        #expect(store.revert.beforeMainID == 101)
+    }
+
+    @Test("Removing a display drops history only when a mode or main reference becomes disconnected",
+          arguments: [(UInt32(101), false), (102, false), (103, false), (104, true)], [false, true])
+    @MainActor
+    func removedDisplayInvalidatesReferences(removal: (UInt32, Bool), triggeredByCallback: Bool) throws {
+        let (removedID, shouldKeep) = removal
+        let store = DisplayStore.forTesting()
+        let mode = try #require((CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode])?.first)
+        let displays = (101...104).map {
+            DisplayInfo(id: UInt32($0), name: "Fake", isMain: $0 == 101,
+                        modes: [mode], currentMode: mode, groups: [])
+        }
+        store.showForDemo(displays)
+        store.revert.recordBatch([
+            (id: 101, name: "First", before: mode),
+            (id: 102, name: "Second", before: mode),
+        ], beforeMain: 103)
+
+        let transition = store.applySnapshot(displays.filter { $0.id != removedID },
+                                             triggeredByCallback: triggeredByCallback)
+
+        #expect(transition.setChanged)
+        #expect(store.revert.entries.map(\.displayID) == (shouldKeep ? [101, 102] : []))
+        #expect(store.revert.beforeMainID == (shouldKeep ? 103 : nil))
     }
 
     @Test("Wake refresh suppresses callback refresh commits until the settled snapshot")

@@ -8,6 +8,7 @@ extension DisplayStore {
         let store = DisplayStore()
         store.dismissStalePopoverOverride = {}
         store.popoverIsOpenOverride = { false }
+        store.demoSnapshot = { [weak store] in store?.displays ?? [] }
         return store
     }
 }

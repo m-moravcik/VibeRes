@@ -12,6 +12,7 @@ struct ProfileEditForm: View {
     let cancel: () -> Void
 
     @Environment(DisplayStore.self) private var displays
+    @Environment(ProfileStore.self) private var profiles
     @FocusState private var nameFieldFocused: Bool
 
     var body: some View {
@@ -49,6 +50,19 @@ struct ProfileEditForm: View {
             .labelsHidden()
             .accessibilityLabel("Main display")
             .help("Which display hosts the menu bar after this profile is applied. 'Don't change' leaves the arrangement alone.")
+
+            Text("SHORTCUT")
+                .font(Design.Typography.sectionHeader)
+                .foregroundStyle(.secondary)
+                .tracking(0.5)
+
+            ShortcutRecorder(
+                owner: .profile(state.profileID),
+                combo: $state.hotkey,
+                savedCombo: profiles.profiles.first(where: { $0.id == state.profileID })?.hotkey,
+                controlSize: .small
+            )
+            .help("Applies this profile from any app. Saved with the rest of the form.")
 
             if state.entries.allSatisfy({ !$0.isIncluded }) {
                 Text("At least one entry must remain to save.")

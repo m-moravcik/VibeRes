@@ -145,17 +145,11 @@ The Shortcuts route needs one hand-built Shortcut per profile; a shortcut
 field next to the profile is one step, in the place the user already is.
 The App Intents stay for Stream Deck, automations and scripting.
 
-**Agreed spec**
-- Optional and unset by default. Nothing is registered until the user sets
-  a shortcut.
-- Per-profile shortcut, set in the profile's Edit form.
-- A global Revert shortcut. Settings offers a suggested combination that the
-  user enables with one click; it is never enabled automatically.
-- Registered with Carbon `RegisterEventHotKey`: no Accessibility permission
-  and no new dependency.
-- Taken or invalid combinations are refused inline when set, not discovered
-  later.
-- Replaces the PRD §2 non-goal "No global hotkeys of its own".
+**Built 2026-11-13, for the next release.** The maintained contract and
+accepted Carbon limitations are in [PRD §4.11](PRD.md#411-global-shortcuts);
+setup and everyday use are in the [user guide](README.md#keyboard-shortcuts).
+The separate Settings tab was chosen because recording in a normal window
+is sturdier than in the popover and one list shows every shortcut.
 
 ## Shipped, kept here so they are not re-proposed
 
@@ -165,7 +159,7 @@ Deferred here until "monthly non-brew downloads pass ~100"; shipped earlier
 because the manual "download the ZIP and replace the .app" step was the only
 update path for anyone not using Homebrew. EdDSA signing, a signed feed, and a
 gate that refuses to self-update anything not Developer ID signed by this
-project. See `PRD.md` §4.12.
+project. See `PRD.md` §4.13.
 
 ### Hover preview double-click — resolved by dropping the popover
 

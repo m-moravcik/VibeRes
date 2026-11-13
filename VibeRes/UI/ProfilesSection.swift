@@ -131,6 +131,8 @@ struct ProfilesSection: View {
         var entries: [EntryEdit]
         /// Row whose display becomes main on apply; nil = don't change.
         var mainRowID: UUID?
+        /// Global shortcut, saved with the rest of the form.
+        var hotkey: KeyCombo?
     }
 
     struct EntryEdit: Equatable, Identifiable {
@@ -282,14 +284,15 @@ struct ProfilesSection: View {
                         // the inline confirmation panel so the user sees
                         // what will be skipped or left alone before the
                         // apply mutates display state.
+                        let live = displays.liveSnapshot()
                         let classification = DisplaySetClassifier.classify(
-                            profiles.bindings(of: profile, to: displays.displays),
-                            against: displays.displays
+                            profiles.bindings(of: profile, to: live),
+                            against: live
                         )
                         if DisplaySetClassifier.isCleanApply(classification) {
                             commitApply(profile)
                         } else {
-                            let preview = profiles.previewApply(profile, against: displays.displays)
+                            let preview = profiles.previewApply(profile, against: live)
                             mode = .confirmingApply(ConfirmApplyState(
                                 profileID: profile.id,
                                 profileName: profile.name,
@@ -451,11 +454,15 @@ struct ProfilesSection: View {
     /// `CGDisplayMode`. Measured in the 2026-08-01 audit: scoring three
     /// displays against a real 60-mode list takes 86 µs.
     private func commitApply(_ profile: Profile) {
+        let live = displays.liveSnapshot()
         let result = profiles.applyDetailed(
             profile,
-            displays: displays.displays,
+            displays: live,
             revert: displays.revert
         )
+        if result.didChangeAnything {
+            displays.endPendingConfirmation()
+        }
         // A profile that moved the main display keeps the popover open, so the
         // refresh that follows can show what changed. See `DisplayStore`.
         if result.mainChange?.didChange == true {
@@ -687,6 +694,7 @@ struct ProfilesSection: View {
         // already stores. A hand-edited mainDisplay matching no row shows as
         // "Don't change" and is dropped on save — the edit form owns the field.
         state.mainRowID = entries.first(where: { profile.mainDisplay == rowMatcher($0) })?.id
+        state.hotkey = profile.hotkey
         return state
     }
 
@@ -732,9 +740,10 @@ struct ProfilesSection: View {
             if var fresh = profiles.profiles.first(where: { $0.id == s.profileID }) {
                 fresh.name = trimmed
                 fresh.mainDisplay = kept.first(where: { $0.id == s.mainRowID }).map(rowMatcher)
+                fresh.hotkey = s.hotkey
                 guard profiles.update(fresh) == .saved else {
-                    // The entries are already saved; only the name and main
-                    // pick did not land. Say so rather than claim an update.
+                    // The entries are already saved; the name, main pick and
+                    // shortcut did not land. Say so rather than claim an update.
                     announce("Entries saved, but the name could not be changed.", tone: .problem)
                     return
                 }

@@ -220,6 +220,20 @@ struct CLIIntegrationTests {
         #expect(result.stdout.contains("Work"))
     }
 
+    @Test("A profile's shortcut is printed by list and show", arguments: ["list", "show"])
+    func printsShortcut(command: String) throws {
+        let dir = try temporaryDirectory()
+        var saved = profile("Work")
+        // F5 (0x60) is named the same on every keyboard layout.
+        saved.hotkey = KeyCombo(keyCode: 0x60, modifiers: [.command, .control])
+        try writeCatalog([saved, profile("Sofa")], to: dir)
+        let arguments = command == "list" ? ["profile", "list"] : ["profile", "show", "Work"]
+        let result = try run(arguments, profileDirectory: dir)
+        #expect(result.status == 0)
+        let shortcutLines = result.stdout.split(separator: "\n").filter { $0.contains("shortcut:") }
+        #expect(shortcutLines == ["  shortcut: ⌃⌘F5"], "one line, for Work only")
+    }
+
     @Test("An unknown profile is a failure, not an empty success")
     func unknownProfileFails() throws {
         let dir = try temporaryDirectory()

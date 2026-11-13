@@ -8,6 +8,7 @@ struct VibeResApp: App {
     @State private var updater: UpdaterProviding
     @State private var preferences: Preferences
     @State private var iconAnimator: MenuBarIconAnimator
+    @State private var hotkeys: HotkeyCenter
 
     init() {
         #if DEBUG
@@ -42,6 +43,18 @@ struct VibeResApp: App {
             guard let displays, let profiles, prefs.autoApplyOnDisplayChange else { return }
             profiles.autoApply(to: displays.displays)
         }
+        // Global shortcuts. Nothing is registered until the user records one;
+        // a unit-test host registers nothing at all, so a test run cannot take
+        // the user's combinations from the installed app.
+        let hotkeys = HotkeyCenter(registrar: CarbonHotkeyRegistrar())
+        hotkeys.onPress = { [weak displays, weak profiles] owner in
+            guard let displays, let profiles else { return }
+            ShortcutActions.perform(owner, displays: displays, profiles: profiles)
+        }
+        if !Self.isUnitTestHost {
+            HotkeySync.keepInSync(hotkeys, profiles: profiles, preferences: prefs)
+        }
+        _hotkeys = State(initialValue: hotkeys)
         _iconAnimator = State(initialValue: iconAnimator)
         _displayStore = State(initialValue: displays)
         _profileStore = State(initialValue: profiles)
@@ -58,7 +71,12 @@ struct VibeResApp: App {
     /// The real log file, unless this launch only hosts the unit tests: their
     /// fixtures log too, and must not land in the file a bug report carries.
     static var debugLogSink: LogSink? {
-        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil ? .shared : nil
+        isUnitTestHost ? nil : .shared
+    }
+
+    /// True when this launch only hosts the unit tests.
+    static var isUnitTestHost: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
     /// Wires up the AppKit-backed display name resolver. Must run before any
@@ -84,6 +102,7 @@ struct VibeResApp: App {
                 .environment(\.updater, updater)
                 .environment(updater.updateStatus)
                 .environment(preferences)
+                .environment(hotkeys)
                 // Plural rules follow the app's language, not the system
                 // locale; see Locale.appLanguage.
                 .environment(\.locale, .appLanguage)
@@ -104,6 +123,7 @@ struct VibeResApp: App {
                 .environment(\.updater, updater)
                 .environment(updater.updateStatus)
                 .environment(preferences)
+                .environment(hotkeys)
                 .environment(\.locale, .appLanguage)
         }
     }

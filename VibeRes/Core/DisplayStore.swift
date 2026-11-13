@@ -22,8 +22,7 @@ final class DisplayStore {
     }
 
     /// Single-step revert history. Populated by `apply(...)` on user clicks
-    /// and by ProfileStore on profile apply. Cleared when the display set
-    /// changes (a captured `before` mode would reference a phantom display).
+    /// and by ProfileStore on profile apply.
     let revert = RevertHistory()
 
     /// Called after a resolution switch went through: a mode applied from the
@@ -73,7 +72,6 @@ final class DisplayStore {
         let mainSwapped: Bool
 
         var shouldBumpSetChangeToken: Bool { setChanged }
-        var shouldClearRevertHistory: Bool { setChanged }
         var shouldDismissMenuBarPopover: Bool { setChanged || mainSwapped }
 
         /// What a reconfiguration refresh does with an open popover.
@@ -313,6 +311,8 @@ final class DisplayStore {
     /// switch would leave it in without switching anything. Debug builds only.
     func showForDemo(_ snapshot: [DisplayInfo]) {
         displays = snapshot
+        lastDisplayIDs = Set(snapshot.map(\.id))
+        demoSnapshot = { snapshot }
     }
 
     /// Demo seam for the profile harness (`ProfileDemo`): what every refresh
@@ -324,7 +324,7 @@ final class DisplayStore {
     #endif
 
     /// The display list as macOS reports it, or the demo's in a harness.
-    private func liveSnapshot() -> [DisplayInfo] {
+    func liveSnapshot() -> [DisplayInfo] {
         #if DEBUG
         if let demoSnapshot { return demoSnapshot() }
         #endif
@@ -429,7 +429,7 @@ final class DisplayStore {
     }
 
     @discardableResult
-    private func applySnapshot(
+    func applySnapshot(
         _ snapshot: [DisplayInfo],
         triggeredByCallback: Bool
     ) -> RefreshTransition {
@@ -445,6 +445,12 @@ final class DisplayStore {
             nowMainID: nowMainID
         )
 
+        if transition.setChanged,
+           revert.entries.contains(where: { !nowIDs.contains($0.displayID) })
+            || revert.beforeMainID.map({ !nowIDs.contains($0) }) == true {
+            revert.clear()
+        }
+
         if triggeredByCallback {
             Log.display.debug("reconfiguration: \(Self.describe(displays))", detail: displays.map(\.name).joined(separator: "; "))
             if transition.shouldBumpSetChangeToken {
@@ -453,12 +459,6 @@ final class DisplayStore {
                 Log.display.info("applyRefresh bump: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) setToken=\(self.setChangeToken) autoApplyToken=\(self.autoApplyToken) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
             } else if transition.shouldDismissMenuBarPopover {
                 Log.display.info("applyRefresh UI-only invalidation: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
-            }
-            if transition.shouldClearRevertHistory {
-                // A captured `before` mode might reference a display that's
-                // no longer attached. Drop the revert history rather than
-                // serve up an entry that would silently no-op.
-                revert.clear()
             }
         }
         lastDisplayIDs = nowIDs
@@ -643,41 +643,47 @@ final class DisplayStore {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
                 guard let self, !Task.isCancelled else { return }
-                switch self.countdown.state(at: Date()) {
-                case .waiting(let seconds):
-                    self.confirmationSecondsRemaining = seconds
-                case .expired:
-                    // The timeout is the actual safety net: a user staring at a
-                    // black screen cannot click anything.
-                    self.revertUnconfirmedChange()
-                    return
-                case .inactive:
-                    return
-                }
+                self.updateConfirmation(at: Date())
             }
         }
+    }
+
+    func updateConfirmation(at now: Date) {
+        switch countdown.state(at: now) {
+        case .waiting(let seconds):
+            confirmationSecondsRemaining = seconds
+        case .expired:
+            Log.apply.info("confirm: window expired, reverting")
+            performRevert()
+        case .inactive:
+            return
+        }
+    }
+
+    func endPendingConfirmation() {
+        countdownTask?.cancel()
+        countdownTask = nil
+        countdown.confirm()
+        confirmationSecondsRemaining = nil
+        pendingConfirmation = nil
     }
 
     /// The user can see the screen and wants to keep it. Re-applies the same mode
     /// permanently so the choice survives a reboot.
     func confirmDisplayChange() {
-        if let pending = pendingConfirmation {
-            do {
-                try applyMode(pending.mode, pending.display, .permanently)
-            } catch {
-                // The mode is still session-scoped and the screen may be
-                // unreadable. Tearing down the countdown here would remove the
-                // only automatic way back, so leave the safety net armed and
-                // say what went wrong.
-                lastError = error.asUserFacingProblem
-                return
-            }
+        guard let pending = pendingConfirmation else { return }
+        do {
+            try applyMode(pending.mode, pending.display, .permanently)
+        } catch {
+            // The mode is still session-scoped and the screen may be
+            // unreadable. Tearing down the countdown here would remove the
+            // only automatic way back, so leave the safety net armed and
+            // say what went wrong.
+            lastError = error.asUserFacingProblem
+            return
         }
         Log.apply.info("confirm: change kept")
-        countdownTask?.cancel()
-        countdown.confirm()
-        confirmationSecondsRemaining = nil
-        pendingConfirmation = nil
+        endPendingConfirmation()
         // Keeping the change means there is nothing left to undo by accident.
         revert.clear()
     }
@@ -688,21 +694,13 @@ final class DisplayStore {
         armConfirmation(mode: mode, display: display)
     }
 
-    private func revertUnconfirmedChange() {
-        Log.apply.info("confirm: window expired, reverting")
-        countdownTask?.cancel()
-        countdown.confirm()
-        confirmationSecondsRemaining = nil
-        pendingConfirmation = nil
-        performRevert()
-    }
-
     /// Re-apply each display's `before` mode, then — if the recorded batch
     /// also moved the menu bar — translate the live arrangement back so the
     /// previous main hosts it again. Returns the count of restorations so the
     /// caller can surface a toast.
     @discardableResult
     func performRevert() -> Int {
+        endPendingConfirmation()
         let snapshot = revert.consume()
         var failed: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)] = []
         var restoredModes = 0
