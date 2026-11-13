@@ -67,13 +67,13 @@ struct ShortcutRecorder<Accessory: View>: View {
                     }
                 } label: {
                     title
-                    // A second Text in a Form label is its subtitle: it wraps
-                    // in the label column instead of widening the row.
                     if let message {
                         message
+                            .font(.caption)
                             .foregroundStyle(messageStyle)
                     }
                 }
+                .labeledContentStyle(ShortcutRowStyle())
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     field
@@ -227,6 +227,22 @@ struct ShortcutRecorder<Accessory: View>: View {
         combo = candidate
         stopRecording()
         return nil
+    }
+}
+
+/// Keep the controls beside the label even when Revert has an accessory.
+/// The automatic Form style can put them below a multiline subtitle.
+private struct ShortcutRowStyle: LabeledContentStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                configuration.label
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            configuration.content
+                .fixedSize()
+        }
     }
 }
 
