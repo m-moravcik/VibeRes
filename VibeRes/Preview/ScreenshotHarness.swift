@@ -116,6 +116,22 @@ enum ScreenshotHarness {
                     ),
                     to: output.appendingPathComponent("settings-shortcuts\(suffix).png")
                 )
+                // A refused combination: the field must stay where the other
+                // rows have theirs, with the reason under the title.
+                try write(
+                    capture(
+                        RefusedShortcutRows(names: profiles.profiles.map(\.name))
+                            .frame(width: 470)
+                            .environment(hotkeys)
+                            .background(scheme == .dark
+                                        ? Color(red: 0.16, green: 0.16, blue: 0.17)
+                                        : Color(red: 0.95, green: 0.95, blue: 0.96))
+                            .environment(\.colorScheme, scheme)
+                            .environment(\.locale, .appLanguage),
+                        scheme: scheme
+                    ),
+                    to: output.appendingPathComponent("settings-shortcuts-refused\(suffix).png")
+                )
                 try write(
                     render(HeroScene(popover: root, scheme: scheme, banner: false)),
                     to: output.appendingPathComponent("hero\(suffix).png")
@@ -268,6 +284,32 @@ private struct DemoEditForm: View {
     var body: some View {
         ProfileEditForm(state: $state, save: {}, cancel: {})
             .padding(.vertical, Design.Spacing.s)
+    }
+}
+
+/// The Shortcuts tab's profile rows, the first one showing a refusal.
+private struct RefusedShortcutRows: View {
+    let names: [String]
+
+    var body: some View {
+        Form {
+            Section {
+                ForEach(Array(names.enumerated()), id: \.offset) { index, name in
+                    ShortcutRecorder(
+                        owner: .profile(UUID()),
+                        combo: .constant(nil),
+                        savedCombo: nil,
+                        title: Text(verbatim: name),
+                        initialProblem: index == 0 ? .needsModifiers : nil
+                    )
+                }
+            } header: {
+                Text("Profiles")
+            }
+        }
+        .formStyle(.grouped)
+        .scrollDisabled(true)
+        .frame(height: 300)
     }
 }
 

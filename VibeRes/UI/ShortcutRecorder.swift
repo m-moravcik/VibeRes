@@ -5,17 +5,28 @@ import SwiftUI
 /// Records a global shortcut: click, press the keys, done.
 ///
 /// Esc cancels, Delete clears, a click anywhere stops listening. A combination
-/// `HotkeyCenter` refuses stays refused in place, with the reason under the
-/// field, and the recorder keeps listening for another try. While it listens,
+/// `HotkeyCenter` refuses stays refused in place, and the recorder keeps
+/// listening for another try. While it listens,
 /// every VibeRes shortcut is released, so pressing one it already owns
 /// records it instead of running it.
-struct ShortcutRecorder: View {
+///
+/// Two layouts. Without a title (the popover's Edit form) the reason sits
+/// under the field. With one (a Settings row) the recorder is the whole row:
+/// the field stays on the trailing edge and the reason goes under the title,
+/// as System Settings does it. A reason inside the trailing column widened
+/// it, which moved the field left or broke the row onto two lines every time
+/// a message came or went.
+struct ShortcutRecorder<Accessory: View>: View {
     let owner: HotkeyOwner
     @Binding var combo: KeyCombo?
     /// What is saved for `owner` right now. A "not active" warning describes
     /// that one, so it shows only while the field still holds it.
     let savedCombo: KeyCombo?
     var controlSize: SwiftUI.ControlSize = .regular
+    /// The row's title in Settings; nil for the stacked popover layout.
+    var title: Text?
+    /// Shown before the field in a titled row (the "Use ⌃⌥⌘R" button).
+    @ViewBuilder var accessory: () -> Accessory
 
     @Environment(HotkeyCenter.self) private var hotkeys
     @State private var isRecording = false
@@ -27,55 +38,52 @@ struct ShortcutRecorder: View {
     /// not start a new one when it lands on the recorder itself.
     @State private var stoppingClick: Int?
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Button(action: toggleRecording) {
-                label
-                    .lineLimit(1)
-                    // Keep short labels stable and leave room for the remove
-                    // button, while allowing longer translations to fit.
-                    .frame(minWidth: controlSize == .small ? 112 : 128)
-                    .fixedSize(horizontal: true, vertical: false)
-            }
-            .controlSize(controlSize)
-            .accessibilityLabel(isRecording ? Text("Recording shortcut") : Text("Shortcut"))
-            .accessibilityValue(combo.map { Text(verbatim: $0.localizedDisplayString()) } ?? Text("None"))
-            .accessibilityHint(Text("Press to record a new shortcut."))
-            .overlay(alignment: .trailing) {
-                if combo != nil, !isRecording {
-                    Button {
-                        combo = nil
-                        problem = nil
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 5)
-                    .help("Remove shortcut")
-                    .accessibilityLabel("Remove shortcut")
-                }
-            }
+    init(
+        owner: HotkeyOwner,
+        combo: Binding<KeyCombo?>,
+        savedCombo: KeyCombo?,
+        controlSize: SwiftUI.ControlSize = .regular,
+        title: Text? = nil,
+        initialProblem: HotkeyProblem? = nil,
+        @ViewBuilder accessory: @escaping () -> Accessory
+    ) {
+        self.owner = owner
+        _combo = combo
+        self.savedCombo = savedCombo
+        self.controlSize = controlSize
+        self.title = title
+        self.accessory = accessory
+        // Seeds a refusal for offscreen screenshots and layout checks.
+        _problem = State(initialValue: initialProblem)
+    }
 
-            if showsUnrecordedHint {
-                Text("Nothing was recorded. If you pressed a key, another app already uses that combination. Try another.")
-                    .font(Design.Typography.note)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if let problem {
-                Text(problem.message)
-                    .font(Design.Typography.note)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if isRecording {
-                Text("Press the keys, or Esc to cancel.")
-                    .font(Design.Typography.note)
-                    .foregroundStyle(.secondary)
-            } else if let combo, combo == savedCombo, let inactive = hotkeys.inactive[owner] {
-                Text("Not active: \(Text(inactive.message))")
-                    .font(Design.Typography.note)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+    var body: some View {
+        Group {
+            if let title {
+                LabeledContent {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        accessory()
+                        field
+                    }
+                } label: {
+                    title
+                    if let message {
+                        message
+                            .font(.caption)
+                            .foregroundStyle(messageStyle)
+                    }
+                }
+                .labeledContentStyle(ShortcutRowStyle())
+            } else {
+                VStack(alignment: .leading, spacing: 3) {
+                    field
+                    if let message {
+                        message
+                            .font(Design.Typography.note)
+                            .foregroundStyle(messageStyle)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
         }
         .onDisappear(perform: stopRecording)
@@ -84,6 +92,54 @@ struct ShortcutRecorder: View {
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             stopRecording()
         }
+    }
+
+    private var field: some View {
+        Button(action: toggleRecording) {
+            label
+                .lineLimit(1)
+                // Keep short labels stable and leave room for the remove
+                // button, while allowing longer translations to fit.
+                .frame(minWidth: controlSize == .small ? 112 : 128)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .controlSize(controlSize)
+        .accessibilityLabel(isRecording ? Text("Recording shortcut") : Text("Shortcut"))
+        .accessibilityValue(combo.map { Text(verbatim: $0.localizedDisplayString()) } ?? Text("None"))
+        .accessibilityHint(Text("Press to record a new shortcut."))
+        .overlay(alignment: .trailing) {
+            if combo != nil, !isRecording {
+                Button {
+                    combo = nil
+                    problem = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 5)
+                .help("Remove shortcut")
+                .accessibilityLabel("Remove shortcut")
+            }
+        }
+    }
+
+    /// The most urgent recorder message takes precedence.
+    private var message: Text? {
+        if showsUnrecordedHint {
+            return Text("Nothing was recorded. If you pressed a key, another app already uses that combination. Try another.")
+        }
+        if let problem { return Text(problem.message) }
+        if isRecording { return Text("Press the keys, or Esc to cancel.") }
+        if let combo, combo == savedCombo, let inactive = hotkeys.inactive[owner] {
+            return Text("Not active: \(Text(inactive.message))")
+        }
+        return nil
+    }
+
+    /// The recording prompt is guidance; everything else is a warning.
+    private var messageStyle: Color {
+        isRecording && problem == nil && !showsUnrecordedHint ? .secondary : .orange
     }
 
     @ViewBuilder
@@ -171,6 +227,38 @@ struct ShortcutRecorder: View {
         combo = candidate
         stopRecording()
         return nil
+    }
+}
+
+/// Keep the controls beside the label even when Revert has an accessory.
+/// The automatic Form style can put them below a multiline subtitle.
+private struct ShortcutRowStyle: LabeledContentStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                configuration.label
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            configuration.content
+                .fixedSize()
+        }
+    }
+}
+
+extension ShortcutRecorder where Accessory == EmptyView {
+    init(
+        owner: HotkeyOwner,
+        combo: Binding<KeyCombo?>,
+        savedCombo: KeyCombo?,
+        controlSize: SwiftUI.ControlSize = .regular,
+        title: Text? = nil,
+        initialProblem: HotkeyProblem? = nil
+    ) {
+        self.init(
+            owner: owner, combo: combo, savedCombo: savedCombo, controlSize: controlSize,
+            title: title, initialProblem: initialProblem, accessory: { EmptyView() }
+        )
     }
 }
 

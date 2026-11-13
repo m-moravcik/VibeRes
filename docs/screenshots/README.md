@@ -26,7 +26,9 @@ The script builds Debug and runs the harness in
 and exits. It also writes `banner-{light,dark}.png`, the 1920x1080 portfolio
 image, which is not used here, `onboarding-profile-{light,dark}.png`,
 showing the welcome tour's profile step, and `edit-{light,dark}.png`, a
-profile's Edit form with its shortcut field.
+profile's Edit form with its shortcut field, and
+`settings-shortcuts-refused-{light,dark}.png`, the Shortcuts tab rows with a
+refused combination, to check that the field stays put.
 
 - The displays are the ones connected to the Mac that renders. Their names and
   modes are hardware, not personal data, but plug in the same pair (a Retina

@@ -310,7 +310,7 @@ room to negotiate.
   Carbon reports only exclusive registrations, so a clash with an app that
   registered without exclusivity goes unnoticed.
 - A saved shortcut that cannot be registered at launch (taken since, or
-  hand-edited) is shown as not active next to its field, never silently dead.
+  hand-edited) is visibly marked not active, never silently dead.
 - Registered with Carbon `RegisterEventHotKey`, exclusively: no Accessibility
   permission, no dependency. Every shortcut is released while one is being
   recorded, so an existing combination can be recorded again.
