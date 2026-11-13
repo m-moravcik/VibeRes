@@ -685,6 +685,124 @@ struct ShortcutActionTests {
         #expect(r.displays.revert.entries.map(\.displayID).sorted() == ids)
     }
 
+    @Test("A profile that changes nothing preserves the original Keep and timeout",
+          arguments: ["alreadyApplied", "skippedNoMode", "failed", "disjoint"], [false, true])
+    func unchangedProfilePreservesConfirmation(outcome: String, keep: Bool) throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: outcome == "skippedNoMode" ? [] : modes)
+        let matcher: DisplayMatcher = outcome == "disjoint"
+            ? .edid(vendor: 1, model: 2, serial: 3)
+            : .edid(vendor: .max, model: .max, serial: .max)
+        let target = outcome == "alreadyApplied" ? modes[1] : modes[0]
+        let profile = Profile(name: "Desk", entries: [entry(target, matcher: matcher)])
+        r.profiles.add(profile)
+        if outcome == "failed" {
+            r.profiles.applyBatch = { _, _ in throw ResolutionSwitcher.Failure.applyMode(.cannotComplete) }
+        }
+        r.displays.revert.record(displayID: 101, displayName: "Original change", before: modes[0])
+        r.displays.armConfirmationForTesting(mode: modes[1], display: 101)
+        let remaining = r.displays.confirmationSecondsRemaining
+        let history = r.displays.revert.entries
+        var committedModes: [Int32] = []
+        r.displays.applyMode = { mode, display, scope in
+            #expect(display == 101)
+            #expect(scope == .permanently)
+            committedModes.append(mode.ioDisplayModeID)
+        }
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+
+        #expect(r.displays.confirmationSecondsRemaining == remaining)
+        #expect(r.displays.revert.entries == history)
+        #expect(r.alerts() == (outcome == "alreadyApplied" ? 0 : 1))
+        if keep { r.displays.confirmDisplayChange() }
+        r.displays.updateConfirmation(at: .distantFuture)
+
+        #expect(committedModes == [(keep ? modes[1] : modes[0]).ioDisplayModeID])
+        #expect(r.displays.confirmationSecondsRemaining == nil)
+        #expect(!r.displays.revert.canRevert)
+    }
+
+    @Test("A partially successful profile replaces confirmation with its new Revert history")
+    func partialProfileSupersedesConfirmation() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])])
+        r.profiles.add(profile)
+        r.profiles.applyBatch = { _, _ in
+            ResolutionSwitcher.BatchOutcome(applied: [101], rejected: [102: .applyMode(.cannotComplete)])
+        }
+        r.displays.revert.record(displayID: 102, displayName: "Original change", before: modes[0])
+        r.displays.armConfirmationForTesting(mode: modes[1], display: 102)
+        var commits = 0
+        r.displays.applyMode = { _, _, _ in commits += 1 }
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+        r.displays.confirmDisplayChange()
+        r.displays.updateConfirmation(at: .distantFuture)
+
+        #expect(r.displays.confirmationSecondsRemaining == nil)
+        #expect(r.displays.revert.entries.map(\.displayID) == [101])
+        #expect(commits == 0)
+        #expect(r.alerts() == 1)
+    }
+
+    @Test("A main-only profile change ends confirmation and keeps the previous main for Revert")
+    func mainOnlyProfileSupersedesConfirmation() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[0], modes: modes)
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])],
+                              mainDisplay: .edid(vendor: .max, model: .max, serial: .max))
+        r.profiles.add(profile)
+        let originalMain = CGMainDisplayID()
+        var main = originalMain
+        var bounds: [CGDirectDisplayID: CGRect] = [
+            originalMain: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+            101: CGRect(x: 1920, y: 0, width: 1920, height: 1080),
+        ]
+        r.profiles.liveArrangement = { (main: main, bounds: bounds) }
+        r.profiles.isInMirrorSet = { _ in false }
+        r.profiles.applyOrigins = { plan, _ in
+            for (id, origin) in plan { bounds[id]?.origin = origin }
+            main = 101
+        }
+        r.displays.revert.record(displayID: 101, displayName: "Original change", before: modes[1])
+        r.displays.armConfirmationForTesting(mode: modes[0], display: 101)
+        var commits = 0
+        r.displays.applyMode = { _, _, _ in commits += 1 }
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+        r.displays.confirmDisplayChange()
+        r.displays.updateConfirmation(at: .distantFuture)
+
+        #expect(r.displays.confirmationSecondsRemaining == nil)
+        #expect(r.displays.revert.entries.isEmpty)
+        #expect(r.displays.revert.beforeMainID == originalMain)
+        #expect(main == 101)
+        #expect(r.batches() == 0)
+        #expect(commits == 0)
+        #expect(r.alerts() == 0)
+    }
+
+    @Test("A delayed connection callback keeps history recorded against the fresh live display set")
+    func delayedCallbackPreservesFreshProfileHistory() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        let connected = r.displays.displays
+        r.displays.showForDemo(Array(connected.prefix(1)))
+        r.displays.demoSnapshot = { connected }
+        let profile = Profile(name: "Desk", entries: [entry(modes[0])])
+        r.profiles.add(profile)
+
+        ShortcutActions.perform(.profile(profile.id), displays: r.displays, profiles: r.profiles)
+        let transition = r.displays.applySnapshot(connected, triggeredByCallback: true)
+
+        #expect(transition.setChanged)
+        #expect(r.batches() == 1)
+        #expect(r.displays.revert.entries.map(\.displayID).sorted() == ids)
+        #expect(r.displays.revert.entries.allSatisfy { $0.before.ioDisplayModeID == modes[1].ioDisplayModeID })
+    }
+
     @Test("A global Revert ends old confirmation before a late Keep")
     func globalRevertSupersedesConfirmation() throws {
         let modes = try realModes()

@@ -22,8 +22,7 @@ final class DisplayStore {
     }
 
     /// Single-step revert history. Populated by `apply(...)` on user clicks
-    /// and by ProfileStore on profile apply. Cleared when the display set
-    /// changes (a captured `before` mode would reference a phantom display).
+    /// and by ProfileStore on profile apply.
     let revert = RevertHistory()
 
     /// Called after a resolution switch went through: a mode applied from the
@@ -73,7 +72,6 @@ final class DisplayStore {
         let mainSwapped: Bool
 
         var shouldBumpSetChangeToken: Bool { setChanged }
-        var shouldClearRevertHistory: Bool { setChanged }
         var shouldDismissMenuBarPopover: Bool { setChanged || mainSwapped }
 
         /// What a reconfiguration refresh does with an open popover.
@@ -431,7 +429,7 @@ final class DisplayStore {
     }
 
     @discardableResult
-    private func applySnapshot(
+    func applySnapshot(
         _ snapshot: [DisplayInfo],
         triggeredByCallback: Bool
     ) -> RefreshTransition {
@@ -447,6 +445,12 @@ final class DisplayStore {
             nowMainID: nowMainID
         )
 
+        if transition.setChanged,
+           revert.entries.contains(where: { !nowIDs.contains($0.displayID) })
+            || revert.beforeMainID.map({ !nowIDs.contains($0) }) == true {
+            revert.clear()
+        }
+
         if triggeredByCallback {
             Log.display.debug("reconfiguration: \(Self.describe(displays))", detail: displays.map(\.name).joined(separator: "; "))
             if transition.shouldBumpSetChangeToken {
@@ -455,12 +459,6 @@ final class DisplayStore {
                 Log.display.info("applyRefresh bump: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) setToken=\(self.setChangeToken) autoApplyToken=\(self.autoApplyToken) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
             } else if transition.shouldDismissMenuBarPopover {
                 Log.display.info("applyRefresh UI-only invalidation: setChanged=\(transition.setChanged) mainSwapped=\(transition.mainSwapped) ids=\(nowIDs.map { String($0) }.joined(separator: ","))")
-            }
-            if transition.shouldClearRevertHistory {
-                // A captured `before` mode might reference a display that's
-                // no longer attached. Drop the revert history rather than
-                // serve up an entry that would silently no-op.
-                revert.clear()
             }
         }
         lastDisplayIDs = nowIDs

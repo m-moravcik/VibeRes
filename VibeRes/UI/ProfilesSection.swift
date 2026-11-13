@@ -455,12 +455,14 @@ struct ProfilesSection: View {
     /// displays against a real 60-mode list takes 86 µs.
     private func commitApply(_ profile: Profile) {
         let live = displays.liveSnapshot()
-        displays.endPendingConfirmation()
         let result = profiles.applyDetailed(
             profile,
             displays: live,
             revert: displays.revert
         )
+        if result.didChangeAnything {
+            displays.endPendingConfirmation()
+        }
         // A profile that moved the main display keeps the popover open, so the
         // refresh that follows can show what changed. See `DisplayStore`.
         if result.mainChange?.didChange == true {

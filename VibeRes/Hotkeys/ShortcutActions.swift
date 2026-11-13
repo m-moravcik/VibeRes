@@ -80,8 +80,10 @@ enum ShortcutActions {
             return
         }
         Log.apply.info("shortcut: applying profile", detail: "profile '\(profile.name)'")
-        displays.endPendingConfirmation()
         let result = profiles.applyDetailed(profile, displays: live, revert: displays.revert)
+        if result.didChangeAnything {
+            displays.endPendingConfirmation()
+        }
         if result.mainChange?.didChange == true {
             displays.expectOwnMainChange()
         }
