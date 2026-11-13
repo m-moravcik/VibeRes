@@ -24,8 +24,10 @@ presentation).
 **Why it was deferred** (kept as history; how the spec answers each)
 - Scope creep risk: mirror would pull arrangement, primary swap and
   rotation after it, and the resolution switcher would become a display
-  configuration manager (BetterDisplay territory). Still true for those;
-  mirroring alone is admitted, the rest stays out (PRD §2).
+  configuration manager (BetterDisplay territory). Main-display selection
+  (primary swap) already shipped in 0.9.0. Mirroring alone is now admitted;
+  full arrangement geometry (Stage 2) stays deferred and rotation stays out
+  (PRD §2).
 - UI complexity: the Save / Edit forms are dense. Answered by a single
   "Mirroring" row and hiding the targets' resolution instead of adding a
   per-entry axis.
