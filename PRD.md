@@ -14,8 +14,8 @@ which survived contact with the implementation. The reasoning that was worth
 keeping — the competitive gap, the CoreGraphics pitfalls, the App Store
 decision — is carried forward below. The original is in git history.
 
-- **Current version:** 0.9.0
-- **Status of this document:** current as of 2026-09-21
+- **Current version:** 0.11.1
+- **Status of this document:** current as of 2026-11-13
 
 ---
 
@@ -75,18 +75,19 @@ and a CLI that links the same code as the app.
 These are deliberate. See [BACKLOG.md](BACKLOG.md) for the ones that have been
 argued through, and why.
 
-- **Not a display configuration manager.** Mirroring, DDC, brightness, colour
-  profiles, virtual displays: BetterDisplay territory. Resolution, refresh rate
-  and which display is main is the whole scope.
+- **Not a display configuration manager.** DDC, brightness, colour profiles,
+  rotation, virtual displays: BetterDisplay territory. Resolution, refresh
+  rate and which display is main is the scope, plus mirroring, which is
+  planned as its own release after 1.0 (spec in BACKLOG.md).
 - **Not on the Mac App Store.** The sandbox forbids
   `kCGDisplayShowDuplicateLowResolutionModes`, which is exactly what lets
   VibeRes list the modes System Settings lists. Sandboxing the app would
   remove the feature it exists for. Distribution is Developer ID signed,
   notarized builds through GitHub Releases and Homebrew.
-- **No global hotkeys of its own.** Shortcuts.app already does this, VibeRes
-  exposes App Intents, and a Shortcut can be bound to any key the user likes —
-  including from Stream Deck, BetterTouchTool and Loupedeck, which all trigger
-  Shortcuts.
+- **No global hotkeys by default.** Planned: an optional shortcut per profile
+  and for Revert, all unset until the user sets one (spec in BACKLOG.md).
+  The App Intents stay for Shortcuts, Stream Deck, BetterTouchTool and
+  Loupedeck.
 - **No full arrangement storage.** A profile pins *which display is main*
   (§4.5) but stores no geometry. Stage 2 remains deferred.
 
@@ -414,5 +415,6 @@ Lowering the deployment target is mostly one line in `project.yml`:
 
 | Date | Change |
 |---|---|
+| 2026-11-13 | Version brought up to 0.11.1. Mirroring (after 1.0) and opt-in global hotkeys moved out of the non-goals |
 | 2026-09-21 | Rewritten as a maintained PRD. The original pre-implementation plan is in git history |
 | 2026-08-03 | 0.9.0: main display in profiles (Stage 1 of arrangement support) |
