@@ -21,6 +21,10 @@ presentation).
 - One CG API call: `CGConfigureDisplayMirrorOfDisplay(config, slave, master)`.
   Drops into the existing apply transaction cleanly.
 
+**Why it was deferred**
+- Profile semantics were unclear when `.anyExternal` matched multiple
+  displays. Resolved by the source/target rule in the agreed spec below.
+
 **Decided 2026-11-13: planned as its own release after 1.0.** The scope
 worry above still holds for arrangement, rotation and DDC; mirroring alone
 fits the "plug in the projector, click a profile" story, so it moves out of
@@ -30,8 +34,8 @@ the non-goals. Not bolted onto a patch, and 1.0 does not wait for it.
 - `Profile.mirror` is tri-state: `nil` leaves mirroring alone (every
   existing profile decodes as this), `.off` turns mirroring off, and
   `.on(source)` mirrors one source to every other display in the profile.
-  The source is one of the profile's entries, so `.anyExternal` resolves to
-  a display exactly as it does for resolution.
+  The source must be a specific display entry. An `.anyExternal` entry can
+  only be a target: every external display it matches mirrors the source.
 - The source's resolution wins. Mirroring forces one mode, so the target
   entries' resolution and refresh rate are hidden in the form, not edited.
 - Saving a new profile captures the current mirror state.
@@ -40,7 +44,8 @@ the non-goals. Not bolted onto a patch, and 1.0 does not wait for it.
   way main-display placement is verified.
 - Revert undoes mirroring along with the resolution.
 - UI: one "Mirroring" row in the Save / Edit form (off, or mirror from a
-  chosen display). Sketch the form before code and keep it compact.
+  chosen specific display entry). Sketch the form before code and keep it
+  compact.
 - PRD §2 lists mirroring as planned; the release moves it into §4.
 
 ### Display arrangement preservation
