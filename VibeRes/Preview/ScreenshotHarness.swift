@@ -287,11 +287,6 @@ private struct DemoEditForm: View {
     }
 }
 
-/// The popover's frame, as `MenuContent` sets it up.
-///
-/// The real popover sits on `.ultraThinMaterial` over the desktop, which an
-/// off-screen window has nothing to blur. A solid fill in the material's
-/// resting colour keeps the contrast what the eye sees.
 /// The Shortcuts tab's profile rows, the first one showing a refusal.
 private struct RefusedShortcutRows: View {
     let names: [String]
@@ -318,6 +313,11 @@ private struct RefusedShortcutRows: View {
     }
 }
 
+/// The popover's frame, as `MenuContent` sets it up.
+///
+/// The real popover sits on `.ultraThinMaterial` over the desktop, which an
+/// off-screen window has nothing to blur. A solid fill in the material's
+/// resting colour keeps the contrast what the eye sees.
 private struct PopoverPanel<Content: View>: View {
     let scheme: ColorScheme
     @ViewBuilder let content: Content

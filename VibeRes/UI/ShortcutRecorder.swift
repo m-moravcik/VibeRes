@@ -5,8 +5,8 @@ import SwiftUI
 /// Records a global shortcut: click, press the keys, done.
 ///
 /// Esc cancels, Delete clears, a click anywhere stops listening. A combination
-/// `HotkeyCenter` refuses stays refused in place, with the reason next to the
-/// field, and the recorder keeps listening for another try. While it listens,
+/// `HotkeyCenter` refuses stays refused in place, and the recorder keeps
+/// listening for another try. While it listens,
 /// every VibeRes shortcut is released, so pressing one it already owns
 /// records it instead of running it.
 ///
@@ -53,7 +53,7 @@ struct ShortcutRecorder<Accessory: View>: View {
         self.controlSize = controlSize
         self.title = title
         self.accessory = accessory
-        // Only the screenshot harness passes one, to render a refusal.
+        // Seeds a refusal for offscreen screenshots and layout checks.
         _problem = State(initialValue: initialProblem)
     }
 
@@ -124,7 +124,7 @@ struct ShortcutRecorder<Accessory: View>: View {
         }
     }
 
-    /// What to say next to the field right now, most urgent first.
+    /// The most urgent recorder message takes precedence.
     private var message: Text? {
         if showsUnrecordedHint {
             return Text("Nothing was recorded. If you pressed a key, another app already uses that combination. Try another.")
