@@ -168,6 +168,13 @@ decisions made while building it (PRD §4.11 has the full behaviour):
   and uses the alert sound when it missed something.
 - Carbon reports only exclusive registrations, so a clash with an app that
   registered the same combination without exclusivity is not detected.
+- Carbon consumes another app's combination before the recorder sees it, so
+  that app's action runs while recording. After the modifiers are released
+  without a recorded key, a hint suggests trying another combination. This
+  limit is accepted rather than requesting Accessibility or Input Monitoring
+  permission or adding an event tap.
+- An incomplete Revert sounds the alert even when some displays restored;
+  profile shortcut save failures are visible in Settings as well as the menu.
 
 ## Shipped, kept here so they are not re-proposed
 

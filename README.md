@@ -138,7 +138,7 @@ Give a profile a global shortcut and it applies from any app, without opening Vi
   </picture>
 </p>
 
-Click the field and press the keys: Esc cancels, Delete removes the shortcut. Use two modifier keys, one of them ⌃, ⌥ or ⌘ (F1–F20 work on their own). A combination macOS already uses, another VibeRes shortcut has, or another app holds is refused on the spot with the reason. If a saved shortcut stops working because something else took it, its field says *Not active* and why.
+Click the field and press the keys: Esc cancels, Delete removes the shortcut. Use two modifier keys, one of them ⌃, ⌥ or ⌘ (F1–F20 work on their own). A combination macOS already uses, another VibeRes shortcut has, or another app holds exclusively is refused with the reason when its key reaches the recorder. Carbon can consume another app's combination first, running that app's action while recording; after you release the modifiers, VibeRes shows a hint instead, without requesting Accessibility permission. If a saved shortcut stops working because something else took it, its field says *Not active* and why.
 
 A profile shortcut applies what the profile can apply right now, with no confirmation, and Revert (or its shortcut) takes it back. When the press missed something, such as a display that isn't connected or nothing left to revert, you hear the alert sound. No permission is needed.
 

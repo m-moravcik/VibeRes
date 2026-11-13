@@ -101,6 +101,61 @@ struct KeyComboTests {
     }
 }
 
+@Suite("Shortcut modifier-only presses")
+struct ModifierOnlyPressTests {
+    @Test("Two shortcut modifiers released without a key show the hint",
+          arguments: [KeyCombo.Modifiers([.control, .option]), [.shift, .command]])
+    func modifiersWithoutKey(modifiers: KeyCombo.Modifiers) {
+        var press = ModifierOnlyPress()
+        let hints = [press.modifiersChanged(modifiers), press.modifiersChanged([]), press.modifiersChanged([])]
+        #expect(hints == [false, true, false])
+    }
+
+    @Test("A delivered key suppresses the hint until the next press")
+    func deliveredKey() {
+        var press = ModifierOnlyPress()
+        let firstDown = press.modifiersChanged([.control, .command])
+        press.keyPressed()
+        let hints = [firstDown, press.modifiersChanged([]),
+                     press.modifiersChanged([.control, .command]), press.modifiersChanged([])]
+        #expect(hints == [false, false, false, true])
+    }
+
+    @Test("A single modifier does not suggest a swallowed shortcut",
+          arguments: [KeyCombo.Modifiers.shift, .command, .control, .option])
+    func singleModifier(modifier: KeyCombo.Modifiers) {
+        var press = ModifierOnlyPress()
+        let hints = [press.modifiersChanged(modifier), press.modifiersChanged([])]
+        #expect(hints == [false, false])
+    }
+
+    @Test("Partial release and re-press show the hint only on full release")
+    func partialRelease() {
+        var press = ModifierOnlyPress()
+        let hints = [press.modifiersChanged([.control, .option]), press.modifiersChanged(.control),
+                     press.modifiersChanged([.control, .option]), press.modifiersChanged([]),
+                     press.modifiersChanged([])]
+        #expect(hints == [false, false, false, true, false])
+    }
+
+    @Test("A key before the second modifier still suppresses the hint")
+    func keyBeforeValidModifiers() {
+        var press = ModifierOnlyPress()
+        let firstDown = press.modifiersChanged(.command)
+        press.keyPressed()
+        let hints = [firstDown, press.modifiersChanged([.shift, .command]), press.modifiersChanged([])]
+        #expect(hints == [false, false, false])
+    }
+
+    @Test("An unmodified key does not suppress a later modifier-only press")
+    func unmodifiedKeyBeforePress() {
+        var press = ModifierOnlyPress()
+        press.keyPressed()
+        let hints = [press.modifiersChanged([.control, .option]), press.modifiersChanged([])]
+        #expect(hints == [false, true])
+    }
+}
+
 @Suite("Profile shortcuts on disk")
 @MainActor
 struct ProfileHotkeyPersistenceTests {
@@ -523,6 +578,52 @@ struct ShortcutActionTests {
         #expect(restored.sorted() == ids)
         #expect(r.alerts() == 0)
         #expect(!r.displays.revert.canRevert)
+    }
+
+    @Test("Revert sounds one alert when one display fails and keeps it retryable")
+    func partialRevertAlerts() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        var restored: [CGDirectDisplayID] = []
+        r.displays.applyMode = { _, id, _ in
+            if id == 102 { throw ResolutionSwitcher.Failure.applyMode(.cannotComplete) }
+            restored.append(id)
+        }
+        r.displays.revert.recordBatch(ids.map { (id: $0, name: "Fake", before: modes[0]) })
+
+        ShortcutActions.perform(.revert, displays: r.displays, profiles: r.profiles)
+
+        #expect(restored == [101])
+        #expect(r.alerts() == 1)
+        #expect(r.displays.revert.canRevert)
+        #expect(r.displays.revert.consume().entries.map(\.displayID) == [102])
+    }
+
+    @Test("Revert sounds one alert when modes restore but the main display fails")
+    func mainRevertFailureAlerts() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        var restored: [CGDirectDisplayID] = []
+        r.displays.applyMode = { _, id, _ in restored.append(id) }
+        r.displays.liveArrangement = {
+            (main: 101, bounds: [
+                101: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+                102: CGRect(x: 1920, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        r.displays.applyOrigins = { _, _ in throw ResolutionSwitcher.Failure.originCoverage }
+        r.displays.revert.recordBatch(
+            ids.map { (id: $0, name: "Fake", before: modes[0]) }, beforeMain: 102
+        )
+
+        ShortcutActions.perform(.revert, displays: r.displays, profiles: r.profiles)
+
+        #expect(restored.sorted() == ids)
+        #expect(r.alerts() == 1)
+        #expect(r.displays.revert.canRevert)
+        let remaining = r.displays.revert.consume()
+        #expect(remaining.entries.isEmpty)
+        #expect(remaining.beforeMain == 102)
     }
 }
 

@@ -45,6 +45,11 @@ struct ShortcutsSettingsTab: View {
             }
 
             Section {
+                if let problem = profiles.lastError {
+                    Text(problem.localizedDescription)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
                 if profiles.profiles.isEmpty {
                     Text("Save a profile in the menu first.")
                         .foregroundStyle(.secondary)

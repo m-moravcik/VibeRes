@@ -22,6 +22,11 @@ struct KeyCombo: Hashable, Sendable {
         /// The ones that make a combination a shortcut rather than typing.
         /// Shift alone only changes what a key types.
         static let commandLike: Modifiers = [.control, .option, .command]
+
+        var hasValidShortcutShape: Bool {
+            let count = [Self.control, .option, .shift, .command].filter(contains).count
+            return count >= 2 && !isDisjoint(with: .commandLike)
+        }
     }
 
     /// Virtual key codes stop at 0x7F (`kVK_F20` is 0x5A, the highest used).
@@ -102,9 +107,7 @@ struct KeyCombo: Hashable, Sendable {
     /// A global shortcut wins over all of them, so a single-modifier combination
     /// would quietly break typing or a menu everywhere else. F-keys are free.
     var hasValidShape: Bool {
-        if isFunctionKey { return true }
-        let count = [Modifiers.control, .option, .shift, .command].filter(modifiers.contains).count
-        return count >= 2 && !modifiers.isDisjoint(with: .commandLike)
+        isFunctionKey || modifiers.hasValidShortcutShape
     }
 
     // MARK: Display

@@ -4068,6 +4068,47 @@
         }
       }
     },
+    "Nothing was recorded. If you pressed a key, another app already uses that combination. Try another.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic se nenahrálo. Pokud jsi stiskl klávesu, tuto kombinaci už používá jiná aplikace. Zkus jinou."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es wurde nichts aufgezeichnet. Wenn du eine Taste gedrückt hast, verwendet eine andere App diese Kombination bereits. Versuche eine andere."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing was recorded. If you pressed a key, another app already uses that combination. Try another."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha grabado nada. Si has pulsado una tecla, otra app ya usa esa combinación. Prueba otra."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun raccourci enregistré. Si vous avez appuyé sur une touche, une autre app utilise déjà cette combinaison. Essayez-en une autre."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nič sa nenahralo. Ak si stlačil kláves, túto kombináciu už používa iná aplikácia. Skús inú."
+          }
+        }
+      }
+    },
     "Off by default. Logs display changes and their results to ~/Library/Logs/VibeRes, up to about 1 MB. Nothing is sent.": {
       "extractionState": "manual",
       "localizations": {

@@ -20,6 +20,8 @@ struct ShortcutRecorder: View {
     @Environment(HotkeyCenter.self) private var hotkeys
     @State private var isRecording = false
     @State private var problem: HotkeyProblem?
+    @State private var modifierOnlyPress = ModifierOnlyPress()
+    @State private var showsUnrecordedHint = false
     @State private var monitor: Any?
     /// The click that stopped a recording, so the same click's release does
     /// not start a new one when it lands on the recorder itself.
@@ -55,7 +57,12 @@ struct ShortcutRecorder: View {
                 }
             }
 
-            if let problem {
+            if showsUnrecordedHint {
+                Text("Nothing was recorded. If you pressed a key, another app already uses that combination. Try another.")
+                    .font(Design.Typography.note)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let problem {
                 Text(problem.message)
                     .font(Design.Typography.note)
                     .foregroundStyle(.orange)
@@ -102,10 +109,12 @@ struct ShortcutRecorder: View {
 
     private func startRecording() {
         problem = nil
+        modifierOnlyPress = ModifierOnlyPress()
+        showsUnrecordedHint = modifierOnlyPress.modifiersChanged(KeyCombo.Modifiers(NSEvent.modifierFlags))
         isRecording = true
         hotkeys.suspend()
         monitor = NSEvent.addLocalMonitorForEvents(
-            matching: [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+            matching: [.keyDown, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown]
         ) { event in
             handle(event)
         }
@@ -114,6 +123,8 @@ struct ShortcutRecorder: View {
     private func stopRecording() {
         guard isRecording else { return }
         isRecording = false
+        showsUnrecordedHint = false
+        modifierOnlyPress = ModifierOnlyPress()
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
         hotkeys.resume()
@@ -123,12 +134,21 @@ struct ShortcutRecorder: View {
     /// popover's own shortcuts or a text field; lets clicks through after
     /// stopping.
     private func handle(_ event: NSEvent) -> NSEvent? {
+        if event.type == .flagsChanged {
+            if modifierOnlyPress.modifiersChanged(KeyCombo.Modifiers(event.modifierFlags)) {
+                showsUnrecordedHint = true
+                problem = nil
+            }
+            return event
+        }
         guard event.type == .keyDown else {
             // A mouse-up carries the number of its mouse-down.
             stoppingClick = event.eventNumber
             stopRecording()
             return event
         }
+        modifierOnlyPress.keyPressed()
+        showsUnrecordedHint = false
         let modifiers = KeyCombo.Modifiers(event.modifierFlags)
         let keyCode = Int(event.keyCode)
         if modifiers.isEmpty, keyCode == kVK_Escape {
@@ -151,6 +171,27 @@ struct ShortcutRecorder: View {
         combo = candidate
         stopRecording()
         return nil
+    }
+}
+
+struct ModifierOnlyPress {
+    private var modifiers: KeyCombo.Modifiers = []
+    private var hadShortcutModifiers = false
+    private var receivedKey = false
+
+    mutating func modifiersChanged(_ modifiers: KeyCombo.Modifiers) -> Bool {
+        self.modifiers = modifiers
+        if modifiers.isEmpty {
+            let showHint = hadShortcutModifiers && !receivedKey
+            self = Self()
+            return showHint
+        }
+        hadShortcutModifiers = hadShortcutModifiers || modifiers.hasValidShortcutShape
+        return false
+    }
+
+    mutating func keyPressed() {
+        receivedKey = !modifiers.isEmpty
     }
 }
 

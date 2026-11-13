@@ -61,7 +61,7 @@ enum ShortcutActions {
             return
         }
         Log.apply.info("shortcut: revert")
-        if displays.performRevert() == 0 {
+        if displays.performRevert() == 0 || displays.revert.canRevert {
             alert()
         }
     }

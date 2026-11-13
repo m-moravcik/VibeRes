@@ -298,8 +298,13 @@ room to negotiate.
   terminal key (⌃) from every other app.
 - Refused when set, with the reason inline: a combination macOS uses (System
   Settings → Keyboard Shortcuts), one another VibeRes shortcut has, or one
-  another app holds exclusively. Carbon reports only exclusive registrations,
-  so a clash with an app that registered without exclusivity goes unnoticed.
+  another app holds exclusively, when the key reaches the recorder. Carbon
+  consumes a combination held by another app before VibeRes sees it: while
+  recording, that app's action runs and the recorder shows a hint after the
+  modifiers are released instead of refusing it. Avoiding this would require
+  Accessibility permission, which VibeRes deliberately does not request.
+  Carbon reports only exclusive registrations, so a clash with an app that
+  registered without exclusivity goes unnoticed.
 - A saved shortcut that cannot be registered at launch (taken since, or
   hand-edited) is shown as not active next to its field, never silently dead.
 - Registered with Carbon `RegisterEventHotKey`, exclusively: no Accessibility
