@@ -278,7 +278,11 @@ private struct RecorderState: ViewModifier {
             }
             .changedGlow(on: acceptances, cornerRadius: cornerRadius)
             .keyframeAnimator(initialValue: CGFloat(0), trigger: refusals) { content, offset in
-                content.offset(x: reduceMotion ? 0 : offset)
+                // A render-time offset, not a layout one: with `.offset` the
+                // breathing border's phaseAnimator layer kept its place while
+                // the button shook out from under it.
+                let dx = reduceMotion ? 0 : offset
+                content.visualEffect { effect, _ in effect.offset(x: dx) }
             } keyframes: { _ in
                 for offset in Design.Motion.recorderShake {
                     CubicKeyframe(offset, duration: Design.Motion.recorderShakeStep)

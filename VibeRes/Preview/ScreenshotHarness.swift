@@ -543,7 +543,9 @@ private enum DemoProfiles {
 private struct RecorderStateGallery: View {
     private func field(_ size: SwiftUI.ControlSize, listening: Bool) -> some View {
         Button {} label: {
-            Text(listening ? "Type shortcut…" : "⌃⌥W")
+            // As the recorder labels itself: the prompt is localised, the
+            // combination is not.
+            (listening ? Text("Type shortcut…") : Text(verbatim: "⌃⌥W"))
                 .frame(minWidth: size == .small ? 112 : 128)
         }
         .controlSize(size)
