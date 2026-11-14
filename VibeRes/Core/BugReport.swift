@@ -3,9 +3,11 @@ import Foundation
 /// The link behind Settings -> Debug -> Report a problem: a new GitHub issue
 /// from the bug report form, with the diagnostics already in their field.
 ///
-/// Nothing leaves the Mac here. The browser opens the form; the user reads
-/// what is in it and submits it, or does not (VISION.md: diagnostics leave
-/// the Mac only when the user sends them).
+/// The app sends nothing itself. The diagnostics travel to GitHub in the
+/// link the browser opens, so they also sit in the browser history, but
+/// nothing is posted until the user reads the form and submits it
+/// (VISION.md: diagnostics leave the Mac only when the user sends them, for
+/// example as a prefilled bug report the user reads before submitting).
 enum BugReport {
     static let newIssue = URL(string: "https://github.com/m-moravcik/VibeRes/issues/new")!
     /// `.github/ISSUE_TEMPLATE/bug_report.yml`, and the id of its diagnostics

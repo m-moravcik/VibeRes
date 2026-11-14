@@ -5298,43 +5298,43 @@
         }
       }
     },
-    "Report a problem opens a new issue on GitHub with these diagnostics filled in. Nothing is sent until you submit it there.": {
+    "Report a problem opens a new issue on GitHub with these diagnostics filled in. They reach GitHub in the link, but nothing is posted until you submit the issue.": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nahlásit problém otevře na GitHubu nové hlášení s vyplněnou diagnostikou. Nic se neodešle, dokud ho tam neodešleš."
+            "value": "Nahlásit problém otevře na GitHubu nové hlášení s vyplněnou diagnostikou. Na GitHub se dostane v odkazu, ale nic se nezveřejní, dokud hlášení neodešleš."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Problem melden öffnet ein neues Issue auf GitHub mit dieser Diagnose. Gesendet wird erst, wenn du es dort abschickst."
+            "value": "Problem melden öffnet ein neues Issue auf GitHub mit dieser Diagnose. Sie gelangt im Link zu GitHub, veröffentlicht wird aber erst, wenn du das Issue abschickst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Report a problem opens a new issue on GitHub with these diagnostics filled in. Nothing is sent until you submit it there."
+            "value": "Report a problem opens a new issue on GitHub with these diagnostics filled in. They reach GitHub in the link, but nothing is posted until you submit the issue."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informar de un problema abre una nueva incidencia en GitHub con este diagnóstico. No se envía nada hasta que la envíes allí."
+            "value": "Informar de un problema abre una nueva incidencia en GitHub con este diagnóstico. Llega a GitHub en el enlace, pero no se publica nada hasta que envíes la incidencia."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Signaler un problème ouvre un nouveau ticket sur GitHub avec ce diagnostic. Rien n’est envoyé tant que vous ne l’avez pas soumis."
+            "value": "Signaler un problème ouvre un nouveau ticket sur GitHub avec ce diagnostic. Il parvient à GitHub dans le lien, mais rien n’est publié tant que vous n’avez pas soumis le ticket."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nahlásiť problém otvorí na GitHube nové hlásenie s vyplnenou diagnostikou. Nič sa neodošle, kým ho tam neodošleš."
+            "value": "Nahlásiť problém otvorí na GitHube nové hlásenie s vyplnenou diagnostikou. Na GitHub sa dostane v odkaze, ale nič sa nezverejní, kým hlásenie neodošleš."
           }
         }
       }

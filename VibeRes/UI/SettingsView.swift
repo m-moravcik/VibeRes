@@ -242,7 +242,7 @@ struct SettingsView: View {
                 Text("Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Report a problem opens a new issue on GitHub with these diagnostics filled in. Nothing is sent until you submit it there.")
+                Text("Report a problem opens a new issue on GitHub with these diagnostics filled in. They reach GitHub in the link, but nothing is posted until you submit the issue.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if reportOnClipboard {

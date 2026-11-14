@@ -51,9 +51,16 @@ struct BugReportTests {
         let text = try #require(query(link.url)["diagnostics"])
         #expect(text.contains("INFO line 49 "))
         #expect(!text.contains("INFO line 0 "))
-        let kept = lines.filter { text.contains($0) }.count
+        let keptLines = lines.filter { text.contains($0) }
+        let kept = keptLines.count
         #expect(kept > 0 && kept < 50)
+        #expect(keptLines == Array(lines.suffix(kept)))
         #expect(text.contains("Last \(kept) log lines (\(50 - kept) older ones did not fit the link"))
+
+        var oneMore = report(logLines: Array(lines.suffix(kept + 1)))
+        oneMore.omittedLogLines = 50 - kept - 1
+        let longer = BugReport.url(diagnostics: oneMore.render())
+        #expect(longer.absoluteString.count > BugReport.maxLinkLength)
     }
 
     @Test("When even the report without log lines is too long, the form opens empty")
