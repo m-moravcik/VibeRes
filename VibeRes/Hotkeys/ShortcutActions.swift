@@ -59,18 +59,14 @@ enum ShortcutActions {
     /// to undo, the alert sound says the press was heard and did nothing.
     private static func revert(displays: DisplayStore) {
         Log.apply.info("shortcut: revert")
-        let hadSomething = displays.revert.canRevert
         let restored = displays.performRevert()
-        if !hadSomething {
-            alert()
-            announce(.nothingToRevert)
-        } else if displays.revert.canRevert {
+        if displays.revert.canRevert {
             // What failed stays armed for another try; the store just said why.
             alert()
             announce(.revertIncomplete(displays.lastError))
         } else if restored == 0 {
             alert()
-            announce(.revertIncomplete(nil))
+            announce(.nothingToRevert)
         } else {
             announce(.reverted)
         }

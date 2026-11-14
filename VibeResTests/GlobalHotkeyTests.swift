@@ -497,11 +497,12 @@ struct ShortcutActionTests {
             return note
         }
 
-        /// Whether the one thing said was an incomplete revert with a reason.
-        var revertIncompleteWithReason: Bool {
+        /// The reason of the one incomplete-revert announcement, if that is
+        /// all that was said.
+        var revertIncompleteReason: UserFacingProblem? {
             let said = announcements()
-            guard said.count == 1, case let .revertIncomplete(problem) = said[0] else { return false }
-            return problem != nil
+            guard said.count == 1, case let .revertIncomplete(problem) = said[0] else { return nil }
+            return problem
         }
     }
 
@@ -865,7 +866,7 @@ struct ShortcutActionTests {
 
         #expect(restored == [101])
         #expect(r.alerts() == 1)
-        #expect(r.revertIncompleteWithReason)
+        #expect(r.revertIncompleteReason == ResolutionSwitcher.Failure.applyMode(.cannotComplete).asUserFacingProblem)
         #expect(r.displays.revert.canRevert)
         #expect(r.displays.revert.consume().entries.map(\.displayID) == [102])
     }
@@ -891,11 +892,33 @@ struct ShortcutActionTests {
 
         #expect(restored.sorted() == ids)
         #expect(r.alerts() == 1)
-        #expect(r.revertIncompleteWithReason)
+        #expect(r.revertIncompleteReason == ResolutionSwitcher.Failure.originCoverage.asUserFacingProblem)
         #expect(r.displays.revert.canRevert)
         let remaining = r.displays.revert.consume()
         #expect(remaining.entries.isEmpty)
         #expect(remaining.beforeMain == 102)
+    }
+
+    @Test("Revert of a main display already back by hand says there is nothing to revert")
+    func revertMainAlreadyBack() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        var origins = 0
+        r.displays.applyOrigins = { _, _ in origins += 1 }
+        r.displays.liveArrangement = {
+            (main: 102, bounds: [
+                101: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+                102: CGRect(x: 1920, y: 0, width: 1920, height: 1080),
+            ])
+        }
+        r.displays.revert.recordBatch([], beforeMain: 102)
+
+        ShortcutActions.perform(.revert, displays: r.displays, profiles: r.profiles)
+
+        #expect(origins == 0)
+        #expect(r.alerts() == 1)
+        #expect(r.announcements() == [.nothingToRevert])
+        #expect(!r.displays.revert.canRevert)
     }
 }
 
