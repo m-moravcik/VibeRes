@@ -118,7 +118,7 @@ enum ScreenshotHarness {
                         // The tab's content at the window's content size;
                         // the tab bar is the window toolbar's, not ours.
                         ShortcutsSettingsTab()
-                            .frame(width: 470, height: 400)
+                            .frame(width: 470, height: 490)
                             .environment(profiles)
                             .environment(preferences)
                             .environment(hotkeys)

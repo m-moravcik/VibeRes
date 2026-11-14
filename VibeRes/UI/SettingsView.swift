@@ -57,8 +57,10 @@ struct SettingsView: View {
         }
         // Sized so no tab scrolls. A little empty space beats a scroll bar in a
         // settings window with four tabs — the previous 320pt height cut off
-        // the General tab once the confirmation setting was added.
-        .frame(width: 470, height: 400)
+        // the General tab once the confirmation setting was added. 490pt fits
+        // the Debug tab with both Report a problem captions in French, its
+        // longest language.
+        .frame(width: 470, height: 490)
         .task {
             // Prefer the recorded intent: if the registration was invalidated
             // and re-registration failed, the toggle should still show what the
