@@ -101,4 +101,19 @@ struct ConfirmDefaultTests {
         defaults.set(true, forKey: onboardingKey)
         #expect(Preferences.initialConfirmDisplayChanges(defaults) == stored)
     }
+
+    // A launch argument (`-VibeRes.ConfirmDisplayChanges YES`, as the
+    // screenshot and demo scripts pass) reaches UserDefaults as the string
+    // "YES" or "NO", not a Bool. It is still the answer, and must not be
+    // replaced by a computed default written to the persistent domain.
+    @Test("A string answer from a launch argument wins and is not overwritten",
+          arguments: [("YES", true), ("NO", false)])
+    func stringAnswerWins(raw: String, expected: Bool) {
+        let (defaults, name) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: name) }
+        defaults.set(raw, forKey: confirmKey)
+        defaults.set("YES", forKey: onboardingKey)
+        #expect(Preferences.initialConfirmDisplayChanges(defaults) == expected)
+        #expect(defaults.object(forKey: confirmKey) as? String == raw)
+    }
 }

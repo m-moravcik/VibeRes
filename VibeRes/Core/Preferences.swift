@@ -152,9 +152,14 @@ final class Preferences {
     /// finished yet) gets the new default, on, and an install that has been
     /// through the tour keeps the old one, off. The result is persisted so the
     /// answer does not flip once the tour sets `onboardingShown`.
+    ///
+    /// Any value counts as an answer, read through `bool(forKey:)`: a launch
+    /// argument such as `-VibeRes.ConfirmDisplayChanges NO` (the screenshot and
+    /// demo scripts pass one) arrives as the string "NO", which `as? Bool`
+    /// would miss, and the fallback would then persist a default over it.
     static func initialConfirmDisplayChanges(_ defaults: UserDefaults) -> Bool {
-        if let stored = defaults.object(forKey: confirmChangesKey) as? Bool {
-            return stored
+        if defaults.object(forKey: confirmChangesKey) != nil {
+            return defaults.bool(forKey: confirmChangesKey)
         }
         let freshInstall = defaults.object(forKey: onboardingShownKey) == nil
         defaults.set(freshInstall, forKey: confirmChangesKey)
