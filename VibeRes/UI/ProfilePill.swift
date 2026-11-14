@@ -8,6 +8,10 @@ struct ProfilePill: View {
     /// (the `✱` badge), which only says the profile's matcher is role-based;
     /// both can be true at once.
     let isActive: Bool
+    /// The displays the profile waits for when none of them is connected, so
+    /// it can apply nothing here; nil when it can. Such a pill dims and says
+    /// which monitor it needs instead of what it would do.
+    var waitingFor: [String]? = nil
     /// Lazily computed preview shown on hover so the user knows *before*
     /// clicking what the apply will do. Re-evaluated on each hover so the
     /// preview reflects live display state, not a stale snapshot.
@@ -45,6 +49,7 @@ struct ProfilePill: View {
                         .foregroundStyle(Design.Palette.accentText)
                 }
             }
+            .opacity(waitingFor == nil ? 1 : Self.waitingOpacity)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(
@@ -75,6 +80,8 @@ struct ProfilePill: View {
             cachedPreview = hover ? previewProvider() : nil
         }
         .help(plainPreviewTooltip)
+        // VoiceOver hears it with the name, without waiting for the help tag.
+        .accessibilityValue(waitingLine ?? "")
         .contextMenu {
             // Left-click on the pill already applies — no Apply item to duplicate it.
             // Context menu is for actions without a dedicated UI control.
@@ -92,16 +99,62 @@ struct ProfilePill: View {
     /// SwiftUI `.popover` here: it creates an NSPanel that intercepts the first
     /// click on the pill while the preview is visible.
     private var plainPreviewTooltip: String {
+        if let waitingLine {
+            // Every row would read "not connected"; say what it needs instead.
+            return [waitingLine, ProfileApplyConfirmation.disjointHeadline()].joined(separator: "\n")
+        }
         guard let preview = cachedPreview else { return tooltip }
-        var lines = activeTooltipPrefix + ["Applying '\(profile.name)' will:"]
+        let name = profile.name
+        var lines = activeTooltipPrefix + [String(localized: LocalizedStringResource(
+            "pill.tooltip.willDo",
+            defaultValue: "Applying '\(name)' will:",
+            locale: .appLanguage,
+            comment: "First line of a profile pill's hover preview, followed by one line per display. 1: profile name"
+        ))]
         for row in preview.rows {
             lines.append("  \(row.tooltipMarker) \(row.displayName) — \(row.detailText)")
         }
         if !preview.untouched.isEmpty {
-            lines.append("Leaves untouched: " + preview.untouched.joined(separator: ", "))
+            let names = ProfileCopy.list(preview.untouched)
+            lines.append(String(localized: LocalizedStringResource(
+                "pill.tooltip.untouched",
+                defaultValue: "Leaves untouched: \(names)",
+                locale: .appLanguage,
+                comment: "Profile pill hover preview: connected displays the profile does not change. 1: their names, as a list"
+            )))
         }
         return lines.joined(separator: "\n")
     }
+
+    /// "Waiting for LG UltraFine", or nil when the profile can apply here.
+    private var waitingLine: String? {
+        waitingFor.map { Self.waitingLine(for: $0) }
+    }
+
+    static func waitingLine(for names: [String], locale: Locale = .appLanguage) -> String {
+        let list = ProfileCopy.list(names, locale: locale)
+        return String(localized: LocalizedStringResource(
+            "pill.tooltip.waiting",
+            defaultValue: "Waiting for \(list)",
+            locale: locale,
+            comment: "Tooltip of a profile none of whose displays is connected. 1: the displays it needs, as a list"
+        ))
+    }
+
+    /// The displays a profile waits for when it can apply nothing to the
+    /// displays connected now; nil when it can apply something.
+    static func waitingFor(
+        _ profile: Profile,
+        classification: DisplaySetClassifier.Classification,
+        locale: Locale = .appLanguage
+    ) -> [String]? {
+        guard case .disjoint = classification else { return nil }
+        return profile.localizedDisplayNames(locale: locale)
+    }
+
+    /// Dim enough to read as unavailable, light enough to stay legible: the
+    /// pill still opens the panel that explains it.
+    static let waitingOpacity = 0.5
 
     private var iconName: String {
         // Built-in only: laptop icon. Otherwise: stack of rectangles.
@@ -113,13 +166,26 @@ struct ProfilePill: View {
     }
 
     private var tooltip: String {
-        (activeTooltipPrefix + ["Apply '\(profile.name)' (\(profile.humanSummary))"]).joined(separator: "\n")
+        let name = profile.name
+        let summary = profile.localizedSummary()
+        return (activeTooltipPrefix + [String(localized: LocalizedStringResource(
+            "pill.tooltip.apply",
+            defaultValue: "Apply '\(name)' (\(summary))",
+            locale: .appLanguage,
+            comment: "Profile pill tooltip before the hover preview is ready. 1: profile name, 2: its displays"
+        ))]).joined(separator: "\n")
     }
 
     /// First line prepended to both tooltip variants when the pill is active —
     /// empty when it isn't, so joining it never leaves a stray blank line.
     private var activeTooltipPrefix: [String] {
-        isActive ? ["Active — matches the current setup"] : []
+        guard isActive else { return [] }
+        return [String(localized: LocalizedStringResource(
+            "pill.tooltip.active",
+            defaultValue: "Active: matches the current setup",
+            locale: .appLanguage,
+            comment: "First tooltip line of the profile pill whose settings are in effect now"
+        ))]
     }
 }
 

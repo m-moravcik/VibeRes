@@ -37,7 +37,10 @@ refused combination, to check that the field stays put, and
 footer's Revert row after a size change, and after a size and main display
 change, its longest label, to check that the row stays on one line in every
 language, and `countdown-{light,dark}.png`, the Keep row of a change waiting
-to be confirmed with its bar drained to 7 of 12 seconds.
+to be confirmed with its bar drained to 7 of 12 seconds, and
+`waiting-{light,dark}.png`, a dimmed pill for a profile whose monitor is not
+connected beside two that can apply, with its "Waiting for" hint and the
+panel a click on it opens.
 
 - The displays are the ones connected to the Mac that renders. Their names and
   modes are hardware, not personal data, but plug in the same pair (a Retina

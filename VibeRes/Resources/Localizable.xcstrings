@@ -9644,6 +9644,552 @@
         }
       }
     },
+    "panel.apply": {
+      "comment": "Apply confirmation button",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť"
+          }
+        }
+      }
+    },
+    "panel.applyAnyway": {
+      "comment": "Apply confirmation button when some displays are missing or extra",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přesto použít"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trotzdem anwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply anyway"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar de todos modos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer quand même"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napriek tomu použiť"
+          }
+        }
+      }
+    },
+    "panel.headline.disjoint": {
+      "comment": "Apply confirmation and pill tooltip: no display the profile names is connected",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Není připojen žádný displej z tohoto profilu, takže není co použít."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keiner der Bildschirme dieses Profils ist angeschlossen, es gibt nichts anzuwenden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None of this profile's displays is connected, so there is nothing to apply."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguna pantalla de este perfil está conectada, así que no hay nada que aplicar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun écran de ce profil n’est connecté, il n’y a donc rien à appliquer."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie je pripojený žiadny displej z tohto profilu, takže nie je čo použiť."
+          }
+        }
+      }
+    },
+    "panel.headline.exact": {
+      "comment": "Apply confirmation: every display the profile names is connected",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapojení displejů odpovídá profilu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Bildschirme entsprechen dem Profil."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display setup matches the profile."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las pantallas coinciden con el perfil."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les écrans correspondent au profil."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapojenie displejov zodpovedá profilu."
+          }
+        }
+      }
+    },
+    "panel.headline.partial": {
+      "comment": "Apply confirmation. 1: the profile's displays that are not connected, as a list",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepřipojené: %1$@. Ostatní displeje se nastaví podle profilu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht angeschlossen: %1$@. Die anderen Bildschirme werden wie gespeichert eingestellt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected: %1$@. The other displays will apply as saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No conectadas: %1$@. Las demás pantallas se aplicarán como se guardaron."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non connectés : %1$@. Les autres écrans seront réglés comme enregistrés."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepripojené: %1$@. Ostatné displeje sa nastavia podľa profilu."
+          }
+        }
+      }
+    },
+    "panel.headline.partialWithExtras": {
+      "comment": "Apply confirmation. 1: the profile's displays that are missing, 2: connected displays it does not name",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepřipojené: %1$@. Připojené navíc, zůstanou beze změny: %2$@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht angeschlossen: %1$@. Zusätzlich angeschlossen, bleiben unverändert: %2$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected: %1$@. Also connected, left untouched: %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No conectadas: %1$@. También conectadas, sin cambios: %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non connectés : %1$@. Également connectés, inchangés : %2$@."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepripojené: %1$@. Pripojené navyše, ostanú bez zmeny: %2$@."
+          }
+        }
+      }
+    },
+    "panel.headline.superset": {
+      "comment": "Apply confirmation. 1: connected displays the profile does not name, as a list",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojené navíc: %1$@. Zůstanou beze změny."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusätzlich angeschlossen: %1$@. Sie bleiben unverändert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also connected: %1$@. They will be left untouched."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "También conectadas: %1$@. No se modificarán."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Également connectés : %1$@. Ils resteront inchangés."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojené navyše: %1$@. Ostanú bez zmeny."
+          }
+        }
+      }
+    },
+    "panel.untouched": {
+      "comment": "Apply confirmation: connected displays the profile leaves alone. 1: their names, as a list",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beze změny: %1$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unverändert: %1$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untouched: %1$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin cambios: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inchangés : %1$@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bez zmeny: %1$@"
+          }
+        }
+      }
+    },
+    "pill.tooltip.active": {
+      "comment": "First tooltip line of the profile pill whose settings are in effect now",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivní: odpovídá aktuálnímu nastavení"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv: entspricht der aktuellen Einrichtung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active: matches the current setup"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo: coincide con la configuración actual"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif : correspond à la configuration actuelle"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktívny: zodpovedá aktuálnemu nastaveniu"
+          }
+        }
+      }
+    },
+    "pill.tooltip.apply": {
+      "comment": "Profile pill tooltip before the hover preview is ready. 1: profile name, 2: its displays",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít „%1$@“ (%2$@)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%1$@“ anwenden (%2$@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply '%1$@' (%2$@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar “%1$@” (%2$@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer « %1$@ » (%2$@)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť „%1$@“ (%2$@)"
+          }
+        }
+      }
+    },
+    "pill.tooltip.untouched": {
+      "comment": "Profile pill hover preview: connected displays the profile does not change. 1: their names, as a list",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponechá beze změny: %1$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lässt unverändert: %1$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaves untouched: %1$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deja sin cambios: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laisse inchangé : %1$@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponechá bez zmeny: %1$@"
+          }
+        }
+      }
+    },
+    "pill.tooltip.waiting": {
+      "comment": "Tooltip of a profile none of whose displays is connected. 1: the displays it needs, as a list",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čeká na %1$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet auf %1$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for %1$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando a %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente de %1$@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čaká na %1$@"
+          }
+        }
+      }
+    },
+    "pill.tooltip.willDo": {
+      "comment": "First line of a profile pill's hover preview, followed by one line per display. 1: profile name",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použití „%1$@“ provede toto:"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%1$@“ anwenden bewirkt:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applying '%1$@' will:"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar “%1$@” hará esto:"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer « %1$@ » va :"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použitie „%1$@“ urobí toto:"
+          }
+        }
+      }
+    },
     "preview.row.alreadyAtClosest": {
       "comment": "The display already holds the closest available mode. 1: current mode, 2: saved mode",
       "extractionState": "manual",
@@ -10312,6 +10858,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tento displej daný režim nepodporuje"
+          }
+        }
+      }
+    },
+    "profile.entry.anyExternal": {
+      "comment": "Stands for a profile entry that applies to whichever external monitor is connected",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "libovolný externí monitor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "beliebiger externer Monitor"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "any external monitor"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cualquier monitor externo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "n’importe quel moniteur externe"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ľubovoľný externý monitor"
           }
         }
       }
