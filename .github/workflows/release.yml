@@ -135,7 +135,7 @@ jobs:
             echo "::error::could not read the VibeRes deployment target from project.yml"
             exit 1
           fi
-          APPLE_LINE="Signed with an Apple Developer ID and notarized by Apple. Requires macOS ${MIN_OS%.0}."
+          APPLE_LINE="Signed with an Apple Developer ID and notarized by Apple. Requires macOS ${MIN_OS%.0} or later."
           LAST="$(grep -v '^[[:space:]]*$' "$NOTES" | tail -n 1 | sed 's/[[:space:]]*$//')"
           if [ "$LAST" != "$APPLE_LINE" ]; then
             echo "::error::$NOTES must end with: $APPLE_LINE"

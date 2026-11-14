@@ -242,9 +242,9 @@ pre-built binary, it needs its own Developer ID signature — and
 1. Bump `MARKETING_VERSION` (and `CURRENT_PROJECT_VERSION`) in `project.yml`.
 2. Bump `version` and `tag:` in `Formula/viberes.rb`.
 3. Write `release-notes/X.Y.Z.md`: short bullets of what changed for the user,
-   ending with this line, as in Eject Guard:
+   ending with this line:
    ```
-   Signed with an Apple Developer ID and notarized by Apple. Requires macOS 26.
+   Signed with an Apple Developer ID and notarized by Apple. Requires macOS 26 or later.
    ```
    The update window is where people decide whether to trust an update, so it
    says who stands behind it. It says exactly what happens: the app is signed
@@ -252,7 +252,10 @@ pre-built binary, it needs its own Developer ID signature — and
    is not the same as Apple signing it. The macOS version follows the
    VibeRes target's `deploymentTarget` in `project.yml`, which its
    `LSMinimumSystemVersion` resolves to (the project-wide
-   `MACOSX_DEPLOYMENT_TARGET` only when the target sets none). No em dash.
+   `MACOSX_DEPLOYMENT_TARGET` only when the target sets none), and "or later"
+   says it is the oldest macOS that runs the app, not the only one
+   (2026-11-14; 0.12.0 and older say "Requires macOS 26." and stay as
+   published, since the appcast that carries them is signed). No em dash.
    The workflow refuses notes that are missing, hold an em dash or end with
    anything other than that exact line. They become the GitHub release body
    and Sparkle's update window. Since 0.11.0 the notes
