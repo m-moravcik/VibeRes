@@ -15,6 +15,11 @@ enum Design {
         static let chip: CGFloat = 5
         static let card: CGFloat = 8
         static let popover: CGFloat = 10
+        /// A bordered button at regular and small size on macOS 26, which the
+        /// shortcut recorder's state border follows. Measured on the rendered
+        /// buttons: the corner profiles match pixel for pixel.
+        static let recorder: CGFloat = 7
+        static let recorderSmall: CGFloat = 5
     }
 
     enum Layout {
@@ -176,6 +181,18 @@ enum Design {
         static let changedGlowIn: TimeInterval = 0.15
         static let changedGlowHold: TimeInterval = 0.35
         static let changedGlowOut: TimeInterval = 0.9
+
+        /// A shortcut recorder that is listening: its accent border breathes,
+        /// one full breath per `recorderBreath`, until it stops listening.
+        /// Reduce Motion: the border holds still.
+        static let recorderBreath: TimeInterval = 1.2
+        static let recorderBreathLow: Double = 0.3
+        static let recorderBorderWidth: CGFloat = 2
+        /// A refused combination: one short shake, three small offsets over
+        /// about 0.3 s, the field saying "no" before the reason is read.
+        /// Reduce Motion: no shake, the border turns orange instead.
+        static let recorderShake: [CGFloat] = [-5, 4, -2, 0]
+        static let recorderShakeStep: TimeInterval = 0.075
 
         // A profile pill that becomes active swaps its symbol for a checkmark
         // and bounces it once, with the system's own symbol bounce. It needs

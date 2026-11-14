@@ -266,6 +266,11 @@ effort; none is built yet.
 - **Reduce Motion:** the border is static; no shake, the border turns orange
   for the refusal instead. The reason text stays the real signal.
 - **Effort:** S. `ShortcutRecorder.swift`.
+- **Built 2026-11-14:** `recorderState` on the recorder field: a 2 pt accent
+  border breathing between full and 0.3 opacity (`phaseAnimator`, 1.2 s a
+  breath) while listening, the changed-glow on an accepted combination, a
+  0.3 s shake (-5, 4, -2, 0 pt) on a refusal. Reduce Motion: the border holds
+  still and turns orange while the refusal stands.
 
 ### 4. The menu bar glyph answers a missed shortcut
 - **Moment:** a global shortcut pressed with the popover closed that did

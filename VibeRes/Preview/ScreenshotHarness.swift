@@ -94,6 +94,9 @@ enum ScreenshotHarness {
                 try write(detail, to: output.appendingPathComponent("detail\(suffix).png"))
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
                 try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
+                // The shortcut recorder listening, at both sizes, to check
+                // that its state border sits on the button's own edge.
+                try write(panel(RecorderStateGallery()), to: output.appendingPathComponent("recorder\(suffix).png"))
                 // A profile waiting for its monitor beside two that can
                 // apply, and the panel its click opens.
                 try write(panel(WaitingPillGallery()), to: output.appendingPathComponent("waiting\(suffix).png"))
@@ -532,6 +535,36 @@ private enum DemoProfiles {
         case "de": return ("Arbeit", "Präsentation", "Code")
         default: return ("Work", "Presentation", "Code")
         }
+    }
+}
+
+/// Recorder-looking buttons with the listening border, regular (Settings)
+/// and small (the Edit form), next to one at rest.
+private struct RecorderStateGallery: View {
+    private func field(_ size: SwiftUI.ControlSize, listening: Bool) -> some View {
+        Button {} label: {
+            // As the recorder labels itself: the prompt is localised, the
+            // combination is not.
+            (listening ? Text("Type shortcut…") : Text(verbatim: "⌃⌥W"))
+                .frame(minWidth: size == .small ? 112 : 128)
+        }
+        .controlSize(size)
+        .recorderState(listening: listening, refused: false, refusals: 0, acceptances: 0,
+                       cornerRadius: size == .small ? Design.Radius.recorderSmall : Design.Radius.recorder)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Design.Spacing.l) {
+            HStack(spacing: Design.Spacing.l) {
+                field(.regular, listening: true)
+                field(.regular, listening: false)
+            }
+            HStack(spacing: Design.Spacing.l) {
+                field(.small, listening: true)
+                field(.small, listening: false)
+            }
+        }
+        .padding(Design.Spacing.l)
     }
 }
 

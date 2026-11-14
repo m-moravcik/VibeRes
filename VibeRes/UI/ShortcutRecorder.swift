@@ -37,6 +37,10 @@ struct ShortcutRecorder<Accessory: View>: View {
     /// The click that stopped a recording, so the same click's release does
     /// not start a new one when it lands on the recorder itself.
     @State private var stoppingClick: Int?
+    /// Go up on each accepted and each refused combination, for the glow and
+    /// the shake.
+    @State private var acceptances = 0
+    @State private var refusals = 0
 
     init(
         owner: HotkeyOwner,
@@ -104,6 +108,13 @@ struct ShortcutRecorder<Accessory: View>: View {
                 .fixedSize(horizontal: true, vertical: false)
         }
         .controlSize(controlSize)
+        .recorderState(
+            listening: isRecording,
+            refused: isRecording && problem != nil,
+            refusals: refusals,
+            acceptances: acceptances,
+            cornerRadius: controlSize == .small ? Design.Radius.recorderSmall : Design.Radius.recorder
+        )
         .accessibilityLabel(isRecording ? Text("Recording shortcut") : Text("Shortcut"))
         .accessibilityValue(combo.map { Text(verbatim: $0.localizedDisplayString()) } ?? Text("None"))
         .accessibilityHint(Text("Press to record a new shortcut."))
@@ -221,12 +232,82 @@ struct ShortcutRecorder<Accessory: View>: View {
         // Ask while still suspended: the probe must not find our own shortcuts.
         if let refusal = hotkeys.problem(with: candidate, for: owner) {
             problem = refusal
+            refusals += 1
             return nil
         }
         problem = nil
         combo = candidate
+        acceptances += 1
         stopRecording()
         return nil
+    }
+}
+
+extension View {
+    /// The recorder field's state, shown on its edge: an accent border that
+    /// breathes while it listens, a shake for a refused combination, and the
+    /// shared changed-glow for an accepted one. The message under the field
+    /// stays the real signal; this only says it at a glance. Reduce Motion:
+    /// the border holds still and turns orange for a refusal.
+    func recorderState(
+        listening: Bool, refused: Bool, refusals: Int, acceptances: Int, cornerRadius: CGFloat
+    ) -> some View {
+        modifier(RecorderState(
+            listening: listening, refused: refused, refusals: refusals,
+            acceptances: acceptances, cornerRadius: cornerRadius
+        ))
+    }
+}
+
+private struct RecorderState: ViewModifier {
+    let listening: Bool
+    let refused: Bool
+    let refusals: Int
+    let acceptances: Int
+    let cornerRadius: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if listening {
+                    border
+                        .allowsHitTesting(false)
+                        .transition(.opacity.animation(Design.Motion.quick))
+                }
+            }
+            .changedGlow(on: acceptances, cornerRadius: cornerRadius)
+            .keyframeAnimator(initialValue: CGFloat(0), trigger: refusals) { content, offset in
+                // A render-time offset, not a layout one: with `.offset` the
+                // breathing border's phaseAnimator layer kept its place while
+                // the button shook out from under it.
+                let dx = reduceMotion ? 0 : offset
+                content.visualEffect { effect, _ in effect.offset(x: dx) }
+            } keyframes: { _ in
+                for offset in Design.Motion.recorderShake {
+                    CubicKeyframe(offset, duration: Design.Motion.recorderShakeStep)
+                }
+            }
+    }
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
+
+    @ViewBuilder private var border: some View {
+        if reduceMotion {
+            shape.strokeBorder(refused ? Color.orange : Color.accentColor,
+                               lineWidth: Design.Motion.recorderBorderWidth)
+        } else {
+            // Breathes for as long as it is on screen, which is as long as
+            // the recorder listens.
+            shape.strokeBorder(Color.accentColor, lineWidth: Design.Motion.recorderBorderWidth)
+                .phaseAnimator([1.0, Design.Motion.recorderBreathLow]) { border, opacity in
+                    border.opacity(opacity)
+                } animation: { _ in
+                    .easeInOut(duration: Design.Motion.recorderBreath / 2)
+                }
+        }
     }
 }
 

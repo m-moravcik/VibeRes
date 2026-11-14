@@ -40,7 +40,9 @@ language, and `countdown-{light,dark}.png`, the Keep row of a change waiting
 to be confirmed with its bar drained to 7 of 12 seconds, and
 `waiting-{light,dark}.png`, a dimmed pill for a profile whose monitor is not
 connected beside two that can apply, with its "Waiting for" hint and the
-panel a click on it opens.
+panel a click on it opens, and `recorder-{light,dark}.png`, the shortcut
+field's listening border at the Settings and Edit form sizes, to check that
+it sits on the button's own rounded edge.
 
 - The displays are the ones connected to the Mac that renders. Their names and
   modes are hardware, not personal data, but plug in the same pair (a Retina
