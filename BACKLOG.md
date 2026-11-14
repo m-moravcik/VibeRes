@@ -4,6 +4,29 @@ Product decisions and ideas for future releases, with planned and deferred
 work identified in each entry. Deferred ideas may never ship. Tracked so we
 don't keep re-deciding the same questions every few weeks.
 
+## 1.0 (decided 2026-11-14)
+
+0.12.0 shipped what was built so far (shortcuts, the first profile in the
+tour, confirmation on by default, the one-line Revert row) so it gets real
+use first. 1.0 is the polished core that says what happened, not more
+features. It ships these, then one break-it QA pass over the whole app and
+fresh README screenshots:
+
+1. The safety countdown drains (motion audit item 2). Confirmation is on by
+   default now, so every new user sees it.
+2. VoiceOver hears a shortcut's result (product suggestions below).
+3. A hint for a profile that can never apply here (product suggestions).
+4. Report a problem with a prefilled bug report (follows from VISION.md).
+5. The shortcut recorder shows its state (motion audit item 3).
+6. One small polish batch: the hover preview morphs between sizes, the
+   onboarding checkmark bounces, "Copied" swaps in place (motion audit items
+   1, 5 and 6).
+
+After 1.0: the menu bar glyph's "no" moment (item 4, needs new frames), bring
+windows back on screen (a new permission flow), HDR (API not known yet, may
+need a private symbol), then mirroring as its own release. Arrangement Stage
+2 stays deferred.
+
 ## Considered
 
 ### Mirror display support
