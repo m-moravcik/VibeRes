@@ -5,9 +5,10 @@ import Testing
 /// Settings -> Debug -> Report a problem: a link to GitHub's bug report form
 /// with the diagnostics in their field. GitHub fills an issue form field from
 /// the query item named after the field's id, next to `template=<file>`
-/// (GitHub docs, "Creating an issue from a URL query"), and refuses links much
-/// over 8 KB. The oracle for the content is the report's own rendering,
-/// recovered by decoding the link as a browser would.
+/// (GitHub docs, "Creating an issue from a URL query"). Signed out, GitHub
+/// keeps a link through the login redirect only up to about 6,000
+/// characters (probed 2026-11-14). The oracle for the content is the report's
+/// own rendering, recovered by decoding the link as a browser would.
 @Suite("Bug report link")
 struct BugReportTests {
     private func report(logLines: [String]) -> Diagnostics.Report {
@@ -48,6 +49,10 @@ struct BugReportTests {
 
         #expect(link.carriesDiagnostics)
         #expect(link.url.absoluteString.count <= BugReport.maxLinkLength)
+        // Measured on github.com signed out, 2026-11-14: return_to keeps the
+        // prefill up to about 6,000 characters, and from about 6,950 the
+        // link gets HTTP 500 instead of the login page.
+        #expect(link.url.absoluteString.count <= 6_000)
         let text = try #require(query(link.url)["diagnostics"])
         #expect(text.contains("INFO line 49 "))
         #expect(!text.contains("INFO line 0 "))

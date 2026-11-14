@@ -14,8 +14,12 @@ enum BugReport {
     /// field, which GitHub fills from a query item of the same name.
     static let template = "bug_report.yml"
     static let diagnosticsField = "diagnostics"
-    /// GitHub refuses a link much over 8 KB, so stay under it.
-    static let maxLinkLength = 8_000
+    /// Measured on github.com signed out, 2026-11-14: the login redirect keeps
+    /// the prefill (`return_to`) only up to about 6,000 characters, links
+    /// from about 6,950 get HTTP 500 and near 9,000 get 414. Signed-in
+    /// behaviour could not be checked, so the signed-out ceiling sets the
+    /// limit, with margin.
+    static let maxLinkLength = 5_500
 
     struct Link: Equatable {
         let url: URL
