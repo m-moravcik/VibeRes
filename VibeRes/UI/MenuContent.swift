@@ -748,6 +748,7 @@ private struct FooterBar: View {
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -872,7 +873,7 @@ private struct FooterBar: View {
                 ? "Revert \(entry.displayName) → \(size) and main display"
                 : "Revert \(entry.displayName) → \(size)"
         default:
-            let names = revert.entries.map(\.displayName).formatted(.list(type: .and))
+            let names = revert.entries.map(\.displayName).formatted(.list(type: .and).locale(locale))
             return alsoMain ? "Revert \(names) and main display" : "Revert \(names)"
         }
     }
