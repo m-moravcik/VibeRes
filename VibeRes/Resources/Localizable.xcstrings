@@ -3080,6 +3080,47 @@
         }
       }
     },
+    "If a new size leaves the screen unreadable, it goes back on its own. Profiles and shortcuts never ask.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokud nové rozlišení udělá obrazovku nečitelnou, vrátí se samo. Profily a zkratky se neptají."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Macht eine neue Größe den Bildschirm unlesbar, wird sie von selbst zurückgesetzt. Profile und Tastenkürzel fragen nie."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If a new size leaves the screen unreadable, it goes back on its own. Profiles and shortcuts never ask."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si un tamaño nuevo deja la pantalla ilegible, se deshace solo. Los perfiles y atajos nunca preguntan."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si une nouvelle taille rend l’écran illisible, elle s’annule d’elle-même. Les profils et raccourcis ne demandent jamais."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ak nové rozlíšenie urobí obrazovku nečitateľnou, vráti sa samo. Profily a skratky sa nepýtajú."
+          }
+        }
+      }
+    },
     "Include %@": {
       "extractionState": "manual",
       "localizations": {
@@ -7057,6 +7098,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zadaj skratku…"
+          }
+        }
+      }
+    },
+    "Undo a size I don't keep within %lld s": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátit rozlišení, které do %lld s neponechám"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Größe zurücksetzen, die ich nicht binnen %lld s behalte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo a size I don't keep within %lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deshacer un tamaño que no conserve en %lld s"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler une taille que je ne garde pas sous %lld s"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrátiť rozlíšenie, ktoré do %lld s neponechám"
           }
         }
       }

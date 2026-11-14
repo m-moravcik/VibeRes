@@ -83,6 +83,8 @@ VibeRes deduplicates NTSC drop-frame variants (59.94, 47.95) against their integ
 
 Variable refresh rate (Adaptive Sync, FreeSync, ProMotion) is supported: a monitor that offers both a variable and a fixed mode at the same rate gets a separate **VRR** chip, and a row click keeps a display that runs VRR on VRR.
 
+**A way back from a black screen.** With **Confirm resolution changes** on, a size or rate you click applies for this session only, and a *Keep this resolution?* row counts down 12 seconds. Click **Keep** to make it stick; do nothing and it goes back on its own, which is what saves you when the new mode leaves the screen unreadable. It is on for a new install; turn it off in the last step of the welcome tour or in Settings → Display. Skipping the tour keeps it on. An existing install keeps its setting. Profiles, shortcuts and auto-apply never ask.
+
 ### Preview on hover
 
 Hover any row other than the current one and a small sketch appears in the top-right corner of the list: the thin outline is the mode you're on, the filled rectangle inside it is the mode you're about to pick, both drawn at the same scale — so shrinking and growing read the same way. It sits in a fixed corner instead of following the cursor, which is deliberate: a popover anchored to the hovered row kept eating the first click and lagging behind fast pointer movement.
