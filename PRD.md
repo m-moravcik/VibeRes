@@ -18,8 +18,8 @@ which survived contact with the implementation. The reasoning that was worth
 keeping — the competitive gap, the CoreGraphics pitfalls, the App Store
 decision — is carried forward below. The original is in git history.
 
-- **Current version:** 0.11.1
-- **Status of this document:** current as of 2026-11-13
+- **Current version:** 0.12.0
+- **Status of this document:** current as of 2026-11-14
 
 ---
 
@@ -466,6 +466,7 @@ Lowering the deployment target is mostly one line in `project.yml`:
 
 | Date | Change |
 |---|---|
+| 2026-11-14 | Version brought up to 0.12.0 |
 | 2026-11-13 | §4.11 Global shortcuts: optional per-profile and Revert shortcuts, unset by default |
 | 2026-11-13 | Version brought up to 0.11.1. Mirroring (after 1.0) and opt-in global hotkeys moved out of the non-goals |
 | 2026-09-21 | Rewritten as a maintained PRD. The original pre-implementation plan is in git history |
