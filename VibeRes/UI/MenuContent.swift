@@ -748,6 +748,7 @@ private struct FooterBar: View {
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -765,6 +766,7 @@ private struct FooterBar: View {
                     MenuRow(
                         icon: "arrow.uturn.backward.circle",
                         label: revertLabel,
+                        detail: revertDetail,
                         // The label was previously omitted because applying a
                         // resolution dismissed the popover, so ⌘Z lost key focus
                         // before anyone could press it. That dismissal was a bug
@@ -830,9 +832,10 @@ private struct FooterBar: View {
         }
     }
 
-    /// Compact label for the revert row — fits the menu's natural width
-    /// without truncating, regardless of whether one or several displays
-    /// were touched by the last apply.
+    /// The revert row's label: what the screen goes back to, short enough
+    /// for one line in every language. The display's name made it wrap
+    /// ("Revert Built-in Retina Display → 1512×982"), so it moved to
+    /// `revertDetail`, the tooltip and what VoiceOver reads.
     ///
     /// Built from the history's values rather than `RevertHistory.summary`,
     /// which stays English for the CLI and the log.
@@ -841,18 +844,42 @@ private struct FooterBar: View {
         let alsoMain = revert.beforeMainID != nil
         switch revert.entries.count {
         case 0:
-            // A main-only revert has no entries — name it rather than falling
+            // A main-only revert has no entries; name it rather than falling
             // back to the generic label.
             return alsoMain ? "Revert main display" : "Revert last change"
         case 1:
+            // With the main display too there is no room for the size in
+            // every language; the tooltip carries it.
+            return alsoMain
+                ? "Revert size and main display"
+                : "Revert to \(Self.sizeText(revert.entries[0]))"
+        case let n:
+            return "Revert \(n) displays"
+        }
+    }
+
+    /// The whole sentence behind `revertLabel`, naming every display it
+    /// touches.
+    private var revertDetail: LocalizedStringKey {
+        let revert = store.revert
+        let alsoMain = revert.beforeMainID != nil
+        switch revert.entries.count {
+        case 0:
+            return alsoMain ? "Revert main display" : "Revert last change"
+        case 1:
             let entry = revert.entries[0]
-            let size = "\(entry.before.width)×\(entry.before.height)"
+            let size = Self.sizeText(entry)
             return alsoMain
                 ? "Revert \(entry.displayName) → \(size) and main display"
                 : "Revert \(entry.displayName) → \(size)"
-        case let n:
-            return "Revert last change (\(n) displays)"
+        default:
+            let names = revert.entries.map(\.displayName).formatted(.list(type: .and).locale(locale))
+            return alsoMain ? "Revert \(names) and main display" : "Revert \(names)"
         }
+    }
+
+    private static func sizeText(_ entry: RevertHistory.Entry) -> String {
+        "\(entry.before.width)×\(entry.before.height)"
     }
 
     private func showAbout() {
@@ -875,6 +902,9 @@ private struct MenuRow: View {
     /// footer stayed English in every language while its translations sat
     /// unused in the catalog.
     let label: LocalizedStringKey
+    /// The full sentence when `label` is a short form of it: shown as the
+    /// tooltip and read by VoiceOver instead of the label.
+    var detail: LocalizedStringKey? = nil
     let shortcut: String?
     let action: () -> Void
     var isEnabled: Bool = true
@@ -889,8 +919,11 @@ private struct MenuRow: View {
                     .frame(width: 16, alignment: .center)
                     .accessibilityHidden(true)
 
+                // A menu item is one line. Labels are written to fit; this
+                // keeps a longer translation from wrapping the row.
                 Text(label)
                     .font(.system(size: 13))
+                    .lineLimit(1)
 
                 Spacer()
 
@@ -916,7 +949,8 @@ private struct MenuRow: View {
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.4)
         .onHover { isHovering = $0 }
-        .accessibilityLabel(label)
+        .help(ifPresent: detail)
+        .accessibilityLabel(detail ?? label)
     }
 }
 
@@ -1297,4 +1331,17 @@ private let thousandsFormatter: NumberFormatter = {
 
 private func formatThousands(_ n: Int) -> String {
     thousandsFormatter.string(from: NSNumber(value: n)) ?? "\(n)"
+}
+
+private extension View {
+    /// A tooltip only when there is something to say. Fixed for a given row,
+    /// so the branch never swaps the view's identity while it is on screen.
+    @ViewBuilder
+    func help(ifPresent text: LocalizedStringKey?) -> some View {
+        if let text {
+            help(text)
+        } else {
+            self
+        }
+    }
 }

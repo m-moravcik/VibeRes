@@ -162,6 +162,24 @@ enum ScreenshotHarness {
                     )
                     try write(rep, to: output.appendingPathComponent("revert\(scheme == .dark ? "-dark" : "-light").png"))
                 }
+                // The longest label the row has: a size and the main display.
+                // Checks it stays on one line; not a README picture.
+                displays.revert.recordBatch(
+                    [(id: builtIn.id, name: builtIn.name, before: previous)], beforeMain: builtIn.id
+                )
+                try write(
+                    capture(
+                        PopoverPanel(scheme: .light) { RootView(path: .constant(NavigationPath())) }
+                            .environment(displays)
+                            .environment(profiles)
+                            .environment(preferences)
+                            .environment(hotkeys)
+                            .environment(\.updater, updater)
+                            .environment(updater.updateStatus),
+                        scheme: .light
+                    ),
+                    to: output.appendingPathComponent("revert-main-light.png")
+                )
             }
         } catch {
             fail("\(error)")

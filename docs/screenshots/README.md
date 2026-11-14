@@ -32,7 +32,11 @@ size I don't keep* box (unchecked here, because the script passes
 checked), and `edit-{light,dark}.png`, a
 profile's Edit form with its shortcut field, and
 `settings-shortcuts-refused-{light,dark}.png`, the Shortcuts tab rows with a
-refused combination, to check that the field stays put.
+refused combination, to check that the field stays put, and
+`revert-{light,dark}.png` and `revert-main-light.png`, the popover with the
+footer's Revert row after a size change, and after a size and main display
+change, its longest label, to check that the row stays on one line in every
+language.
 
 - The displays are the ones connected to the Mac that renders. Their names and
   modes are hardware, not personal data, but plug in the same pair (a Retina

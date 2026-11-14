@@ -270,6 +270,10 @@ effort; none is built yet.
   1512×982" is too long for the popover footer and breaks the menu-like row.
   Shorter label ("Revert to 1512×982"), the display name in the tooltip and
   the accessibility label. A UI defect, worth fixing before the motion items.
+  **Built 2026-11-14:** "Revert to 1512×982", or "Revert size and main
+  display" when the menu bar moves back too (the size does not fit there in
+  every language) and "Revert 2 displays"; the whole sentence with display
+  names is the tooltip and what VoiceOver reads. Footer rows are one line.
 - **VoiceOver hears a shortcut's result.** With the popover closed a profile
   or Revert shortcut is silent for a screen reader user. Post an
   accessibility announcement ("Applied Work", "Nothing to revert") through
