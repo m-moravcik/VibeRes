@@ -21,14 +21,29 @@ struct ConfirmationRowRenderTests {
         .init(deadline: Date().addingTimeInterval(left), length: Self.window)
     }
 
+    /// The bar keeps sliding while the row renders, however long the host
+    /// takes, so it must sit between the time left on a clock reverting at
+    /// `deadline` when the row was built and when its pixels were captured.
+    /// The slack covers pixel rounding at the bar's end.
+    private func expectDrained(_ shot: Shot, deadline: Date, builtAt: Date,
+                               sourceLocation: SourceLocation = #_sourceLocation) {
+        let atBuild = deadline.timeIntervalSince(builtAt) / Self.window
+        let atCapture = deadline.timeIntervalSince(shot.capturedAt) / Self.window
+        #expect(shot.barShare <= atBuild + 0.02 && shot.barShare >= atCapture - 0.02,
+                "bar share \(shot.barShare), expected \(atCapture)...\(atBuild)",
+                sourceLocation: sourceLocation)
+    }
+
     @Test("The bar follows the continuous time left, not the whole seconds",
           arguments: [ColorScheme.light, .dark])
     func slidesWithContinuousFraction(scheme: ColorScheme) throws {
         // 7 s on the label but half the window on the clock: a bar that
-        // stepped with the digits would read 7/12, not 1/2.
-        let shot = try render(ConfirmationRow(seconds: 7, window: window(left: 6), keep: {}),
-                              scheme: scheme, name: "continuous-half")
-        #expect(abs(shot.barShare - 0.5) < 0.03, "bar share \(shot.barShare)")
+        // stepped with the digits would read 7/12, not at most 1/2.
+        let builtAt = Date()
+        let deadline = builtAt.addingTimeInterval(6)
+        let row = ConfirmationRow(seconds: 7, window: .init(deadline: deadline, length: Self.window), keep: {})
+        let shot = try render(row, scheme: scheme, name: "continuous-half")
+        expectDrained(shot, deadline: deadline, builtAt: builtAt)
     }
 
     @Test("Past the deadline the fading row reads empty, not the last rounded-up second")
@@ -53,16 +68,15 @@ struct ConfirmationRowRenderTests {
           arguments: [3.0, 6.0, 9.0])
     func drainsOverWindow(elapsed: Double) throws {
         var countdown = RevertCountdown()
-        countdown.arm(at: Date().addingTimeInterval(-elapsed), seconds: DisplayStore.confirmationWindowSeconds)
+        let builtAt = Date()
+        let armedAt = builtAt.addingTimeInterval(-elapsed)
+        countdown.arm(at: armedAt, seconds: DisplayStore.confirmationWindowSeconds)
         let seconds = Int((Self.window - elapsed).rounded(.up))
         let shot = try render(
             ConfirmationRow(seconds: seconds, window: try #require(countdown.window), keep: {}),
             scheme: .light, name: "drain-\(Int(elapsed))s-elapsed"
         )
-        // Rendering takes a fraction of a second after arming, so allow a
-        // little more drain than the nominal share.
-        let expected = 1 - elapsed / Self.window
-        #expect(shot.barShare <= expected + 0.02 && shot.barShare >= expected - 0.06, "bar share \(shot.barShare)")
+        expectDrained(shot, deadline: armedAt.addingTimeInterval(Self.window), builtAt: builtAt)
     }
 
     @Test("The clock symbol takes the warning tint", arguments: [ColorScheme.light, .dark])
@@ -90,12 +104,15 @@ struct ConfirmationRowRenderTests {
         #expect(window.fractionRemaining(at: now) > 0.98)
         #expect(abs(window.fractionRemaining(at: now.addingTimeInterval(Self.window / 2)) - 0.5) < 0.02)
 
+        // The clock armed for the 12 s window when the store was asked to.
+        let deadline = armedAt.addingTimeInterval(Self.window)
         let seconds = try #require(store.confirmationSecondsRemaining)
+        let armedBuiltAt = Date()
         let armed = try render(
             ConfirmationRow(seconds: seconds, window: window, keep: store.confirmDisplayChange),
             scheme: .light, name: "store-armed"
         )
-        #expect(armed.barShare > 0.9, "bar share \(armed.barShare)")
+        expectDrained(armed, deadline: deadline, builtAt: armedBuiltAt)
 
         store.confirmDisplayChange()
         #expect(commits.count == 1)
@@ -104,15 +121,12 @@ struct ConfirmationRowRenderTests {
 
         // The row as it fades out keeps the window it was built with, so its
         // bar still shows the time left on the armed clock rather than snapping.
-        let expected = 1 - Date().timeIntervalSince(armedAt) / Self.window
+        let fadingBuiltAt = Date()
         let fading = try render(
             ConfirmationRow(seconds: seconds, window: window, keep: {}),
             scheme: .light, name: "store-after-keep"
         )
-        // Rendering takes a fraction of a second, so allow a little more
-        // drain than the share at the moment rendering began.
-        #expect(fading.barShare <= expected + 0.02 && fading.barShare >= expected - 0.06,
-                "bar share \(fading.barShare), expected \(expected)")
+        expectDrained(fading, deadline: deadline, builtAt: fadingBuiltAt)
     }
 
     // MARK: - Rendering
@@ -123,6 +137,8 @@ struct ConfirmationRowRenderTests {
         var barShare: Double
         /// Tinted pixels in the leading 32 pt above the bar, where the clock sits.
         var tintedPixelsLeftOfText: Int
+        /// When the pixels were taken; the frame they show is no later.
+        var capturedAt: Date
     }
 
     /// Renders with Reduce Motion pinned to `reduceMotion` whatever the host
@@ -161,6 +177,7 @@ struct ConfirmationRowRenderTests {
 
         let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))
         hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
+        let capturedAt = Date()
         let png = try #require(bitmap.representation(using: .png, properties: [:]))
         let file = "countdown-\(name)-\(scheme == .dark ? "dark" : "light").png"
         Attachment.record(png, named: file)
@@ -185,7 +202,8 @@ struct ConfirmationRowRenderTests {
                 clock += 1
             }
         }
-        return Shot(barShare: Double(run) / Double(width), tintedPixelsLeftOfText: clock)
+        return Shot(barShare: Double(run) / Double(width), tintedPixelsLeftOfText: clock,
+                    capturedAt: capturedAt)
     }
 
     /// System orange in either appearance, and not the 12 % wash behind the row.
