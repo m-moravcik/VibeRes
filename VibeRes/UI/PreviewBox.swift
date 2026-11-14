@@ -51,6 +51,7 @@ struct PreviewBox: View {
                 .transition(.opacity.animation(Design.Motion.quick))
         }
         .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
+        .clipShape(Rectangle())
         .padding(6)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
         // Moving down the size list, the proposed frame springs from one size

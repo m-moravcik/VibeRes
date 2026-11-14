@@ -260,12 +260,17 @@ struct SettingsView: View {
                     Button {
                         copyDiagnostics()
                     } label: {
-                        // One label whose symbol and words swap in place, so
-                        // "Copied" confirms without the button jumping.
-                        Label(diagnosticsCopied ? LocalizedStringKey("Copied") : "Copy diagnostics",
-                              systemImage: diagnosticsCopied ? "checkmark" : "doc.on.doc")
-                            .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
-                            .animation(Design.Motion.quick, value: diagnosticsCopied)
+                        // One label whose symbol and words swap in place. Both
+                        // labels sit hidden underneath, so the button keeps the
+                        // wider one's width and the row stays still.
+                        ZStack {
+                            Label("Copy diagnostics", systemImage: "doc.on.doc").hidden()
+                            Label("Copied", systemImage: "checkmark").hidden()
+                            Label(diagnosticsCopied ? LocalizedStringKey("Copied") : "Copy diagnostics",
+                                  systemImage: diagnosticsCopied ? "checkmark" : "doc.on.doc")
+                                .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
+                                .animation(Design.Motion.quick, value: diagnosticsCopied)
+                        }
                     }
                 }
             } header: {
