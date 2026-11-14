@@ -163,8 +163,8 @@ built; each still needs its own design before it ships.
 
 ### Confirm resolution changes on by default
 **Built 2026-11-13.** On for a fresh install (no welcome tour finished yet),
-with the switch in the tour's last step so the user chooses before the first
-"Keep?" row appears. An install from before keeps what it had, which is off
+with the switch in the tour's last step and in Settings → Display; skipping
+the tour keeps it on. An install from before keeps what it had, which is off
 for anyone who never touched it. Guards a size or rate picked by hand only.
 
 ### HDR as an advanced profile setting

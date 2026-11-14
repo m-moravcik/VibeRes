@@ -67,16 +67,15 @@ struct ConfirmDefaultTests {
     private let confirmKey = "VibeRes.ConfirmDisplayChanges"
     private let onboardingKey = "VibeRes.OnboardingShown"
 
-    private func makeDefaults() -> UserDefaults {
+    private func makeDefaults() -> (UserDefaults, String) {
         let name = "VibeResTests.confirm.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: name)!
-        defaults.removePersistentDomain(forName: name)
-        return defaults
+        return (UserDefaults(suiteName: name)!, name)
     }
 
     @Test("A fresh install starts with the timeout on, and keeps it after the tour")
     func freshInstallIsOn() {
-        let defaults = makeDefaults()
+        let (defaults, name) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: name) }
         #expect(Preferences.initialConfirmDisplayChanges(defaults))
         // Finishing the tour must not flip the answer on the next launch.
         defaults.set(true, forKey: onboardingKey)
@@ -86,7 +85,8 @@ struct ConfirmDefaultTests {
 
     @Test("An install from before the new default keeps it off")
     func existingInstallStaysOff() {
-        let defaults = makeDefaults()
+        let (defaults, name) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: name) }
         defaults.set(true, forKey: onboardingKey)
         #expect(!Preferences.initialConfirmDisplayChanges(defaults))
         #expect(defaults.object(forKey: confirmKey) as? Bool == false)
@@ -94,7 +94,8 @@ struct ConfirmDefaultTests {
 
     @Test("A stored answer wins either way", arguments: [true, false])
     func storedAnswerWins(stored: Bool) {
-        let defaults = makeDefaults()
+        let (defaults, name) = makeDefaults()
+        defer { defaults.removePersistentDomain(forName: name) }
         defaults.set(stored, forKey: confirmKey)
         #expect(Preferences.initialConfirmDisplayChanges(defaults) == stored)
         defaults.set(true, forKey: onboardingKey)

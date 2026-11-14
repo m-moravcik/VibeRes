@@ -226,8 +226,9 @@ room to negotiate.
   the entry so it can be tried again, and reports only what actually came back.
 - **Confirm resolution changes** applies a size or rate picked by hand for the
   session only and undoes it after 12 seconds unless confirmed. On for a fresh
-  install, where the welcome tour shows the switch; an install from before
-  this default keeps its setting. Profiles, shortcuts and auto-apply arm no
+  install; the last step of the welcome tour and Settings → Display turn it
+  off, and skipping the tour keeps it on. An install from before this default
+  keeps its setting. Profiles, shortcuts and auto-apply arm no
   countdown. The *timeout* is the safety net,
   not the button: someone looking at a black screen cannot click anything.
   Explicit Revert ends that confirmation. Applying a profile ends it only

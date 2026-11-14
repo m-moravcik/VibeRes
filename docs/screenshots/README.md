@@ -25,7 +25,11 @@ The script builds Debug and runs the harness in
 `VibeRes/Preview/ScreenshotHarness.swift`, which renders the real views at 2x
 and exits. It also writes `banner-{light,dark}.png`, the 1920x1080 portfolio
 image, which is not used here, `onboarding-profile-{light,dark}.png`,
-showing the welcome tour's profile step, and `edit-{light,dark}.png`, a
+showing the welcome tour's profile step,
+`onboarding-confirm-{light,dark}.png`, the tour's step 3 with the *Undo a
+size I don't keep* box (unchecked here, because the harness's isolated
+preferences are not a fresh install; a real fresh install starts with it
+checked), and `edit-{light,dark}.png`, a
 profile's Edit form with its shortcut field, and
 `settings-shortcuts-refused-{light,dark}.png`, the Shortcuts tab rows with a
 refused combination, to check that the field stays put.
