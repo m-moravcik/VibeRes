@@ -56,9 +56,4 @@ struct RevertCountdown {
         // Rounded up: the label must never read "0 seconds" while still waiting.
         return .waiting(secondsRemaining: Int(remaining.rounded(.up)))
     }
-
-    /// The pending window's share left, or nil when nothing is pending.
-    func fractionRemaining(at now: Date) -> Double? {
-        window?.fractionRemaining(at: now)
-    }
 }

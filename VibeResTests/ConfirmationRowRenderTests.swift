@@ -80,6 +80,7 @@ struct ConfirmationRowRenderTests {
         var commits: [CGConfigureOption] = []
         store.applyMode = { _, _, option in commits.append(option) }
         // Display 101 is no real display; the apply seam is stubbed anyway.
+        let armedAt = Date()
         store.armConfirmationForTesting(mode: mode, display: 101)
         defer { store.endPendingConfirmation() }
 
@@ -102,13 +103,16 @@ struct ConfirmationRowRenderTests {
         #expect(store.confirmationWindow == nil)
 
         // The row as it fades out keeps the window it was built with, so its
-        // bar still shows the time that was left rather than snapping.
+        // bar still shows the time left on the armed clock rather than snapping.
+        let expected = 1 - Date().timeIntervalSince(armedAt) / Self.window
         let fading = try render(
             ConfirmationRow(seconds: seconds, window: window, keep: {}),
             scheme: .light, name: "store-after-keep"
         )
-        let left = window.fractionRemaining(at: Date())
-        #expect(abs(fading.barShare - left) < 0.03, "bar share \(fading.barShare), left \(left)")
+        // Rendering takes a fraction of a second, so allow a little more
+        // drain than the share at the moment rendering began.
+        #expect(fading.barShare <= expected + 0.02 && fading.barShare >= expected - 0.06,
+                "bar share \(fading.barShare), expected \(expected)")
     }
 
     // MARK: - Rendering
