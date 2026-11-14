@@ -144,7 +144,7 @@ Click the field and press the keys: Esc cancels, Delete removes the shortcut. Cl
 
 A combination macOS already uses, another VibeRes shortcut has, or another app holds exclusively is refused with the reason when its key reaches the recorder. Carbon can consume another app's combination first, running that app's action while recording; after you release the modifiers, VibeRes shows a hint instead, without requesting Accessibility permission. Conflicts with other apps' non-exclusive registrations cannot be detected. If a saved shortcut cannot be registered, VibeRes shows *Not active* and why. In Settings, prompts and warnings wrap below the row title while the shortcut field stays on the right; in the Edit form, they appear below the field. See [the shortcut contract](PRD.md#411-global-shortcuts) for the technical limits.
 
-A profile shortcut applies what the profile can apply right now, with no confirmation, and Revert (or its shortcut) takes it back. When the press missed something, such as a display that isn't connected or nothing left to revert, you hear the alert sound. No permission is needed.
+A profile shortcut applies what the profile can apply right now, with no confirmation, and Revert (or its shortcut) takes it back. When the press missed something, such as a display that isn't connected or nothing left to revert, you hear the alert sound. With VoiceOver on, VoiceOver also says what happened, such as the profile's name and result or *Nothing to revert*. No permission is needed.
 
 ---
 
