@@ -182,6 +182,12 @@ enum Design {
         static let changedGlowHold: TimeInterval = 0.35
         static let changedGlowOut: TimeInterval = 0.9
 
+        /// The hover preview in a display's detail grows from this scale out
+        /// of its corner as it appears (`quick`, at once: it answers the
+        /// pointer), and fades out with `rowOut`. Its proposed frame springs
+        /// between sizes with `chip`.
+        static let previewScaleIn: CGFloat = 0.96
+
         /// A shortcut recorder that is listening: its accent border breathes,
         /// one full breath per `recorderBreath`, until it stops listening.
         /// Reduce Motion: the border holds still.

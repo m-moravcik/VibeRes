@@ -448,6 +448,15 @@ struct DisplayDetailView: View {
                         .padding(.top, 12)
                         .padding(.trailing, 12)
                         .allowsHitTesting(false)
+                        // Grows a touch out of its corner as it appears, and
+                        // fades faster as it goes. Reduce Motion: fades only.
+                        .transition(.asymmetric(
+                            insertion: (reduceMotion
+                                ? AnyTransition.opacity
+                                : .opacity.combined(with: .scale(scale: Design.Motion.previewScaleIn, anchor: .topTrailing)))
+                                .animation(Design.Motion.quick),
+                            removal: .opacity.animation(Design.Motion.rowOut)
+                        ))
                     }
                 }
             } else {

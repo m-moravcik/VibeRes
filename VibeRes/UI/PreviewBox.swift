@@ -18,6 +18,11 @@ struct PreviewBox: View {
     /// outline so the user reads "this is the chunk you'd actually see".
     var desktopImage: NSImage? = nil
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The proposed size, which the frames follow.
+    private var proposed: PointSize { PointSize(width: proposedWidth, height: proposedHeight) }
+
     var body: some View {
         let cur = CGSize(width: max(1, currentWidth), height: max(1, currentHeight))
         let prop = CGSize(width: max(1, proposedWidth), height: max(1, proposedHeight))
@@ -39,6 +44,23 @@ struct PreviewBox: View {
             // Inner (proposed mode) — either a flat tinted rect, or a
             // cropped slice of the live desktop image scaled into the
             // proposed mode's aspect.
+            proposedFrame(propFrame)
+                // Under Reduce Motion one size crossfades into the next
+                // instead of springing to it.
+                .id(reduceMotion ? AnyHashable(proposed) : AnyHashable(0))
+                .transition(.opacity)
+        }
+        .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
+        // Moving down the size list, the proposed frame springs from one size
+        // to the next, so "bigger" or "smaller" reads as a change rather than
+        // a jump. Reduce Motion: the crossfade above.
+        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.chip, value: proposed)
+        .padding(6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    @ViewBuilder
+    private func proposedFrame(_ propFrame: CGSize) -> some View {
             if let image = desktopImage {
                 Image(nsImage: image)
                     .resizable()
@@ -58,10 +80,6 @@ struct PreviewBox: View {
                     )
                     .frame(width: propFrame.width, height: propFrame.height)
             }
-        }
-        .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
-        .padding(6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
     }
 }
 
