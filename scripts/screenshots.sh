@@ -10,7 +10,8 @@
 # last step with the confirmation switch), edit (a profile's Edit
 # form with its shortcut), settings-shortcuts (the Settings window's Shortcuts tab),
 # hero (popover under the menu bar) and banner (1920x1080) in -light and -dark,
-# plus icon.png. The displays are this Mac's; the profiles are invented. Copy
+# plus icon.png and revert-main-light (the Revert row's longest label, a layout
+# check). The displays are this Mac's; the profiles are invented. Copy
 # what you need into docs/screenshots.
 #
 # The preferences are passed as launch arguments. UserDefaults serves those
