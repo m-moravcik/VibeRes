@@ -209,6 +209,13 @@ example as a prefilled bug report the user reads before submitting. A button
 in Settings -> Debug opens a new GitHub issue with the diagnostics in its
 body. Open: URL length limits for the log lines, and falling back to copying
 when the report is too long.
+**Built 2026-11-14:** "Report a problem…" next to Copy diagnostics opens
+the bug report form with the diagnostics in its field (`BugReport`). Links
+stay under 5,500 characters (signed out, GitHub keeps the prefill through
+login only up to about 6,000 and answers HTTP 500 from about 6,950): the
+oldest log lines are left out first and the report says how many; if even
+that is too long, the form opens empty and the full report goes on the
+clipboard, which the Debug tab says.
 
 ## Motion and polish audit (2026-11-13)
 
