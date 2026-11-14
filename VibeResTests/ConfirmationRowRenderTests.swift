@@ -5,9 +5,9 @@ import Testing
 
 /// The bar that drains under "Keep this resolution? Reverting in Ns", measured
 /// in the pixels of the real row rendered offscreen. The expected widths come
-/// from the countdown's contract (a linear drain over the 12 s window, and
-/// seconds / window whenever there is no continuous fraction to draw), not from
-/// the view's own arithmetic. Nothing here arms a countdown that can expire or
+/// from the countdown's contract (a linear drain over the 12 s window, empty
+/// at the deadline, and seconds / window under Reduce Motion), not from the
+/// view's own arithmetic. Nothing here arms a countdown that can expire or
 /// applies a mode: the store's apply seam is stubbed.
 @Suite("Confirmation row's draining bar", .serialized)
 @MainActor
@@ -15,30 +15,36 @@ struct ConfirmationRowRenderTests {
     private static let rowWidth: CGFloat = 320
     private static let window = Double(DisplayStore.confirmationWindowSeconds)
 
-    @Test("The bar follows the continuous fraction, not the whole seconds",
+    /// A window of the confirmation's length that reverts `left` seconds from
+    /// now.
+    private func window(left: TimeInterval) -> RevertCountdown.Window {
+        .init(deadline: Date().addingTimeInterval(left), length: Self.window)
+    }
+
+    @Test("The bar follows the continuous time left, not the whole seconds",
           arguments: [ColorScheme.light, .dark])
     func slidesWithContinuousFraction(scheme: ColorScheme) throws {
         // 7 s on the label but half the window on the clock: a bar that
         // stepped with the digits would read 7/12, not 1/2.
-        let shot = try render(ConfirmationRow(seconds: 7, fractionRemaining: { _ in 0.5 }, keep: {}),
+        let shot = try render(ConfirmationRow(seconds: 7, window: window(left: 6), keep: {}),
                               scheme: scheme, name: "continuous-half")
         #expect(abs(shot.barShare - 0.5) < 0.03, "bar share \(shot.barShare)")
     }
 
-    @Test("Once Keep ends the countdown, the fading row holds the last second's share")
-    func keepHoldsLastSecond() throws {
-        // fractionRemaining is nil after Keep; the bar must read 3/12, not snap
-        // to empty while the row fades.
-        let shot = try render(ConfirmationRow(seconds: 3, fractionRemaining: { _ in nil }, keep: {}),
-                              scheme: .light, name: "after-keep-3s")
-        #expect(abs(shot.barShare - 3 / Self.window) < 0.03, "bar share \(shot.barShare)")
+    @Test("Past the deadline the fading row reads empty, not the last rounded-up second")
+    func expiryReadsEmpty() throws {
+        // The 500 ms tick reverts up to half a second late, while the label
+        // still says 1s. The row fading out then must not grow a 1/12 bar.
+        let shot = try render(ConfirmationRow(seconds: 1, window: window(left: -0.3), keep: {}),
+                              scheme: .light, name: "after-expiry")
+        #expect(shot.barShare < 0.01, "bar share \(shot.barShare)")
     }
 
     @Test("Under Reduce Motion the bar steps with the digits")
     func reduceMotionSteps() throws {
-        // The continuous fraction says 0.9; Reduce Motion must ignore it and
+        // The clock says 0.9 of the window; Reduce Motion must ignore it and
         // show 6 of 12 seconds.
-        let row = ConfirmationRow(seconds: 6, fractionRemaining: { _ in 0.9 }, keep: {})
+        let row = ConfirmationRow(seconds: 6, window: window(left: 0.9 * Self.window), keep: {})
         let shot = try render(row, scheme: .light, reduceMotion: true, name: "reduce-motion-6s")
         #expect(abs(shot.barShare - 0.5) < 0.03, "bar share \(shot.barShare)")
     }
@@ -50,7 +56,7 @@ struct ConfirmationRowRenderTests {
         countdown.arm(at: Date().addingTimeInterval(-elapsed), seconds: DisplayStore.confirmationWindowSeconds)
         let seconds = Int((Self.window - elapsed).rounded(.up))
         let shot = try render(
-            ConfirmationRow(seconds: seconds, fractionRemaining: { countdown.fractionRemaining(at: $0) }, keep: {}),
+            ConfirmationRow(seconds: seconds, window: try #require(countdown.window), keep: {}),
             scheme: .light, name: "drain-\(Int(elapsed))s-elapsed"
         )
         // Rendering takes a fraction of a second after arming, so allow a
@@ -61,12 +67,12 @@ struct ConfirmationRowRenderTests {
 
     @Test("The clock symbol takes the warning tint", arguments: [ColorScheme.light, .dark])
     func clockIsTinted(scheme: ColorScheme) throws {
-        let shot = try render(ConfirmationRow(seconds: 7, fractionRemaining: { _ in 7.0 / 12 }, keep: {}),
+        let shot = try render(ConfirmationRow(seconds: 7, window: window(left: 7), keep: {}),
                               scheme: scheme, name: "clock")
         #expect(shot.tintedPixelsLeftOfText > 10, "orange pixels in the clock area: \(shot.tintedPixelsLeftOfText)")
     }
 
-    @Test("Through the store: armed reads full, Keep commits once and the row keeps its bar")
+    @Test("Through the store: armed reads full, Keep commits once and the fading row keeps draining")
     func storeWiring() throws {
         let modes = CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode]
         let mode = try #require(modes?.first, "no display mode on this machine")
@@ -78,15 +84,14 @@ struct ConfirmationRowRenderTests {
         defer { store.endPendingConfirmation() }
 
         let now = Date()
-        let atArm = try #require(store.confirmationFractionRemaining(at: now))
-        #expect(atArm > 0.98)
-        let halfway = try #require(store.confirmationFractionRemaining(at: now.addingTimeInterval(Self.window / 2)))
-        #expect(abs(halfway - 0.5) < 0.02)
+        let window = try #require(store.confirmationWindow)
+        #expect(window.length == Self.window)
+        #expect(window.fractionRemaining(at: now) > 0.98)
+        #expect(abs(window.fractionRemaining(at: now.addingTimeInterval(Self.window / 2)) - 0.5) < 0.02)
 
         let seconds = try #require(store.confirmationSecondsRemaining)
         let armed = try render(
-            ConfirmationRow(seconds: seconds, fractionRemaining: store.confirmationFractionRemaining(at:),
-                            keep: store.confirmDisplayChange),
+            ConfirmationRow(seconds: seconds, window: window, keep: store.confirmDisplayChange),
             scheme: .light, name: "store-armed"
         )
         #expect(armed.barShare > 0.9, "bar share \(armed.barShare)")
@@ -94,14 +99,16 @@ struct ConfirmationRowRenderTests {
         store.confirmDisplayChange()
         #expect(commits.count == 1)
         #expect(store.confirmationSecondsRemaining == nil)
-        #expect(store.confirmationFractionRemaining(at: Date()) == nil)
+        #expect(store.confirmationWindow == nil)
 
-        // The row as it fades out: still showing the last seconds it had.
+        // The row as it fades out keeps the window it was built with, so its
+        // bar still shows the time that was left rather than snapping.
         let fading = try render(
-            ConfirmationRow(seconds: seconds, fractionRemaining: store.confirmationFractionRemaining(at:), keep: {}),
+            ConfirmationRow(seconds: seconds, window: window, keep: {}),
             scheme: .light, name: "store-after-keep"
         )
-        #expect(abs(fading.barShare - Double(seconds) / Self.window) < 0.03, "bar share \(fading.barShare)")
+        let left = window.fractionRemaining(at: Date())
+        #expect(abs(fading.barShare - left) < 0.03, "bar share \(fading.barShare), left \(left)")
     }
 
     // MARK: - Rendering

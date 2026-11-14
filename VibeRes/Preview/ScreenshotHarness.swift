@@ -98,7 +98,11 @@ enum ScreenshotHarness {
                 // values: arming the real one would revert a display when it
                 // ran out.
                 try write(
-                    panel(ConfirmationRow(seconds: 7, fractionRemaining: { _ in 7.0 / 12 }, keep: {})),
+                    panel(ConfirmationRow(
+                        seconds: 7,
+                        window: .init(deadline: Date().addingTimeInterval(7), length: 12),
+                        keep: {}
+                    )),
                     to: output.appendingPathComponent("countdown\(suffix).png")
                 )
                 try write(panel(OnboardingView(step: 1)), to: output.appendingPathComponent("onboarding-profile\(suffix).png"))

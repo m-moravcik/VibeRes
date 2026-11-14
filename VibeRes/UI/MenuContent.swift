@@ -139,12 +139,9 @@ struct RootView: View {
                 .padding(.horizontal, Design.Spacing.m)
             }
 
-            if let seconds = store.confirmationSecondsRemaining {
-                ConfirmationRow(
-                    seconds: seconds,
-                    fractionRemaining: store.confirmationFractionRemaining(at:),
-                    keep: store.confirmDisplayChange
-                )
+            if let seconds = store.confirmationSecondsRemaining,
+               let window = store.confirmationWindow {
+                ConfirmationRow(seconds: seconds, window: window, keep: store.confirmDisplayChange)
                 // Rises a touch from the footer it belongs to once the rows
                 // have made room, and fades before the footer closes up over
                 // it.
@@ -182,8 +179,10 @@ struct RootView: View {
 /// people who can see the screen and do not want to wait it out.
 struct ConfirmationRow: View {
     let seconds: Int
-    /// The share of the window left at a given instant (`DisplayStore`).
-    let fractionRemaining: (Date) -> Double?
+    /// The pending window. A value rather than a read of the store: once
+    /// Keep, a revert or the deadline ends the countdown, the row fading out
+    /// keeps this one, so its bar goes on showing the time that was left.
+    let window: RevertCountdown.Window
     let keep: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -217,20 +216,14 @@ struct ConfirmationRow: View {
     /// from VoiceOver, which reads the seconds.
     @ViewBuilder private var drainingBar: some View {
         if reduceMotion {
-            bar(steppedFraction)
+            bar(Double(seconds) / window.length)
         } else {
             // Redrawn every frame only while the row exists, the 12 s of a
-            // pending change. Keep ends the countdown before the row has
-            // faded out; the bar then holds the width of the last second
-            // rather than snapping empty.
+            // pending change.
             TimelineView(.animation) { context in
-                bar(fractionRemaining(context.date) ?? steppedFraction)
+                bar(window.fractionRemaining(at: context.date))
             }
         }
-    }
-
-    private var steppedFraction: Double {
-        Double(seconds) / Double(DisplayStore.confirmationWindowSeconds)
     }
 
     private func bar(_ fraction: Double) -> some View {
