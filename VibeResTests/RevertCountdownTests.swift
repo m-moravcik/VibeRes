@@ -61,4 +61,30 @@ struct RevertCountdownTests {
         // Would already be expired under the first deadline.
         #expect(countdown.state(at: start.addingTimeInterval(13)) == .waiting(secondsRemaining: 4))
     }
+
+    @Test("The bar's share of the window falls linearly from full to empty")
+    func fractionDrainsLinearly() {
+        var countdown = RevertCountdown()
+        #expect(countdown.fractionRemaining(at: start) == nil)
+
+        countdown.arm(at: start, seconds: 12)
+        #expect(countdown.fractionRemaining(at: start) == 1)
+        // A quarter of 12 s gone leaves three quarters, at any instant rather
+        // than whole seconds, or the bar could not slide.
+        #expect(countdown.fractionRemaining(at: start.addingTimeInterval(3)) == 0.75)
+        #expect(countdown.fractionRemaining(at: start.addingTimeInterval(10.5)) == 0.125)
+        // Never below empty, even if the revert runs a moment late.
+        #expect(countdown.fractionRemaining(at: start.addingTimeInterval(20)) == 0)
+    }
+
+    @Test("Re-arming refills the bar; confirming removes it")
+    func fractionFollowsArmAndConfirm() {
+        var countdown = RevertCountdown()
+        countdown.arm(at: start, seconds: 12)
+        countdown.arm(at: start.addingTimeInterval(6), seconds: 12)
+        #expect(countdown.fractionRemaining(at: start.addingTimeInterval(6)) == 1)
+
+        countdown.confirm()
+        #expect(countdown.fractionRemaining(at: start.addingTimeInterval(7)) == nil)
+    }
 }

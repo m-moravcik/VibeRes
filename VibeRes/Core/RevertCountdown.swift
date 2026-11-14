@@ -18,12 +18,14 @@ struct RevertCountdown {
     }
 
     private var deadline: Date?
+    private var window: TimeInterval = 0
 
     /// Starts (or restarts) the countdown. Re-arming replaces the previous
     /// deadline rather than stacking, so a run of quick changes gets one window
     /// measured from the last of them.
     mutating func arm(at now: Date, seconds: Int) {
-        deadline = now.addingTimeInterval(TimeInterval(seconds))
+        window = TimeInterval(seconds)
+        deadline = now.addingTimeInterval(window)
     }
 
     /// The user said the screen is fine. A confirmed change must never be undone,
@@ -38,5 +40,13 @@ struct RevertCountdown {
         guard remaining > 0 else { return .expired }
         // Rounded up: the label must never read "0 seconds" while still waiting.
         return .waiting(secondsRemaining: Int(remaining.rounded(.up)))
+    }
+
+    /// How much of the window is left, from 1 when armed to 0 at the deadline,
+    /// or nil when nothing is pending. Continuous, unlike `state(at:)`, so the
+    /// bar that drains with it can slide rather than step.
+    func fractionRemaining(at now: Date) -> Double? {
+        guard let deadline, window > 0 else { return nil }
+        return min(max(deadline.timeIntervalSince(now) / window, 0), 1)
     }
 }

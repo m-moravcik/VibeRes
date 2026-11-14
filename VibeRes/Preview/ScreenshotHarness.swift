@@ -94,6 +94,13 @@ enum ScreenshotHarness {
                 try write(detail, to: output.appendingPathComponent("detail\(suffix).png"))
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
                 try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
+                // The revert countdown with 7 of 12 s left, drawn from fixed
+                // values: arming the real one would revert a display when it
+                // ran out.
+                try write(
+                    panel(ConfirmationRow(seconds: 7, fractionRemaining: { _ in 7.0 / 12 }, keep: {})),
+                    to: output.appendingPathComponent("countdown\(suffix).png")
+                )
                 try write(panel(OnboardingView(step: 1)), to: output.appendingPathComponent("onboarding-profile\(suffix).png"))
                 try write(panel(OnboardingView(step: 2)), to: output.appendingPathComponent("onboarding-confirm\(suffix).png"))
                 if let desk = profiles.profiles.first {

@@ -626,6 +626,13 @@ final class DisplayStore {
     private(set) var confirmationSecondsRemaining: Int?
 
     private var countdown = RevertCountdown()
+
+    /// The share of the confirmation window still left, 1 to 0, or nil when
+    /// nothing is pending. Read every frame by the bar that drains under the
+    /// Keep row; the seconds above stay the authority on when it reverts.
+    func confirmationFractionRemaining(at now: Date) -> Double? {
+        countdown.fractionRemaining(at: now)
+    }
     private var pendingConfirmation: (mode: CGDisplayMode, display: CGDirectDisplayID)?
     private var countdownTask: Task<Void, Never>?
 

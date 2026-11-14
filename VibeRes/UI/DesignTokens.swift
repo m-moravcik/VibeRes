@@ -30,6 +30,9 @@ enum Design {
         /// The height of a small segmented control on macOS 26, which a pill
         /// on the same line matches so the two sit level.
         static let inlineControlHeight: CGFloat = 20
+        /// The bar that drains along the bottom edge of the revert countdown:
+        /// thin enough to sit on the row's edge rather than read as a control.
+        static let countdownBarHeight: CGFloat = 2
         /// How far a display card's title may shrink to fit beside its MAIN
         /// badge before it truncates; enough for the longest built-in display
         /// name in the six languages.
@@ -92,6 +95,9 @@ enum Design {
         /// ClipShot draw their attention rows. The words on them stay in label
         /// colours; only the symbol takes the hue.
         static let warningFill = Color.orange.opacity(0.12)
+        /// The hue such a note's symbol takes, and the countdown's draining
+        /// bar.
+        static let warningTint = Color.orange
         static let problemFill = Color.red.opacity(0.10)
     }
 
