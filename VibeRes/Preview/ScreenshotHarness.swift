@@ -94,6 +94,9 @@ enum ScreenshotHarness {
                 try write(detail, to: output.appendingPathComponent("detail\(suffix).png"))
                 try write(save, to: output.appendingPathComponent("save\(suffix).png"))
                 try write(panel(NoteGallery()), to: output.appendingPathComponent("notes\(suffix).png"))
+                // A profile waiting for its monitor beside two that can
+                // apply, and the panel its click opens.
+                try write(panel(WaitingPillGallery()), to: output.appendingPathComponent("waiting\(suffix).png"))
                 // The revert countdown with 7 of 12 s left, drawn from fixed
                 // values: arming the real one would revert a display when it
                 // ran out.
@@ -535,6 +538,51 @@ private enum DemoProfiles {
 /// The three tones of the note under the profile pills, with real copy built
 /// from invented outcomes, so a change to their colours or a long translation
 /// can be checked without applying anything.
+/// A pill for a profile none of whose displays is connected, dimmed, next to
+/// an active one and one that can apply, over the confirmation that clicking
+/// it opens. Invented profiles; no store involved.
+private struct WaitingPillGallery: View {
+    private static func entry(_ name: String, vendor: UInt32) -> Profile.Entry {
+        Profile.Entry(matcher: .edid(vendor: vendor, model: 1, serial: 1), displayName: name,
+                      pointWidth: 2560, pointHeight: 1440, refreshHz: 60, isHiDPI: false)
+    }
+
+    private let desk = Profile(name: "Desk", entries: [entry("Built-in Retina Display", vendor: 1)])
+    private let talk = Profile(name: "Talk", entries: [entry("Built-in Retina Display", vendor: 2)])
+    private let studio = Profile(name: "Studio", entries: [entry("LG UltraFine", vendor: 3)])
+
+    private func pill(_ profile: Profile, active: Bool = false, waiting: Bool = false) -> some View {
+        ProfilePill(
+            profile: profile, isCurrentlyFlexible: false, isActive: active,
+            waitingFor: waiting ? profile.localizedDisplayNames() : nil,
+            previewProvider: { ProfileApplyPreview(rows: [], untouched: []) },
+            onApply: {}, onRename: {}, onUpdateCurrent: {}, onToggleFlexible: {}, onEdit: {}, onDelete: {}
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Design.Spacing.m) {
+            HStack(spacing: 4) {
+                pill(desk, active: true)
+                pill(talk)
+                pill(studio, waiting: true)
+            }
+            .padding(.horizontal, Design.Spacing.l)
+            Text(verbatim: ProfilePill.waitingLine(for: studio.localizedDisplayNames()))
+                .font(Design.Typography.note)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, Design.Spacing.l)
+            ProfileApplyConfirmation(
+                profileName: studio.name,
+                preview: ProfileApplyPreview(rows: [], untouched: []),
+                classification: .disjoint,
+                apply: {}, cancel: {}
+            )
+        }
+        .padding(.vertical, Design.Spacing.m)
+    }
+}
+
 private struct NoteGallery: View {
     private static func outcome(
         _ name: String, _ status: ProfileStore.ApplyOutcome.Status,

@@ -7,6 +7,7 @@
 #
 # Writes root, detail, save, revert, notes (the outcome note's three tones),
 # countdown (the Keep row with its draining bar part way),
+# waiting (a dimmed pill waiting for its monitor, with the panel it opens),
 # onboarding-profile (the welcome tour's profile step), onboarding-confirm (its
 # last step with the confirmation switch), edit (a profile's Edit
 # form with its shortcut), settings-shortcuts (the Settings window's Shortcuts tab),

@@ -271,12 +271,14 @@ struct ProfilesSection: View {
             // inside the loop made the pill bar quadratic in the thing users
             // add most.
             let active = activeProfileIDs
+            let waiting = waitingProfiles
             FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(Array(profiles.profiles.enumerated()), id: \.element.id) { index, profile in
                     ProfilePill(
                         profile: profile,
                         isCurrentlyFlexible: isFlexible(profile),
                         isActive: active.contains(profile.id),
+                        waitingFor: waiting[profile.id],
                         previewProvider: { profiles.previewApply(profile, against: displays.displays) }
                     ) {
                         // Classify before applying. Clean fit (.exactMatch)
@@ -335,6 +337,18 @@ struct ProfilesSection: View {
 
     /// The profiles whose saved setup is what the displays are doing right
     /// now — the pills that draw the checkmark and the accent border.
+    /// Profiles none of whose displays is connected, with the displays they
+    /// wait for. Their pills dim and say which monitor would bring them back.
+    private var waitingProfiles: [UUID: [String]] {
+        let live = displays.displays
+        var result: [UUID: [String]] = [:]
+        for profile in profiles.profiles {
+            let classification = DisplaySetClassifier.classify(profiles.bindings(of: profile, to: live), against: live)
+            result[profile.id] = ProfilePill.waitingFor(profile, classification: classification)
+        }
+        return result
+    }
+
     private var activeProfileIDs: Set<UUID> {
         let live = displays.displays
         return Set(

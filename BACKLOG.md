@@ -314,6 +314,11 @@ effort; none is built yet.
 - **A hint for a profile that can never apply here.** A pill whose displays
   are all missing applies nothing; its tooltip could say which monitor it is
   waiting for, as the confirmation panel already does.
+  **Built 2026-11-14:** the pill dims and its tooltip (and VoiceOver value)
+  says "Waiting for LG UltraFine", then the panel's reason. The pill
+  tooltip and the apply confirmation were English in every language; they
+  are in the catalog now, and the panel names the missing or extra
+  displays instead of counting them with "(s)".
 - **No new sounds.** macOS has no silent mode to respect and the menu bar
   utility should stay quiet; the alert sound for a missed shortcut is the
   one sound worth having.

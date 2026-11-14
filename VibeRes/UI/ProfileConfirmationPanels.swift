@@ -27,7 +27,7 @@ struct ProfileApplyConfirmation: View {
                     .font(.system(size: 12, weight: .semibold))
             }
 
-            Text(Self.headline(for: classification))
+            Text(verbatim: Self.headline(for: classification))
                 .font(Design.Typography.footer)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -44,7 +44,7 @@ struct ProfileApplyConfirmation: View {
                             .font(Design.Typography.note)
                             .foregroundStyle(.tertiary)
                             .accessibilityHidden(true)
-                        Text("Untouched: " + preview.untouched.joined(separator: ", "))
+                        Text(verbatim: Self.untouched(preview.untouched))
                             .font(Design.Typography.note)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -87,27 +87,89 @@ struct ProfileApplyConfirmation: View {
         }
     }
 
-    static func headline(for c: DisplaySetClassifier.Classification) -> String {
+    /// The sentence under the panel's title. Names rather than counts, so
+    /// it needs no plural forms and says which displays it means.
+    static func headline(for c: DisplaySetClassifier.Classification, locale: Locale = .appLanguage) -> String {
         switch c {
         case .exactMatch:
-            return "Display setup matches the profile."
+            return String(localized: LocalizedStringResource(
+                "panel.headline.exact",
+                defaultValue: "Display setup matches the profile.",
+                locale: locale,
+                comment: "Apply confirmation: every display the profile names is connected"
+            ))
         case .partialMatch(let missing):
-            let names = missing.map(\.displayName).joined(separator: ", ")
-            return "\(missing.count) of the profile's displays is not connected (\(names)). Other entries will apply as saved."
+            let names = missingNames(missing, locale: locale)
+            return String(localized: LocalizedStringResource(
+                "panel.headline.partial",
+                defaultValue: "Not connected: \(names). The other displays will apply as saved.",
+                locale: locale,
+                comment: "Apply confirmation. 1: the profile's displays that are not connected, as a list"
+            ))
         case .supersetMatch(let extra):
-            let names = extra.map(\.name).joined(separator: ", ")
-            return "You have \(extra.count) extra monitor(s) connected (\(names)). They will be left untouched."
+            let names = ProfileCopy.list(extra.map(\.name), locale: locale)
+            return String(localized: LocalizedStringResource(
+                "panel.headline.superset",
+                defaultValue: "Also connected: \(names). They will be left untouched.",
+                locale: locale,
+                comment: "Apply confirmation. 1: connected displays the profile does not name, as a list"
+            ))
         case .partialWithExtras(let missing, let extra):
-            return "\(missing.count) saved display(s) missing, \(extra.count) extra connected. Only matched entries will apply."
+            let missingList = missingNames(missing, locale: locale)
+            let extraList = ProfileCopy.list(extra.map(\.name), locale: locale)
+            return String(localized: LocalizedStringResource(
+                "panel.headline.partialWithExtras",
+                defaultValue: "Not connected: \(missingList). Also connected, left untouched: \(extraList).",
+                locale: locale,
+                comment: "Apply confirmation. 1: the profile's displays that are missing, 2: connected displays it does not name"
+            ))
         case .disjoint:
-            return "None of this profile's monitors are connected. There's nothing to apply."
+            return disjointHeadline(locale: locale)
         }
     }
 
-    static func applyButtonLabel(for c: DisplaySetClassifier.Classification) -> String {
-        if case .exactMatch = c { return "Apply" }
-        if case .disjoint = c { return "Apply" }
-        return "Apply anyway"
+    /// Also the second line of the tooltip on a pill that is waiting for its
+    /// displays, so the two say the same.
+    static func disjointHeadline(locale: Locale = .appLanguage) -> String {
+        String(localized: LocalizedStringResource(
+            "panel.headline.disjoint",
+            defaultValue: "None of this profile's displays is connected, so there is nothing to apply.",
+            locale: locale,
+            comment: "Apply confirmation and pill tooltip: no display the profile names is connected"
+        ))
+    }
+
+    private static func missingNames(_ entries: [Profile.Entry], locale: Locale) -> String {
+        ProfileCopy.list(ProfileCopy.displayNames(of: entries, locale: locale), locale: locale)
+    }
+
+    static func untouched(_ names: [String], locale: Locale = .appLanguage) -> String {
+        let list = ProfileCopy.list(names, locale: locale)
+        return String(localized: LocalizedStringResource(
+            "panel.untouched",
+            defaultValue: "Untouched: \(list)",
+            locale: locale,
+            comment: "Apply confirmation: connected displays the profile leaves alone. 1: their names, as a list"
+        ))
+    }
+
+    static func applyButtonLabel(for c: DisplaySetClassifier.Classification, locale: Locale = .appLanguage) -> String {
+        switch c {
+        case .exactMatch, .disjoint:
+            return String(localized: LocalizedStringResource(
+                "panel.apply",
+                defaultValue: "Apply",
+                locale: locale,
+                comment: "Apply confirmation button"
+            ))
+        case .partialMatch, .supersetMatch, .partialWithExtras:
+            return String(localized: LocalizedStringResource(
+                "panel.applyAnyway",
+                defaultValue: "Apply anyway",
+                locale: locale,
+                comment: "Apply confirmation button when some displays are missing or extra"
+            ))
+        }
     }
 
     /// Nothing the profile names is connected, so there is nothing to apply.
