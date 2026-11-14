@@ -60,7 +60,12 @@ struct PreferencesTests {
 
 /// Who gets the confirmation timeout on, decided once per install. Run against
 /// a private defaults suite, never the app's own preferences.
-@Suite("Confirm resolution changes default")
+///
+/// One fixed suite name, emptied before and after each test, and the tests run
+/// one at a time so they never share it. A fresh name per test would leave an
+/// empty plist in ~/Library/Preferences on every run even after
+/// `removePersistentDomain`, because cfprefsd keeps the emptied file.
+@Suite("Confirm resolution changes default", .serialized)
 @MainActor
 struct ConfirmDefaultTests {
     // The stored keys, written out as the persisted contract in UserDefaults.
@@ -68,8 +73,10 @@ struct ConfirmDefaultTests {
     private let onboardingKey = "VibeRes.OnboardingShown"
 
     private func makeDefaults() -> (UserDefaults, String) {
-        let name = "VibeResTests.confirm.\(UUID().uuidString)"
-        return (UserDefaults(suiteName: name)!, name)
+        let name = "VibeResTests.confirm"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return (defaults, name)
     }
 
     @Test("A fresh install starts with the timeout on, and keeps it after the tour")
