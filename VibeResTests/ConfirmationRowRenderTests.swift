@@ -38,14 +38,8 @@ struct ConfirmationRowRenderTests {
     func reduceMotionSteps() throws {
         // The continuous fraction says 0.9; Reduce Motion must ignore it and
         // show 6 of 12 seconds.
-        // The environment value is read-only, so stand in for the system
-        // setting inside this process only; the Mac's own setting is never
-        // touched.
-        let restore = ReduceMotionOverride.install()
-        defer { restore() }
-        #expect(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
         let row = ConfirmationRow(seconds: 6, fractionRemaining: { _ in 0.9 }, keep: {})
-        let shot = try render(row, scheme: .light, name: "reduce-motion-6s")
+        let shot = try render(row, scheme: .light, reduceMotion: true, name: "reduce-motion-6s")
         #expect(abs(shot.barShare - 0.5) < 0.03, "bar share \(shot.barShare)")
     }
 
@@ -120,7 +114,16 @@ struct ConfirmationRowRenderTests {
         var tintedPixelsLeftOfText: Int
     }
 
-    private func render(_ row: some View, scheme: ColorScheme, name: String) throws -> Shot {
+    /// Renders with Reduce Motion pinned to `reduceMotion` whatever the host
+    /// says: CI runners have it on, a developer's Mac usually has it off.
+    private func render(_ row: some View, scheme: ColorScheme, reduceMotion: Bool = false,
+                        name: String) throws -> Shot {
+        // The environment value is read-only, so stand in for the system
+        // setting inside this process only; the Mac's own setting is never
+        // touched.
+        let restore = ReduceMotionOverride.install(reduceMotion)
+        defer { restore() }
+        #expect(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion == reduceMotion)
         let view = row
             .frame(width: Self.rowWidth)
             .background(scheme == .dark ? Color.black : Color.white)
@@ -181,20 +184,21 @@ struct ConfirmationRowRenderTests {
     }
 }
 
-/// Makes `NSWorkspace.accessibilityDisplayShouldReduceMotion` answer true in
-/// this test process until the returned closure runs.
+/// Makes `NSWorkspace.accessibilityDisplayShouldReduceMotion` answer `value`
+/// in this test process until the returned closure runs.
 @MainActor
 private enum ReduceMotionOverride {
-    static func install() -> () -> Void {
+    static func install(_ value: Bool) -> () -> Void {
         let cls: AnyClass = NSWorkspace.self
         let selector = #selector(getter: NSWorkspace.accessibilityDisplayShouldReduceMotion)
         guard let method = class_getInstanceMethod(cls, selector) else { return {} }
-        let block: @convention(block) (AnyObject) -> Bool = { _ in true }
+        let block: @convention(block) (AnyObject) -> Bool = { _ in value }
         let original = method_setImplementation(method, imp_implementationWithBlock(block))
         NotificationCenter.default.post(name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: NSWorkspace.shared)
         NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: NSWorkspace.shared)
         return {
             method_setImplementation(method, original)
+            NotificationCenter.default.post(name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: NSWorkspace.shared)
             NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: NSWorkspace.shared)
         }
     }
