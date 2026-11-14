@@ -327,6 +327,12 @@ room to negotiate.
   Revert. A profile that binds no connected display does nothing. The alert
   sound marks a press that missed something (nothing to revert, a display not
   connected, a failed switch); a fallback rate stays quiet.
+- VoiceOver hears each press's result, since the popover may be closed: a
+  profile's name with the note the popover would show under the pills (nothing
+  when the popover would show none), that none of its displays is connected,
+  or that Revert reverted, had nothing to revert, or what it could not revert.
+  The announcement is in the app's language and is posted 0.6 s later, because
+  a mode switch blanks the displays and can swallow it. No new sounds.
 - The optional profile `hotkey` field uses `KeyCombo`'s Codable format; Revert
   is stored in Preferences (UserDefaults). An unreadable profile shortcut is
   dropped on load, never the profile. `viberes profile list` and `show` print
@@ -335,7 +341,8 @@ room to negotiate.
 
 *Evidence:* `Core/KeyCombo.swift`, `Hotkeys/HotkeyCenter.swift`,
 `Hotkeys/CarbonHotkeyRegistrar.swift`, `Hotkeys/ShortcutActions.swift`,
-`UI/ShortcutRecorder.swift`, `UI/ShortcutsSettingsTab.swift`.
+`Hotkeys/ShortcutAnnouncement.swift`, `UI/ShortcutRecorder.swift`,
+`UI/ShortcutsSettingsTab.swift`.
 
 ### 4.12 Language
 
