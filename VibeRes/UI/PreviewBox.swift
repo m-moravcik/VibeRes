@@ -51,13 +51,13 @@ struct PreviewBox: View {
                 .transition(.opacity.animation(Design.Motion.quick))
         }
         .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
+        .padding(6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
         // Moving down the size list, the proposed frame springs from one size
         // to the next, so "bigger" or "smaller" reads as a change rather than
         // a jump. Reduce Motion: the outline and box jump to their new size
         // and only the crossfade above moves.
         .animation(reduceMotion ? nil : Design.Motion.chip, value: proposed)
-        .padding(6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
     }
 
     @ViewBuilder
