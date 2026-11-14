@@ -305,6 +305,12 @@ effort; none is built yet.
   or Revert shortcut is silent for a screen reader user. Post an
   accessibility announcement ("Applied Work", "Nothing to revert") through
   `NSAccessibility.post(element:notification: .announcementRequested)`.
+  **Built 2026-11-14:** a profile shortcut says the profile's name and the
+  note the popover would show ("Desk: Already at the saved settings."),
+  or that none of its displays is connected; Revert says it reverted, that
+  there was nothing to revert, or what could not be reverted. The alert
+  sound stays for a miss. `ShortcutAnnouncement`, posted 0.6 s later so the
+  mode switch does not swallow it.
 - **A hint for a profile that can never apply here.** A pill whose displays
   are all missing applies nothing; its tooltip could say which monitor it is
   waiting for, as the confirmation panel already does.

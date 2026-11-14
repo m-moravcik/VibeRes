@@ -42,6 +42,9 @@ enum ShortcutActions {
     /// The system alert sound. A seam so a test can count alerts without
     /// sounding one on the machine running it.
     static var alert: () -> Void = { NSSound.beep() }
+    /// What VoiceOver hears afterwards. A seam so a test can read what would
+    /// be said without speaking.
+    static var announce: (ShortcutAnnouncement) -> Void = ShortcutAnnouncement.post
 
     static func perform(_ owner: HotkeyOwner, displays: DisplayStore, profiles: ProfileStore) {
         switch owner {
@@ -56,8 +59,20 @@ enum ShortcutActions {
     /// to undo, the alert sound says the press was heard and did nothing.
     private static func revert(displays: DisplayStore) {
         Log.apply.info("shortcut: revert")
-        if displays.performRevert() == 0 || displays.revert.canRevert {
+        let hadSomething = displays.revert.canRevert
+        let restored = displays.performRevert()
+        if !hadSomething {
             alert()
+            announce(.nothingToRevert)
+        } else if displays.revert.canRevert {
+            // What failed stays armed for another try; the store just said why.
+            alert()
+            announce(.revertIncomplete(displays.lastError))
+        } else if restored == 0 {
+            alert()
+            announce(.revertIncomplete(nil))
+        } else {
+            announce(.reverted)
         }
     }
 
@@ -68,6 +83,7 @@ enum ShortcutActions {
     private static func applyProfile(_ id: UUID, displays: DisplayStore, profiles: ProfileStore) {
         guard let profile = profiles.profiles.first(where: { $0.id == id }) else {
             alert()
+            announce(.profileMissing)
             return
         }
         let live = displays.liveSnapshot()
@@ -77,6 +93,7 @@ enum ShortcutActions {
         if classification == .disjoint {
             Log.apply.info("shortcut: profile matches no connected display", detail: "profile '\(profile.name)'")
             alert()
+            announce(.noDisplayConnected(profile: profile.name))
             return
         }
         Log.apply.info("shortcut: applying profile", detail: "profile '\(profile.name)'")
@@ -98,6 +115,10 @@ enum ShortcutActions {
         }
         if missedSomething || result.mainChange?.problemSummary != nil {
             alert()
+        }
+        // Said only when the popover would show a note for it too.
+        if let note = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) {
+            announce(.applied(profile: profile.name, note: note))
         }
     }
 }

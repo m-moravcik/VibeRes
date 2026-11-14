@@ -488,6 +488,21 @@ struct ShortcutActionTests {
         let profiles: ProfileStore
         var batches: () -> Int
         var alerts: () -> Int
+        var announcements: () -> [ShortcutAnnouncement]
+
+        /// The note of the one profile announcement, if that is all that was said.
+        func appliedNote(_ profile: String) -> ApplyOutcomeNote? {
+            let said = announcements()
+            guard said.count == 1, case let .applied(name, note) = said[0], name == profile else { return nil }
+            return note
+        }
+
+        /// Whether the one thing said was an incomplete revert with a reason.
+        var revertIncompleteWithReason: Bool {
+            let said = announcements()
+            guard said.count == 1, case let .revertIncomplete(problem) = said[0] else { return false }
+            return problem != nil
+        }
     }
 
     private func rig(current: CGDisplayMode, modes: [CGDisplayMode]) -> Rig {
@@ -506,7 +521,10 @@ struct ShortcutActionTests {
         }
         var alerts = 0
         ShortcutActions.alert = { alerts += 1 }
-        return Rig(displays: displays, profiles: profiles, batches: { batches }, alerts: { alerts })
+        var announcements: [ShortcutAnnouncement] = []
+        ShortcutActions.announce = { announcements.append($0) }
+        return Rig(displays: displays, profiles: profiles, batches: { batches }, alerts: { alerts },
+                   announcements: { announcements })
     }
 
     @Test("A profile that fits applies silently and can be reverted")
@@ -521,6 +539,8 @@ struct ShortcutActionTests {
         #expect(r.batches() == 1)
         #expect(r.alerts() == 0)
         #expect(r.displays.revert.canRevert)
+        // VoiceOver hears what the popover's note would say, with whose it is.
+        #expect(r.appliedNote("Desk")?.tone == .info)
     }
 
     @Test("A shortcut does not switch when the live mode already matches despite a stale cached mode")
@@ -543,6 +563,7 @@ struct ShortcutActionTests {
         #expect(r.batches() == 0)
         #expect(r.alerts() == 0)
         #expect(!r.displays.revert.canRevert)
+        #expect(r.appliedNote("Desk")?.content == .alreadyAtSavedSettings)
         #expect(r.displays.displays.allSatisfy { $0.currentMode?.ioDisplayModeID == modes[1].ioDisplayModeID })
         #expect(r.displays.setChangeToken == setChangeToken)
         #expect(r.displays.autoApplyToken == autoApplyToken)
@@ -601,6 +622,7 @@ struct ShortcutActionTests {
         #expect(r.batches() == 0)
         #expect(r.alerts() == 1)
         #expect(!r.displays.revert.canRevert)
+        #expect(r.announcements() == [.noDisplayConnected(profile: "Away")])
     }
 
     @Test("A profile missing one of its displays applies the rest and sounds the alert")
@@ -617,6 +639,8 @@ struct ShortcutActionTests {
 
         #expect(r.batches() == 1)
         #expect(r.alerts() == 1)
+        // The display left out is said too, as on the note's second line.
+        #expect(r.appliedNote("Desk")?.skipped.isEmpty == false)
     }
 
     @Test("A shortcut for a deleted profile sounds the alert")
@@ -626,6 +650,7 @@ struct ShortcutActionTests {
         ShortcutActions.perform(.profile(UUID()), displays: r.displays, profiles: r.profiles)
         #expect(r.batches() == 0)
         #expect(r.alerts() == 1)
+        #expect(r.announcements() == [.profileMissing])
     }
 
     @Test("Revert with nothing to undo sounds the alert and ends any confirmation",
@@ -643,6 +668,7 @@ struct ShortcutActionTests {
 
         #expect(restores == 0)
         #expect(r.alerts() == 1)
+        #expect(r.announcements() == [.nothingToRevert])
         #expect(r.displays.confirmationSecondsRemaining == nil)
     }
 
@@ -661,6 +687,7 @@ struct ShortcutActionTests {
         #expect(restored.sorted() == ids)
         #expect(r.alerts() == 0)
         #expect(!r.displays.revert.canRevert)
+        #expect(r.announcements().last == .reverted)
     }
 
     @Test("A profile shortcut ends old confirmation and its history survives Keep and timeout")
@@ -820,6 +847,7 @@ struct ShortcutActionTests {
         #expect(r.displays.confirmationSecondsRemaining == nil)
         #expect(!r.displays.revert.canRevert)
         #expect(r.alerts() == 0)
+        #expect(r.announcements() == [.reverted])
     }
 
     @Test("Revert sounds one alert when one display fails and keeps it retryable")
@@ -837,6 +865,7 @@ struct ShortcutActionTests {
 
         #expect(restored == [101])
         #expect(r.alerts() == 1)
+        #expect(r.revertIncompleteWithReason)
         #expect(r.displays.revert.canRevert)
         #expect(r.displays.revert.consume().entries.map(\.displayID) == [102])
     }
@@ -862,6 +891,7 @@ struct ShortcutActionTests {
 
         #expect(restored.sorted() == ids)
         #expect(r.alerts() == 1)
+        #expect(r.revertIncompleteWithReason)
         #expect(r.displays.revert.canRevert)
         let remaining = r.displays.revert.consume()
         #expect(remaining.entries.isEmpty)
