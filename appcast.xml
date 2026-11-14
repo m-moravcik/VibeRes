@@ -6,26 +6,28 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.11.1</title>
-      <pubDate>Sat, 24 Oct 2026 12:20:39 +0000</pubDate>
-      <sparkle:version>31</sparkle:version>
-      <sparkle:shortVersionString>0.11.1</sparkle:shortVersionString>
+      <title>0.12.0</title>
+      <pubDate>Sat, 14 Nov 2026 07:48:20 +0000</pubDate>
+      <sparkle:version>32</sparkle:version>
+      <sparkle:shortVersionString>0.12.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
 <ul>
-<li>Words in the accent colour are easier to read. The current size, its CURRENT badge and the flexible-profile ✱ were drawn in the plain accent colour, which measured around 3:1 against the menu. They are now shaded from the accent you picked, darker in light mode and lighter in dark mode, until they reach at least 4.5:1 wherever they appear. Symbols and highlights keep the plain accent.</li>
-<li>After a resolution change, a display card&#x27;s mode line and the refresh rate in a display&#x27;s detail no longer turn near black for a second while their numbers roll.</li>
+<li>Keyboard shortcuts: give a profile a shortcut and it applies from any app, without opening the menu, and give one to Revert to undo the last change. Settings &gt; Shortcuts lists them all and offers ⌃⌥⌘R for Revert with one click. Nothing is set until you record one, and no permission is needed.</li>
+<li>The welcome tour now lets you save your current displays as your first profile, and it keeps one height on every step, so Next stays under the pointer.</li>
+<li>A safety net for new installs: a size or rate you pick by hand applies on trial and goes back on its own after 12 seconds unless you click Keep, which saves you when the new mode leaves the screen unreadable. Turn it off in the tour&#x27;s last step or in Settings &gt; Display. If you already use VibeRes, your setting stays as it was.</li>
+<li>The Revert row stays on one line: it says &quot;Revert to 1512×982&quot;, and its tooltip names the display.</li>
 </ul>
-<p>Signed with Developer ID, notarized and stapled. Requires macOS 26.</p>
+<p>Signed with an Apple Developer ID and notarized by Apple. Requires macOS 26.</p>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.11.1/VibeRes-0.11.1.zip"
-                 sparkle:edSignature="gLwKhvmTtS13u2ZZJ5Gl8W73i68VxYQBCJ0ouAEHWU/RsEd6QLmg32+PkV456SxEiYnbdmP2Eb/ZkPQ9rsPqBw=="
-                 length="4475221"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.12.0/VibeRes-0.12.0.zip"
+                 sparkle:edSignature="p7SmpCFLDYdjx2ktQ7tpm8JiKCDg0kV4x0dO4fChUWLrwnJwvHtUWudTefCGx/mTLvUN5Rp4rcBMIdy9oatqAQ=="
+                 length="4724620"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: vhszKC7ZYkMgMi7mPy1o9e1C6BbNUzsFfc4Z2MJJqRZRkqg+sbm29apd/tm+EQQ4wGN/DtGuhoJ5MCumn9aWCQ==
-length: 1685
+edSignature: NUfTp0AwxKFOCFZnOKp6Z5exQGE7shN4cJZQWx9Oz8lJJ1OL/zQcvxcE9CKtdKRw3U0GDtnb+zUz00WDQwfhBA==
+length: 2052
 -->
