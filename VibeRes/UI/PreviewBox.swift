@@ -51,7 +51,10 @@ struct PreviewBox: View {
                 .transition(.opacity.animation(Design.Motion.quick))
         }
         .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
-        .clipShape(Rectangle())
+        // Under Reduce Motion the old frame fades out at its old size after
+        // the box has jumped, so keep it inside the box. Only then: a clip
+        // changes how the material and shadow render at rest.
+        .clipped(when: reduceMotion)
         .padding(6)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
         // Moving down the size list, the proposed frame springs from one size
@@ -82,6 +85,19 @@ struct PreviewBox: View {
                     )
                     .frame(width: propFrame.width, height: propFrame.height)
             }
+    }
+}
+
+private extension View {
+    /// Clips to the view's frame only when `active`. Fixed while Reduce Motion
+    /// stays put, so the branch does not swap identity mid-animation.
+    @ViewBuilder
+    func clipped(when active: Bool) -> some View {
+        if active {
+            clipped()
+        } else {
+            self
+        }
     }
 }
 
