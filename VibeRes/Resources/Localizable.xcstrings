@@ -5298,6 +5298,88 @@
         }
       }
     },
+    "Report a problem opens a new issue on GitHub with these diagnostics filled in. Nothing is sent until you submit it there.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém otevře na GitHubu nové hlášení s vyplněnou diagnostikou. Nic se neodešle, dokud ho tam neodešleš."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden öffnet ein neues Issue auf GitHub mit dieser Diagnose. Gesendet wird erst, wenn du es dort abschickst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report a problem opens a new issue on GitHub with these diagnostics filled in. Nothing is sent until you submit it there."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informar de un problema abre una nueva incidencia en GitHub con este diagnóstico. No se envía nada hasta que la envíes allí."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaler un problème ouvre un nouveau ticket sur GitHub avec ce diagnostic. Rien n’est envoyé tant que vous ne l’avez pas soumis."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásiť problém otvorí na GitHube nové hlásenie s vyplnenou diagnostikou. Nič sa neodošle, kým ho tam neodošleš."
+          }
+        }
+      }
+    },
+    "Report a problem…": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report a problem…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informar de un problema…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaler un problème…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásiť problém…"
+          }
+        }
+      }
+    },
     "Resolutions": {
       "extractionState": "manual",
       "localizations": {
@@ -7161,6 +7243,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tento displej už nie je pripojený."
+          }
+        }
+      }
+    },
+    "The diagnostics were too long for the link and are on the clipboard. Paste them into the issue.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostika byla na odkaz příliš dlouhá, proto je ve schránce. Vlož ji do hlášení."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Diagnose war für den Link zu lang und liegt in der Zwischenablage. Füge sie in das Issue ein."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The diagnostics were too long for the link and are on the clipboard. Paste them into the issue."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El diagnóstico era demasiado largo para el enlace y está en el portapapeles. Pégalo en la incidencia."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le diagnostic était trop long pour le lien et se trouve dans le presse-papiers. Collez-le dans le ticket."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostika bola na odkaz príliš dlhá, preto je v schránke. Vlož ju do hlásenia."
           }
         }
       }

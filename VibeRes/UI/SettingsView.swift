@@ -14,6 +14,9 @@ struct SettingsView: View {
     /// True for a moment after "Copy diagnostics", so the button can say it worked
     /// in place instead of raising an alert.
     @State private var diagnosticsCopied = false
+    /// Report a problem had to put the diagnostics on the clipboard, because
+    /// they did not fit the link; says so until the next report.
+    @State private var reportOnClipboard = false
     @State private var launchAtLogin: Bool = LoginItem.isEnabled
     /// Forces the TabView to start on General every time the Settings
     /// window is opened. SwiftUI keeps the SettingsView instance alive
@@ -239,9 +242,18 @@ struct SettingsView: View {
                 Text("Copies versions, Mac model, these settings, displays and the latest log lines for a bug report. No serial numbers or file paths.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Text("Report a problem opens a new issue on GitHub with these diagnostics filled in. Nothing is sent until you submit it there.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if reportOnClipboard {
+                    Text("The diagnostics were too long for the link and are on the clipboard. Paste them into the issue.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 HStack {
                     Spacer()
+                    Button("Report a problem…", action: reportProblem)
                     Button {
                         copyDiagnostics()
                     } label: {
@@ -260,12 +272,30 @@ struct SettingsView: View {
         .scrollContentBackground(.hidden)
     }
 
-    private func copyDiagnostics() {
-        let report = Diagnostics.collect(
+    private func collectDiagnostics() -> Diagnostics.Report {
+        Diagnostics.collect(
             preferences: preferences,
             displays: displays.displays,
             profileCount: profiles.profiles.count
         )
+    }
+
+    /// Opens the bug report form in the browser with the diagnostics in it.
+    /// If they are too long for a link even without log lines, the form opens
+    /// empty and the full report goes on the clipboard instead.
+    private func reportProblem() {
+        let report = collectDiagnostics()
+        let link = BugReport.link(for: report)
+        if !link.carriesDiagnostics {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(report.render(), forType: .string)
+        }
+        reportOnClipboard = !link.carriesDiagnostics
+        NSWorkspace.shared.open(link.url)
+    }
+
+    private func copyDiagnostics() {
+        let report = collectDiagnostics()
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(report.render(), forType: .string)
         diagnosticsCopied = true

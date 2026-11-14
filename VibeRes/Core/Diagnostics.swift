@@ -30,6 +30,9 @@ enum Diagnostics {
         /// Whether the debug log file is on, to tell "no lines because it is off"
         /// from "no lines because nothing happened".
         var logEnabled: Bool
+        /// Older log lines left out so the report fits a link
+        /// (`BugReport`); Copy diagnostics leaves none out.
+        var omittedLogLines = 0
     }
 
     static func summarise(_ info: DisplayInfo) -> DisplaySummary {
@@ -117,13 +120,17 @@ extension Diagnostics.Report {
         out.append("")
         out.append("Profiles: \(profileCount)")
         out.append("")
-        out.append("Last \(Diagnostics.logLineCount) log lines")
-        if logLines.isEmpty {
+        if omittedLogLines > 0 {
+            out.append("Last \(logLines.count) log lines (\(omittedLogLines) older ones did not fit the link; Copy diagnostics has them)")
+        } else {
+            out.append("Last \(Diagnostics.logLineCount) log lines")
+        }
+        if logLines.isEmpty, omittedLogLines == 0 {
             out.append(logEnabled
                 ? "(none yet)"
                 : "(debug log is off; turn on Settings > Debug > Write debug log to file, reproduce the problem and copy again)")
         } else {
-            if !logEnabled {
+            if !logEnabled, !logLines.isEmpty {
                 let newest = logLines.last?.split(separator: " ").first.map(String.init) ?? "unknown"
                 out.append("Debug log is off now. Lines below are from when it was on (last: \(newest)).")
             }
