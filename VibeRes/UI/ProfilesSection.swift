@@ -335,8 +335,6 @@ struct ProfilesSection: View {
         }
     }
 
-    /// The profiles whose saved setup is what the displays are doing right
-    /// now — the pills that draw the checkmark and the accent border.
     /// Profiles none of whose displays is connected, with the displays they
     /// wait for. Their pills dim and say which monitor would bring them back.
     private var waitingProfiles: [UUID: [String]] {
@@ -349,6 +347,8 @@ struct ProfilesSection: View {
         return result
     }
 
+    /// The profiles whose saved setup is what the displays are doing right
+    /// now — the pills that draw the checkmark and the accent border.
     private var activeProfileIDs: Set<UUID> {
         let live = displays.displays
         return Set(

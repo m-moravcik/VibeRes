@@ -535,9 +535,6 @@ private enum DemoProfiles {
     }
 }
 
-/// The three tones of the note under the profile pills, with real copy built
-/// from invented outcomes, so a change to their colours or a long translation
-/// can be checked without applying anything.
 /// A pill for a profile none of whose displays is connected, dimmed, next to
 /// an active one and one that can apply, over the confirmation that clicking
 /// it opens. Invented profiles; no store involved.
@@ -583,6 +580,9 @@ private struct WaitingPillGallery: View {
     }
 }
 
+/// The three tones of the note under the profile pills, with real copy built
+/// from invented outcomes, so a change to their colours or a long translation
+/// can be checked without applying anything.
 private struct NoteGallery: View {
     private static func outcome(
         _ name: String, _ status: ProfileStore.ApplyOutcome.Status,
