@@ -217,14 +217,20 @@ struct ConfirmationRow: View {
     /// from VoiceOver, which reads the seconds.
     @ViewBuilder private var drainingBar: some View {
         if reduceMotion {
-            bar(Double(seconds) / Double(DisplayStore.confirmationWindowSeconds))
+            bar(steppedFraction)
         } else {
             // Redrawn every frame only while the row exists, the 12 s of a
-            // pending change.
+            // pending change. Keep ends the countdown before the row has
+            // faded out; the bar then holds the width of the last second
+            // rather than snapping empty.
             TimelineView(.animation) { context in
-                bar(fractionRemaining(context.date) ?? 0)
+                bar(fractionRemaining(context.date) ?? steppedFraction)
             }
         }
+    }
+
+    private var steppedFraction: Double {
+        Double(seconds) / Double(DisplayStore.confirmationWindowSeconds)
     }
 
     private func bar(_ fraction: Double) -> some View {
