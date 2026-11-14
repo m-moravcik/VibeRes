@@ -626,6 +626,13 @@ final class DisplayStore {
     private(set) var confirmationSecondsRemaining: Int?
 
     private var countdown = RevertCountdown()
+
+    /// The pending confirmation window, or nil. The bar that drains under the
+    /// Keep row reads its share every frame; the seconds above stay the
+    /// authority on when it reverts.
+    var confirmationWindow: RevertCountdown.Window? {
+        countdown.window
+    }
     private var pendingConfirmation: (mode: CGDisplayMode, display: CGDirectDisplayID)?
     private var countdownTask: Task<Void, Never>?
 

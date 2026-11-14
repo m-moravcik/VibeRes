@@ -17,23 +17,40 @@ struct RevertCountdown {
         case expired
     }
 
-    private var deadline: Date?
+    /// A pending window: when it reverts and how long it was. A value, so a
+    /// view that is fading out can keep the one it had and go on draining.
+    struct Window: Equatable {
+        let deadline: Date
+        let length: TimeInterval
+
+        /// How much of the window is left, from 1 when armed to 0 at the
+        /// deadline. Continuous, unlike `state(at:)`, so the bar that drains
+        /// with it can slide rather than step.
+        func fractionRemaining(at now: Date) -> Double {
+            guard length > 0 else { return 0 }
+            return min(max(deadline.timeIntervalSince(now) / length, 0), 1)
+        }
+    }
+
+    /// The pending window, or nil when nothing waits for confirmation.
+    private(set) var window: Window?
 
     /// Starts (or restarts) the countdown. Re-arming replaces the previous
     /// deadline rather than stacking, so a run of quick changes gets one window
     /// measured from the last of them.
     mutating func arm(at now: Date, seconds: Int) {
-        deadline = now.addingTimeInterval(TimeInterval(seconds))
+        let length = TimeInterval(seconds)
+        window = Window(deadline: now.addingTimeInterval(length), length: length)
     }
 
     /// The user said the screen is fine. A confirmed change must never be undone,
     /// so this is permanent rather than a pause.
     mutating func confirm() {
-        deadline = nil
+        window = nil
     }
 
     func state(at now: Date) -> State {
-        guard let deadline else { return .inactive }
+        guard let deadline = window?.deadline else { return .inactive }
         let remaining = deadline.timeIntervalSince(now)
         guard remaining > 0 else { return .expired }
         // Rounded up: the label must never read "0 seconds" while still waiting.

@@ -244,6 +244,10 @@ effort; none is built yet.
 - **Reduce Motion:** the bar steps once a second with the digits instead of
   sliding.
 - **Effort:** S. `MenuContent.swift` countdown row.
+- **Built 2026-11-14:** a 2 pt bar in the warning tint along the bottom of
+  `ConfirmationRow`, driven by `TimelineView(.animation)` from the
+  countdown's deadline; under Reduce Motion it steps with the seconds. The
+  clock symbol takes the same tint, as the palette says warning notes do.
 
 ### 3. The shortcut recorder shows its state
 - **Moment:** recording a shortcut in Settings or the Edit form.

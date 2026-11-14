@@ -139,27 +139,9 @@ struct RootView: View {
                 .padding(.horizontal, Design.Spacing.m)
             }
 
-            if let seconds = store.confirmationSecondsRemaining {
-                // The countdown is the safety net; this row is for people who can
-                // see the screen and do not want to wait it out.
-                HStack(spacing: Design.Spacing.s) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(Design.Typography.note)
-                    // The seconds count down rather than flick, so the row
-                    // reads as a clock that is running.
-                    Text("Keep this resolution? Reverting in \(seconds)s")
-                        .font(Design.Typography.note.monospacedDigit())
-                        .contentTransition(reduceMotion ? .opacity : .numericText(countsDown: true))
-                        .animation(reduceMotion ? Design.Motion.quick : Design.Motion.number, value: seconds)
-                    Spacer(minLength: Design.Spacing.s)
-                    Button("Keep") { store.confirmDisplayChange() }
-                        .font(Design.Typography.note)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                }
-                .padding(.horizontal, Design.Spacing.l)
-                .padding(.vertical, Design.Spacing.xs)
-                .background(Design.Palette.warningFill)
+            if let seconds = store.confirmationSecondsRemaining,
+               let window = store.confirmationWindow {
+                ConfirmationRow(seconds: seconds, window: window, keep: store.confirmDisplayChange)
                 // Rises a touch from the footer it belongs to once the rows
                 // have made room, and fades before the footer closes up over
                 // it.
@@ -189,6 +171,69 @@ struct RootView: View {
         // Reduce Motion it fades out on one card and in on the other.
         .animation(reduceMotion ? Design.Motion.quick : Design.Motion.badge,
                    value: store.displays.first(where: \.isMain)?.id)
+    }
+}
+
+/// "Keep this resolution? Reverting in 12s" over the footer while a change
+/// waits to be confirmed. The countdown is the safety net; this row is for
+/// people who can see the screen and do not want to wait it out.
+struct ConfirmationRow: View {
+    let seconds: Int
+    /// The pending window. A value rather than a read of the store: once
+    /// Keep, a revert or the deadline ends the countdown, the row fading out
+    /// keeps this one, so its bar goes on showing the time that was left.
+    let window: RevertCountdown.Window
+    let keep: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: Design.Spacing.s) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(Design.Typography.note)
+                .foregroundStyle(Design.Palette.warningTint)
+            // The seconds count down rather than flick, so the row reads as a
+            // clock that is running.
+            Text("Keep this resolution? Reverting in \(seconds)s")
+                .font(Design.Typography.note.monospacedDigit())
+                .contentTransition(reduceMotion ? .opacity : .numericText(countsDown: true))
+                .animation(reduceMotion ? Design.Motion.quick : Design.Motion.number, value: seconds)
+            Spacer(minLength: Design.Spacing.s)
+            Button("Keep", action: keep)
+                .font(Design.Typography.note)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, Design.Spacing.l)
+        .padding(.vertical, Design.Spacing.xs)
+        .background(Design.Palette.warningFill)
+        .overlay(alignment: .bottom) { drainingBar }
+    }
+
+    /// Progress at a glance: the screen this sits on may be barely legible,
+    /// and the seconds need reading. It slides, linear over the window;
+    /// under Reduce Motion it steps once a second with the digits. Hidden
+    /// from VoiceOver, which reads the seconds.
+    @ViewBuilder private var drainingBar: some View {
+        if reduceMotion {
+            bar(Double(seconds) / window.length)
+        } else {
+            // Redrawn every frame only while the row exists, the 12 s of a
+            // pending change.
+            TimelineView(.animation) { context in
+                bar(window.fractionRemaining(at: context.date))
+            }
+        }
+    }
+
+    private func bar(_ fraction: Double) -> some View {
+        GeometryReader { proxy in
+            Rectangle()
+                .fill(Design.Palette.warningTint)
+                .frame(width: proxy.size.width * min(max(fraction, 0), 1))
+        }
+        .frame(height: Design.Layout.countdownBarHeight)
+        .accessibilityHidden(true)
     }
 }
 
