@@ -131,7 +131,7 @@ Right-click any pill to apply, update, rename, or delete. Delete asks first: the
 
 ### Keyboard shortcuts
 
-Give a profile a global shortcut and it applies from any app, without opening VibeRes. Set one in the profile's Edit form (right-click the pill, **Edit…**) or in **Settings → Shortcuts**, which lists every profile and **Revert last change**. Nothing is set until you record one; for Revert, Settings offers ⌃⌥⌘R with one click.
+Give a profile a global shortcut and it applies from any app, without opening VibeRes. Set one in the profile's Edit form (right-click the pill, **Edit…**) or in **Settings → Shortcuts**, which lists every profile and **Revert last change**. Nothing is set until you record one; for Revert, Settings offers ⌃⌥⌘R with one click. Once the Revert shortcut is set and active, the popover shows it next to Revert.
 
 <p align="center">
   <picture>

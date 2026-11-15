@@ -231,9 +231,10 @@ against the code. "Evidence" names where it lives.
 This is principle 2 made concrete, and it is the requirement with the least
 room to negotiate.
 
-- **Revert** (the footer row, or the Revert shortcut once set) undoes the last action — one display or
-  a whole profile, including the main-display change. A revert that fails keeps
-  the entry so it can be tried again, and reports only what actually came back.
+- **Revert** (the footer row, or the Revert shortcut once set) undoes the last
+  action — one display or a whole profile, including the main-display change. A
+  revert that fails keeps the entry so it can be tried again, and reports only
+  what actually came back.
 - **Confirm resolution changes** applies a size or rate picked by hand for the
   session only and undoes it after 12 seconds unless confirmed. On for a fresh
   install; the last step of the welcome tour and Settings → Display turn it
@@ -342,6 +343,8 @@ room to negotiate.
   by another app or refused by macOS is tried again whenever the running
   apps change (an app quitting frees its combinations), never while a
   recorder listens.
+- The popover's Revert row names the Revert shortcut only while it is
+  registered, and has no popover-only shortcut of its own.
 - Registered with Carbon `RegisterEventHotKey`, exclusively: no Accessibility
   permission, no dependency. Every shortcut is released while one is being
   recorded, so an existing combination can be recorded again.
@@ -500,6 +503,7 @@ Lowering the deployment target is mostly one line in `project.yml`:
 
 | Date | Change |
 |---|---|
+| 2026-11-15 | §4.6, §4.11: one Revert shortcut, the global one; the popover's Revert row shows it once set, no ⌘Z |
 | 2026-11-15 | §4.6, §4.7: one countdown trial per run of picks; Make main and auto-apply end the countdown, auto-apply arms Revert |
 | 2026-11-14 | Version brought up to 0.12.0 |
 | 2026-11-13 | §4.11 Global shortcuts: optional per-profile and Revert shortcuts, unset by default |

@@ -810,7 +810,8 @@ struct DisplayDetailView: View {
 /// Footer rendered as a native-looking vertical menu list directly in the popover.
 /// Each row mimics NSMenuItem chrome: SF symbol on the left, label in the middle,
 /// keyboard shortcut on the right, accent-color highlight on hover. Real ⌘-shortcuts
-/// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
+/// are wired via `.keyboardShortcut` modifiers on the underlying buttons, except
+/// Revert, which names the global Revert shortcut instead.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
     @Environment(Preferences.self) private var preferences
