@@ -953,18 +953,25 @@ struct HotkeyRetryTests {
     private let comboA = KeyCombo(keyCode: 0x12, modifiers: [.control, .option]) // ⌃⌥1
     private let comboB = KeyCombo(keyCode: 0x13, modifiers: [.control, .option]) // ⌃⌥2
 
-    @Test("A shortcut another app held registers once that app quits")
+    /// Stands in for `NSWorkspace.shared`: only the KVO-observable list of
+    /// running apps. A menu bar app that quits shows up there and nowhere
+    /// else: macOS posts no didTerminateApplicationNotification for it.
+    private final class FakeWorkspace: NSObject {
+        @objc dynamic var runningApplications: [NSRunningApplication] = [.current]
+    }
+
+    @Test("A shortcut another app held registers once that app quits, menu bar apps included")
     func retriesWhenAnAppQuits() {
         let registrar = FakeRegistrar()
         let center = HotkeyCenter(registrar: registrar)
-        let workspace = NotificationCenter()
-        center.retryWhenAppsQuit(observing: workspace)
+        let workspace = FakeWorkspace()
+        center.retryWhenAppsQuit(observing: workspace, \.runningApplications)
         registrar.takenElsewhere = [comboB]
         center.setBindings([HotkeyBinding(owner: .profile(desk), combo: comboB, name: "Desk")])
         #expect(center.inactive == [.profile(desk): .usedByAnotherApp])
 
         registrar.takenElsewhere = []
-        workspace.post(name: NSWorkspace.didTerminateApplicationNotification, object: nil)
+        workspace.runningApplications = []
 
         #expect(Array(registrar.live.values) == [comboB])
         #expect(center.inactive.isEmpty)

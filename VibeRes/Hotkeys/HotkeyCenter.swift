@@ -127,18 +127,25 @@ final class HotkeyCenter {
         registerAll()
     }
 
-    /// Retries inactive shortcuts whenever an app quits, since that is when
-    /// a combination it held comes free. `center` is the workspace's
-    /// notification center in the app, and a private one in tests.
-    func retryWhenAppsQuit(observing center: NotificationCenter) {
-        terminationObserver = center.addObserver(
-            forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
-        ) { [weak self] _ in
+    /// Retries inactive shortcuts whenever the running apps change, since an
+    /// app quitting is when a combination it held comes free. `source` is
+    /// `NSWorkspace.shared` in the app, and a stand-in in tests.
+    ///
+    /// Watches `runningApplications` rather than
+    /// `NSWorkspace.didTerminateApplicationNotification`: that notification
+    /// is posted only for Dock apps, never for menu bar (LSUIElement) apps,
+    /// which are the ones that usually claim global shortcuts. A launch
+    /// triggers a retry too; it finds nothing new and costs one attempt.
+    func retryWhenAppsQuit<Source: NSObject>(
+        observing source: Source, _ runningApps: KeyPath<Source, [NSRunningApplication]>
+    ) {
+        // NSWorkspace changes `runningApplications` on the main thread.
+        appsObservation = source.observe(runningApps) { [weak self] _, _ in
             MainActor.assumeIsolated { self?.retryInactive() }
         }
     }
 
-    @ObservationIgnored private var terminationObserver: NSObjectProtocol?
+    @ObservationIgnored private var appsObservation: NSKeyValueObservation?
 
     /// Why `combo` cannot be given to `owner`, or nil when it can.
     ///
