@@ -7,13 +7,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ na GitHubu – kliknutím zobrazíš"
+            "value": "%@ na GitHubu: kliknutím zobrazíš"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ auf GitHub – zum Ansehen klicken"
+            "value": "%@ auf GitHub: zum Ansehen klicken"
           }
         },
         "en": {
@@ -502,7 +502,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "„Skaliert“ nutzt HiDPI-Rendering, damit Text auf Retina scharf bleibt (Standard für eingebaute Displays). „Nativ“ ist 1:1-Pixelabbildung – typisch für externe Monitore ohne Retina."
+            "value": "„Skaliert“ nutzt HiDPI-Rendering, damit Text auf Retina scharf bleibt (Standard für eingebaute Displays). „Nativ“ ist 1:1-Pixelabbildung. Typisch für externe Monitore ohne Retina."
           }
         },
         "en": {
@@ -773,7 +773,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wendet eine neue Auflösung nur für diese Sitzung an und macht sie nach %lld Sekunden rückgängig, sofern du nicht bestätigst. Nützlich, wenn ein Modus deinen Bildschirm schon einmal unlesbar gemacht hat – das Rückgängigmachen passiert von selbst und funktioniert daher auch, wenn du den Knopf nicht sehen kannst."
+            "value": "Wendet eine neue Auflösung nur für diese Sitzung an und macht sie nach %lld Sekunden rückgängig, sofern du nicht bestätigst. Nützlich, wenn ein Modus deinen Bildschirm schon einmal unlesbar gemacht hat. Das Rückgängigmachen passiert von selbst und funktioniert daher auch, wenn du den Knopf nicht sehen kannst."
           }
         },
         "en": {
@@ -4244,7 +4244,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur ein Display darf auf „zu jedem externen Monitor passen“ gesetzt sein – binde die anderen an einen bestimmten Monitor."
+            "value": "Nur ein Display darf auf „zu jedem externen Monitor passen“ gesetzt sein. Binde die anderen an einen bestimmten Monitor."
           }
         },
         "en": {
@@ -4326,7 +4326,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur ein Eintrag darf zu „jedem externen Monitor“ passen – entferne oder binde die Duplikate zuerst."
+            "value": "Nur ein Eintrag darf zu „jedem externen Monitor“ passen. Entferne oder binde die Duplikate zuerst."
           }
         },
         "en": {
@@ -6419,7 +6419,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gespeichert, aber %@ melden dieselbe Kennung – dieses Profil kann sie nicht unterscheiden und stellt beide gleich ein."
+            "value": "Gespeichert, aber %@ melden dieselbe Kennung. Dieses Profil kann sie nicht unterscheiden und stellt beide gleich ein."
           }
         },
         "en": {
@@ -7665,13 +7665,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dostupná aktualizace – %@ na GitHubu"
+            "value": "Dostupná aktualizace: %@ na GitHubu"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Update verfügbar – %@ auf GitHub"
+            "value": "Update verfügbar: %@ auf GitHub"
           }
         },
         "en": {
@@ -9734,7 +9734,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Einfachen Modus genügt ein Klick auf eine Auflösung – die höchste verfügbare Bildwiederholrate wird automatisch gewählt. Profis können das in den Einstellungen (⌘,) ausschalten und dort auch die Live-Vorschau und automatische Updates regeln."
+            "value": "Im Einfachen Modus genügt ein Klick auf eine Auflösung. Die höchste verfügbare Bildwiederholrate wird automatisch gewählt. Profis können das in den Einstellungen (⌘,) ausschalten und dort auch die Live-Vorschau und automatische Updates regeln."
           }
         },
         "en": {

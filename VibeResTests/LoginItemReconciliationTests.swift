@@ -61,6 +61,17 @@ struct LoginItemReconciliationTests {
         #expect(LoginItem.note(status: .enabled, storedIntent: true, lastChangeFailed: false) == nil)
     }
 
+    @Test("A failed change stops being reported once System Settings makes it true")
+    func failureClearsWhenStatusMatchesIntent() {
+        // Turning VibeRes on fails while System Settings holds it off; the
+        // user then switches it on there and comes back to Settings.
+        #expect(LoginItem.note(status: .requiresApproval, storedIntent: true, lastChangeFailed: true)
+                == .needsApproval)
+        #expect(LoginItem.note(status: .enabled, storedIntent: true, lastChangeFailed: true) == nil)
+        #expect(LoginItem.note(status: .disabled, storedIntent: false, lastChangeFailed: true) == nil)
+        #expect(LoginItem.note(status: .disabled, storedIntent: true, lastChangeFailed: true) == .couldNotChange)
+    }
+
     @Test("Diagnostics report what macOS says, and the wish when it differs")
     func diagnosticsLabel() {
         #expect(Diagnostics.loginItemLabel(.enabled, intent: true) == "on")

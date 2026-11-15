@@ -2,13 +2,19 @@ import Foundation
 import Testing
 @testable import VibeRes
 
-/// The house style for VibeRes copy has no em dash: a reason gets its own
-/// sentence or a colon. Checked against what the app actually ships, the
-/// compiled string tables of every language, so a new string or translation
-/// cannot bring one back unnoticed.
+/// The house style for VibeRes copy has no dash between clauses: a reason
+/// gets its own sentence or a colon. That covers the em dash and the spaced en
+/// dash German and Czech use in its place. Checked against what the app
+/// actually ships, the compiled string tables of every language, so a new
+/// string or translation cannot bring one back unnoticed.
 @Suite("Copy punctuation")
 struct CopyPunctuationTests {
     private static let emDash = "\u{2014}"
+    private static let spacedEnDash = " \u{2013} "
+
+    private static func hasClauseDash(_ text: String) -> Bool {
+        text.contains(emDash) || text.contains(spacedEnDash)
+    }
 
     /// Every string in a compiled table, plural variants included.
     private static func strings(in object: Any) -> [String] {
@@ -20,8 +26,8 @@ struct CopyPunctuationTests {
         }
     }
 
-    @Test("No shipped string in any language uses an em dash")
-    func noEmDashInTables() throws {
+    @Test("No shipped string in any language joins clauses with a dash")
+    func noClauseDashInTables() throws {
         let languages = Bundle.main.localizations.filter { $0 != "Base" }
         try #require(languages.count >= 6)
         var offenders: [String] = []
@@ -33,7 +39,7 @@ struct CopyPunctuationTests {
                 else { continue }
                 for (key, value) in table {
                     let texts = [key] + Self.strings(in: value)
-                    if texts.contains(where: { $0.contains(Self.emDash) }) {
+                    if texts.contains(where: Self.hasClauseDash) {
                         offenders.append("\(language): \(key)")
                     }
                 }
@@ -52,8 +58,8 @@ struct CopyPunctuationTests {
             == "1920×1080")
     }
 
-    @Test("The English problem text the CLI prints has no em dash")
-    func noEmDashInEnglishProblems() {
+    @Test("The English problem text the CLI prints has no clause dash")
+    func noClauseDashInEnglishProblems() {
         let problems: [UserFacingProblem] = [
             .mirroredArrangement, .mainDisplayAdjusted, .previousMainNotRestored,
             .profilesNotSaved,
@@ -62,7 +68,7 @@ struct CopyPunctuationTests {
             .switchFailed(.originCoverage),
         ]
         for problem in problems {
-            #expect(!problem.englishDescription.contains(Self.emDash), "\(problem)")
+            #expect(!Self.hasClauseDash(problem.englishDescription), "\(problem)")
         }
     }
 }

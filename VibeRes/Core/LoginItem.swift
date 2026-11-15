@@ -100,15 +100,16 @@ enum LoginItem {
     enum Note: Equatable {
         /// Turned off in System Settings; the note links there.
         case needsApproval
-        /// The last change did not take, or a wanted registration is missing
-        /// (a re-registration at launch failed).
+        /// The system still disagrees with what was asked for: the last change
+        /// did not take, or a wanted registration is missing (a re-registration
+        /// at launch failed). Gone once macOS reports what the user wants.
         case couldNotChange
     }
 
     static func note(status: Status, storedIntent: Bool?, lastChangeFailed: Bool) -> Note? {
         if status == .requiresApproval { return .needsApproval }
-        if lastChangeFailed { return .couldNotChange }
-        if storedIntent == true, status == .disabled { return .couldNotChange }
+        if storedIntent == (status == .enabled) { return nil }
+        if lastChangeFailed || storedIntent == true { return .couldNotChange }
         return nil
     }
 
