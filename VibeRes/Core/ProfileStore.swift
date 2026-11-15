@@ -94,31 +94,167 @@ final class ProfileStore {
         }
     }
 
-    func load() {
-        // Check the size before reading rather than after: the point is to not
-        // pull an implausible file into memory on the main actor at launch.
-        let size = (try? storeURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-        guard Self.isWithinSizeLimit(bytes: size) else {
-            Log.profiles.error("load: profiles file is \(size) bytes, over the size limit; ignoring it")
-            lastError = .profilesUnreadable
-            profiles = []
-            return
-        }
+    /// True while the file on disk holds something the catalog in memory
+    /// left out and no copy of it has been kept yet. `save` refuses to write
+    /// over such a file: replacing it would lose for good what this version
+    /// merely could not read.
+    @ObservationIgnored
+    private var unkeptDamage = false
 
-        guard let data = try? Data(contentsOf: storeURL) else {
-            profiles = []
-            return
-        }
-        do {
-            profiles = Self.capped(try JSONDecoder().decode([Profile].self, from: data))
-            Log.profiles.info("load: \(profiles.count) profile(s)")
-        } catch {
-            // Sanitised — don't surface JSONDecoder internals or file paths.
-            Log.profiles.error("load: profiles file could not be decoded (\(Self.errorCode(error)))")
-            lastError = .profilesUnreadable
-            profiles = []
+    @ObservationIgnored
+    private var watcher: CatalogWatcher?
+
+    /// Reloads the catalog whenever another process changes it, such as the
+    /// `viberes` CLI, so the popover, Settings and the shortcuts follow the
+    /// file instead of a copy read at launch. The app calls this once; the
+    /// CLI, which lives for one command, never does.
+    func watchForExternalChanges() {
+        guard watcher == nil else { return }
+        watcher = CatalogWatcher(file: storeURL) { [weak self] in
+            self?.load()
         }
     }
+
+    /// What reading the catalog file found.
+    private enum DiskRead {
+        /// No file: the catalog is empty. The normal first-launch state.
+        case missing
+        case data(Data)
+        /// Over `maximumStoreBytes`; not read into memory at all.
+        case tooLarge(bytes: Int)
+        /// The file is there but could not be opened or read.
+        case failed(String)
+    }
+
+    private func readDisk() -> DiskRead {
+        // FileManager rather than `URL.resourceValues`: a URL caches resource
+        // values for its lifetime, and this one lives as long as the store,
+        // so a reload would keep seeing the file as it was at launch.
+        let attributes: [FileAttributeKey: Any]
+        do {
+            attributes = try FileManager.default.attributesOfItem(atPath: storeURL.path)
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+            return .missing
+        } catch {
+            return .failed(Self.errorCode(error))
+        }
+        guard attributes[.type] as? FileAttributeType == .typeRegular else {
+            return .failed("not a regular file")
+        }
+        // Check the size before reading rather than after: the point is to not
+        // pull an implausible file into memory on the main actor at launch.
+        let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
+        guard Self.isWithinSizeLimit(bytes: size) else { return .tooLarge(bytes: size) }
+        do {
+            return .data(try Data(contentsOf: storeURL))
+        } catch {
+            return .failed(Self.errorCode(error))
+        }
+    }
+
+    /// Reads the catalog from disk. Runs at launch, before every mutation
+    /// (so a change another process saved is the base the mutation builds
+    /// on, not something it writes over), and when the watcher sees the file
+    /// change.
+    func load() {
+        switch readDisk() {
+        case .missing:
+            unkeptDamage = false
+            settle([], problem: nil)
+
+        case .failed(let reason):
+            // Keep what is in memory: the file may be fine and only out of
+            // reach for now, and there is nothing to copy aside. `save`
+            // refuses until it can be read again.
+            Log.profiles.error("load: profiles file could not be read (\(reason))")
+            unkeptDamage = true
+            lastError = .profilesUnreadable(keptAs: nil)
+
+        case .tooLarge(let bytes):
+            Log.profiles.error("load: profiles file is \(bytes) bytes, over the size limit; ignoring it")
+            unkeptDamage = true
+            settle([], problem: .profilesUnreadable(keptAs: keepDamagedFileAside()))
+
+        case .data(let data):
+            let report = CatalogDecodeReport()
+            let decoder = JSONDecoder()
+            decoder.userInfo[CatalogDecodeReport.key] = report
+            do {
+                let decoded = try decoder.decode([Lenient<Profile>].self, from: data)
+                let catalog = Self.capped(decoded.compactMap(\.value))
+                if report.dropped > 0 {
+                    Log.profiles.error("load: \(report.dropped) unreadable item(s) left out of the catalog")
+                    unkeptDamage = true
+                    settle(catalog, problem: .profilesPartlyUnreadable(keptAs: keepDamagedFileAside()))
+                } else {
+                    unkeptDamage = false
+                    settle(catalog, problem: nil)
+                }
+                Log.profiles.info("load: \(catalog.count) profile(s)")
+            } catch {
+                // Not a list at all. Sanitised: no JSONDecoder internals or
+                // file paths in the log.
+                Log.profiles.error("load: profiles file could not be decoded (\(Self.errorCode(error)))")
+                unkeptDamage = true
+                settle([], problem: .profilesUnreadable(keptAs: keepDamagedFileAside()))
+            }
+        }
+    }
+
+    /// Publishes a freshly read catalog. Assigns only on a real change, so a
+    /// reload that finds what the app itself just saved does not redraw every
+    /// observer. A clean read leaves an earlier problem alone: the file is
+    /// usually clean because the app's own save replaced it, and what was
+    /// left out, and where the original went, is still worth reading.
+    private func settle(_ catalog: [Profile], problem: UserFacingProblem?) {
+        if catalog != profiles { profiles = catalog }
+        if let problem { lastError = problem }
+    }
+
+    /// Copies the catalog file, untouched, to a new file next to it before
+    /// anything can be saved over it, and returns the copy's name.
+    ///
+    /// A copy identical to one already kept is not made again, so a damaged
+    /// file read at every launch or reload leaves one copy, not one per read.
+    /// An existing copy is never overwritten. `nil` when no copy could be
+    /// made; `unkeptDamage` then stays set and `save` refuses.
+    private func keepDamagedFileAside() -> String? {
+        let fm = FileManager.default
+        let directory = storeURL.deletingLastPathComponent()
+        let existing = (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        if let twin = existing.first(where: {
+            $0.lastPathComponent.hasPrefix(Self.keptCopyPrefix)
+                && fm.contentsEqual(atPath: $0.path, andPath: storeURL.path)
+        }) {
+            unkeptDamage = false
+            return twin.lastPathComponent
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        let stamp = formatter.string(from: Date())
+        for attempt in 1...100 {
+            let suffix = attempt == 1 ? "" : "-\(attempt)"
+            let name = "\(Self.keptCopyPrefix)\(stamp)\(suffix).json"
+            do {
+                // `copyItem` fails rather than replace an existing file.
+                try fm.copyItem(at: storeURL, to: directory.appendingPathComponent(name))
+                Log.profiles.info("load: kept the unreadable catalog aside as \(name)")
+                unkeptDamage = false
+                return name
+            } catch let error as CocoaError where error.code == .fileWriteFileExists {
+                continue
+            } catch {
+                Log.profiles.error("load: could not keep the unreadable catalog aside (\(Self.errorCode(error)))")
+                return nil
+            }
+        }
+        return nil
+    }
+
+    /// Name prefix of a kept copy of an unreadable catalog.
+    nonisolated static let keptCopyPrefix = "profiles-unreadable-"
 
     /// Domain and code only: a Cocoa error's description carries the file path.
     private static func errorCode(_ error: Error) -> String {
@@ -126,7 +262,14 @@ final class ProfileStore {
         return "\(ns.domain) \(ns.code)"
     }
 
+    /// Writes the catalog. Callers build `catalog` from `profiles` right
+    /// after `load()`, so what another process saved meanwhile is kept.
     private func save(_ catalog: [Profile]) -> SaveResult {
+        guard !unkeptDamage else {
+            Log.profiles.error("save: refused, the file on disk holds data that was not read and could not be kept aside")
+            lastError = .profilesNotSaved
+            return .failedToSave
+        }
         do {
             let data = try JSONEncoder().encode(catalog)
             try data.write(to: storeURL, options: [.atomic])
@@ -138,7 +281,9 @@ final class ProfileStore {
                 ofItemAtPath: storeURL.path
             )
             profiles = catalog
-            lastError = nil
+            // A read problem stays until dismissed: it says what was left
+            // out and where the original is, which a later save does not undo.
+            if lastError?.isCatalogReadProblem != true { lastError = nil }
             Log.profiles.debug("save: \(profiles.count) profile(s)")
             return .saved
         } catch {
@@ -155,6 +300,7 @@ final class ProfileStore {
     /// `viberes profile save "   "` printed success and stored nothing.
     @discardableResult
     func add(_ profile: Profile) -> SaveResult {
+        load()
         var p = profile
         p.name = Self.sanitised(p.name)
         guard case .saved = nameVerdict(for: p.name, excluding: p.id) else {
@@ -165,6 +311,7 @@ final class ProfileStore {
 
     @discardableResult
     func update(_ profile: Profile) -> SaveResult {
+        load()
         guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedNotFound }
         var p = profile
         p.name = Self.sanitised(p.name)
@@ -242,7 +389,8 @@ final class ProfileStore {
 
     @discardableResult
     func delete(_ profile: Profile) -> SaveResult {
-        save(profiles.filter { $0.id != profile.id })
+        load()
+        return save(profiles.filter { $0.id != profile.id })
     }
 
     /// Refreshes a profile's recorded resolution+refresh+HiDPI for each entry from
@@ -251,12 +399,17 @@ final class ProfileStore {
     /// flexible and specific isn't lost. Entries whose matcher doesn't bind to
     /// anything live are left as-is so a Q3279 entry doesn't disappear just
     /// because the user is on the road.
+    ///
+    /// Each entry reads the display it binds to when the profile is applied
+    /// (`bindings`), so a flexible entry next to a specific one reads the
+    /// other monitor, not whichever external happens to be listed first.
     @discardableResult
     func updateFromCurrent(_ profile: Profile, displays: [DisplayInfo]) -> Profile? {
+        load()
         guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return nil }
         var updated = profiles[i]
-        updated.entries = updated.entries.map { entry -> Profile.Entry in
-            guard let info = displays.first(where: { entry.matcher.matches($0.id) }),
+        updated.entries = bindings(of: updated, to: displays).map { entry, bound -> Profile.Entry in
+            guard let info = bound.first,
                   let mode = info.currentMode
             else { return entry } // no live match — keep prior snapshot
             return Profile.Entry(
@@ -284,52 +437,63 @@ final class ProfileStore {
         case madeFlexible
         case madeSpecific
         case blockedNoExternal
+        /// Making the profile flexible would give it two "any external"
+        /// entries, which `replaceEntries` and `captureCurrent` refuse.
+        case blockedSeveralExternals
+        /// The profile is no longer in the catalog, e.g. the CLI deleted it.
+        case notFound
         case failedToSave
     }
 
     /// Toggles each external entry between .edid (specific) and .anyExternal
-    /// (flexible). Built-in entries stay as-is — built-in is always exactly one
-    /// physical display, so the distinction is meaningless there.
+    /// (flexible), and the main display with it. Built-in entries stay as-is —
+    /// built-in is always exactly one physical display, so the distinction is
+    /// meaningless there.
     @discardableResult
     func toggleFlexible(_ profile: Profile, displays: [DisplayInfo]) -> LockResult {
-        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .madeFlexible }
+        load()
+        guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .notFound }
         var updated = profiles[i]
         let isCurrentlyFlexible = updated.entries.contains {
             if case .anyExternal = $0.matcher { return true }
             return false
         }
 
-        // Locking a flexible profile requires a connected external to capture
-        // its EDID. Without one, refuse the action so the profile doesn't end
-        // up silently still flexible after a "lock to current monitors" click.
         if isCurrentlyFlexible {
-            let hasExternal = displays.contains { CGDisplayIsBuiltin($0.id) == 0 }
-            if !hasExternal { return .blockedNoExternal }
-        }
-
-        updated.entries = updated.entries.map { entry -> Profile.Entry in
-            switch entry.matcher {
-            case .builtIn:
-                return entry
-            case .edid:
-                if !isCurrentlyFlexible {
-                    var e = entry
-                    e.matcher = .anyExternal
-                    return e
+            // Lock each flexible entry to the monitor it binds to on apply:
+            // an external the profile does not already name. Without one
+            // there is no EDID to capture, so refuse rather than leave the
+            // profile silently flexible after a "lock to current monitors".
+            var captured: [DisplayMatcher] = []
+            for (index, (entry, bound)) in bindings(of: updated, to: displays).enumerated() {
+                guard case .anyExternal = entry.matcher else { continue }
+                guard let info = bound.first else { return .blockedNoExternal }
+                let id = displayIdentity(info.id)
+                let matcher = DisplayMatcher.edid(vendor: id.vendor, model: id.model, serial: id.serial)
+                updated.entries[index].matcher = matcher
+                updated.entries[index].displayName = info.name
+                captured.append(matcher)
+            }
+            // A main display pinned to "any external" follows its entry.
+            // `bindings` allows one flexible entry per profile, so there is
+            // at most one capture to follow.
+            if updated.mainDisplay == .anyExternal, captured.count == 1 {
+                updated.mainDisplay = captured[0]
+            }
+        } else {
+            let externals = updated.entries.indices.filter {
+                if case .edid = updated.entries[$0].matcher { return true }
+                return false
+            }
+            // Two "any external" entries would fight over every external, and
+            // the Edit form and the save form refuse to create them; this
+            // toggle must not be the way around that.
+            guard externals.count <= 1 else { return .blockedSeveralExternals }
+            for index in externals {
+                if updated.mainDisplay == updated.entries[index].matcher {
+                    updated.mainDisplay = .anyExternal
                 }
-                return entry
-            case .anyExternal:
-                if isCurrentlyFlexible {
-                    if let info = displays.first(where: { CGDisplayIsBuiltin($0.id) == 0 }) {
-                        let id = DisplayIdentity.capture(info.id)
-                        var e = entry
-                        e.matcher = .edid(vendor: id.vendor, model: id.model, serial: id.serial)
-                        e.displayName = info.name
-                        return e
-                    }
-                    return entry
-                }
-                return entry
+                updated.entries[index].matcher = .anyExternal
             }
         }
         var catalog = profiles
@@ -396,6 +560,7 @@ final class ProfileStore {
     func replaceEntries(_ profile: Profile, with newEntries: [Profile.Entry]) -> SaveResult {
         guard !newEntries.isEmpty else { return .rejectedEmpty }
         guard !Self.hasMultipleAnyExternal(newEntries) else { return .rejectedMultipleAnyExternal }
+        load()
         guard let i = profiles.firstIndex(where: { $0.id == profile.id }) else { return .rejectedNotFound }
         var updated = profiles[i]
         updated.entries = newEntries
@@ -412,6 +577,7 @@ final class ProfileStore {
     /// reaches here.
     @discardableResult
     func setHotkey(_ hotkey: KeyCombo?, for id: UUID) -> SaveResult {
+        load()
         guard let i = profiles.firstIndex(where: { $0.id == id }) else { return .rejectedNotFound }
         var catalog = profiles
         catalog[i].hotkey = hotkey
@@ -682,6 +848,11 @@ final class ProfileStore {
     /// display identity.
     @ObservationIgnored
     var displayMatches: (DisplayMatcher, CGDirectDisplayID) -> Bool = { $0.matches($1) }
+
+    /// The EDID identity of a live display, captured when a flexible entry is
+    /// locked to it. Injectable for the same reason as `displayMatches`.
+    @ObservationIgnored
+    var displayIdentity: (CGDirectDisplayID) -> DisplayIdentity = { DisplayIdentity.capture($0) }
 
     /// The live displays each entry of `profile` binds to, in entry order.
     /// An "any external" entry never binds a display that a specific entry

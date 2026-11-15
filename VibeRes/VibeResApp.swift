@@ -53,6 +53,9 @@ struct VibeResApp: App {
         }
         if !Self.isUnitTestHost {
             HotkeySync.keepInSync(hotkeys, profiles: profiles, preferences: prefs)
+            // The CLI saves to the same file; follow it, so the popover and
+            // the shortcuts never act on a catalog read at launch.
+            profiles.watchForExternalChanges()
         }
         _hotkeys = State(initialValue: hotkeys)
         _iconAnimator = State(initialValue: iconAnimator)

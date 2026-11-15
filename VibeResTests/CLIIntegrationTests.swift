@@ -163,6 +163,35 @@ struct CLIIntegrationTests {
         #expect(result.stdout.contains("(no profiles)"))
     }
 
+    @Test("An unreadable catalog is an error, not an empty list", arguments: ["list", "save"])
+    func unreadableCatalogFails(command: String) throws {
+        let dir = try temporaryDirectory()
+        let garbage = Data("{not json".utf8)
+        try garbage.write(to: dir.appendingPathComponent("profiles.json"))
+        let arguments = command == "save" ? ["profile", "save", "New"] : ["profile", "list"]
+        let result = try run(arguments, profileDirectory: dir)
+        #expect(result.status == 1)
+        #expect(!result.stdout.contains("(no profiles)"))
+        #expect(result.stderr.contains("could not be read"))
+        #expect(try Data(contentsOf: dir.appendingPathComponent("profiles.json")) == garbage)
+    }
+
+    @Test("A partly readable catalog lists what it can and warns about the rest")
+    func partlyReadableCatalogWarns() throws {
+        let dir = try temporaryDirectory()
+        let data = try JSONEncoder().encode([profile("Work"), profile("Home")])
+        var json = try #require(JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+        json[1]["entries"] = [["matcher": ["kind": "hologram"]]]
+        try JSONSerialization.data(withJSONObject: json)
+            .write(to: dir.appendingPathComponent("profiles.json"))
+
+        let result = try run(["profile", "list"], profileDirectory: dir)
+        #expect(result.status == 0)
+        #expect(result.stdout.contains("Work"))
+        #expect(!result.stdout.contains("Home"))
+        #expect(result.stderr.contains("left out"))
+    }
+
     // MARK: Refusals are reported
 
     @Test("A blank profile name is refused instead of reported as saved")

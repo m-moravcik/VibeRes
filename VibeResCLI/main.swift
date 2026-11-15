@@ -80,6 +80,26 @@ func bestMatch(on display: DisplayInfo, spec: ResolutionSpec) -> CGDisplayMode? 
 
 // MARK: - Profile lookup
 
+/// Opens the catalog for one command and reports what reading it found.
+///
+/// A catalog that could not be read at all ends the command: "(no profiles)"
+/// would claim there are none, and a save would start a new catalog in place
+/// of a file the user may want back. A partly read catalog is usable, so what
+/// was left out goes to stderr and the command carries on.
+@MainActor
+func openCatalog() -> ProfileStore {
+    let store = ProfileStore()
+    switch store.lastError {
+    case .profilesUnreadable?:
+        fail(store.lastError!.englishDescription)
+    case let problem? where problem.isCatalogReadProblem:
+        print2("warning: \(problem.englishDescription)")
+    default:
+        break
+    }
+    return store
+}
+
 /// Resolves a profile handle — a name or the id `profile list` prints — or
 /// exits with a message.
 ///
@@ -258,7 +278,7 @@ func cmdSet(_ needle: String, _ specStr: String) {
 
 @MainActor
 func cmdProfileList() {
-    let store = ProfileStore()
+    let store = openCatalog()
     if store.profiles.isEmpty {
         print("(no profiles)")
         return
@@ -276,7 +296,7 @@ func cmdProfileList() {
 
 @MainActor
 func cmdProfileSave(_ name: String, args: [String]) {
-    let store = ProfileStore()
+    let store = openCatalog()
     // The name is checked first on purpose: it is wrong or right regardless of
     // what is plugged in, and answering "no displays connected" to someone who
     // typed a blank name is answering a question they did not ask.
@@ -322,7 +342,7 @@ func cmdProfileSave(_ name: String, args: [String]) {
 
 @MainActor
 func cmdProfileShow(_ name: String) {
-    let store = ProfileStore()
+    let store = openCatalog()
     let p = requireProfile(name, in: store)
     print("# \(p.name)\t(\(p.humanSummary))")
     for entry in p.entries {
@@ -346,7 +366,7 @@ func cmdProfileShow(_ name: String) {
 
 @MainActor
 func cmdProfileApply(_ name: String) {
-    let store = ProfileStore()
+    let store = openCatalog()
     let profile = requireProfile(name, in: store)
     let displays = DisplayManager.snapshot()
     let result = store.applyDetailed(profile, displays: displays)
@@ -379,7 +399,7 @@ func cmdProfileApply(_ name: String) {
 
 @MainActor
 func cmdProfileDelete(_ name: String) {
-    let store = ProfileStore()
+    let store = openCatalog()
     let profile = requireProfile(name, in: store)
     failOnRejection(store.delete(profile))
     print("deleted profile \"\(profile.name)\"")
@@ -387,7 +407,7 @@ func cmdProfileDelete(_ name: String) {
 
 @MainActor
 func cmdProfileUpdate(_ name: String) {
-    let store = ProfileStore()
+    let store = openCatalog()
     let profile = requireProfile(name, in: store)
     let displays = DisplayManager.snapshot()
     if let updated = store.updateFromCurrent(profile, displays: displays) {
@@ -399,7 +419,7 @@ func cmdProfileUpdate(_ name: String) {
 
 @MainActor
 func cmdProfileFlex(_ name: String) {
-    let store = ProfileStore()
+    let store = openCatalog()
     let profile = requireProfile(name, in: store)
     let displays = DisplayManager.snapshot()
     switch store.toggleFlexible(profile, displays: displays) {
@@ -411,12 +431,16 @@ func cmdProfileFlex(_ name: String) {
         fail(UserFacingProblem.profilesNotSaved.englishDescription)
     case .blockedNoExternal:
         fail("can't lock \"\(profile.name)\" — connect the external monitor first")
+    case .blockedSeveralExternals:
+        fail("can't make \"\(profile.name)\" flexible: only one of its monitors can match any external monitor")
+    case .notFound:
+        fail("that profile is no longer in the store")
     }
 }
 
 @MainActor
 func cmdProfileRename(_ old: String, _ new: String) {
-    let store = ProfileStore()
+    let store = openCatalog()
     var profile = requireProfile(old, in: store)
     let previousName = profile.name
     profile.name = new
