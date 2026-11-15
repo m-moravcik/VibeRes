@@ -272,4 +272,4 @@ VibeRes is free and open source. If it saves you time, you can [buy me a coffee]
 
 MIT — see [LICENSE](./LICENSE). Inspired by EasyRes by Chris Miles.
 
-Built by [Michal Moravčík](https://github.com/m-moravcik). [More projects](https://web.pexelo.com/portfolio).
+Built by [Michal Moravčík](https://github.com/m-moravcik). [More projects](https://build.pexelo.com/portfolio).

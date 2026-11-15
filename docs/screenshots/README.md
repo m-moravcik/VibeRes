@@ -18,7 +18,7 @@ in the old terms.
 
 ```sh
 scripts/screenshots.sh        # English, into build/screenshots/en
-scripts/screenshots.sh sk     # Slovak, for the web.pexelo portfolio
+scripts/screenshots.sh sk     # Slovak, for the build.pexelo portfolio
 ```
 
 The script builds Debug and runs the harness in
