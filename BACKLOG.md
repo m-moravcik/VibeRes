@@ -217,6 +217,14 @@ oldest log lines are left out first and the report says how many; if even
 that is too long, the form opens empty and the full report goes on the
 clipboard, which the Debug tab says.
 
+### Revert after the CLI and the Set Resolution intent
+VISION.md: a shortcut or script applies like the CLI, and Revert takes it
+back. Profiles, shortcuts and auto-apply record Revert; the `viberes` CLI
+(a separate process) and the Set Resolution App Intent (which calls the
+switcher directly) still record none, so Revert and ⌘Z afterwards offer the
+action before them. Open: how the CLI hands its change to the running app,
+and whether the intent should go through `DisplayStore` instead.
+
 ## Motion and polish audit (2026-11-13)
 
 A pass over the whole app with the motion-polish checklist. The popover

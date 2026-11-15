@@ -19,7 +19,7 @@ keeping — the competitive gap, the CoreGraphics pitfalls, the App Store
 decision — is carried forward below. The original is in git history.
 
 - **Current version:** 0.12.0
-- **Status of this document:** current as of 2026-11-14
+- **Status of this document:** current as of 2026-11-15
 
 ---
 
@@ -231,11 +231,16 @@ room to negotiate.
   keeps its setting. Profiles, shortcuts and auto-apply arm no
   countdown. The *timeout* is the safety net,
   not the button: someone looking at a black screen cannot click anything.
-  Explicit Revert ends that confirmation. Applying a profile ends it only
-  when the profile changes something, so an unsuccessful or unchanged apply
-  keeps the original safety net.
+  Explicit Revert ends that confirmation. A newer action (a profile,
+  auto-apply, Make main display) ends it only when it changes something, so
+  an unsuccessful or unchanged action keeps the original safety net. A click
+  on the mode already in use does nothing at all.
+- Sizes picked while a countdown runs are one trial: the countdown restarts,
+  **Keep** makes every pick of the trial permanent, and the timeout or Revert
+  takes each display back to its mode from before the trial.
 - Revert history is dropped when it would reference a display that is no longer
-  attached.
+  attached. A display unplugged during a countdown leaves the trial; the
+  countdown goes on for the displays still connected.
 
 *Evidence:* `Core/RevertHistory.swift`, `Core/RevertCountdown.swift`,
 `DisplayStore.performRevert`.
@@ -256,6 +261,8 @@ room to negotiate.
   user who just picked a mode by hand.
 - Nothing is announced when nothing actually changed. When something did, the
   popover says "Applied ..." if it is opened within 60 seconds.
+- What it changed is the last action: Revert takes it back, and it ends a
+  countdown that was running.
 
 *Evidence:* `ProfileStore.profileForAutoApply`, `ProfileStore.autoApply`,
 `DisplayStore.onAutoApplyNeeded`, `AutoApplyAnnouncement`.
@@ -473,6 +480,7 @@ Lowering the deployment target is mostly one line in `project.yml`:
 
 | Date | Change |
 |---|---|
+| 2026-11-15 | §4.6, §4.7: one countdown trial per run of picks; Make main and auto-apply end the countdown, auto-apply arms Revert |
 | 2026-11-14 | Version brought up to 0.12.0 |
 | 2026-11-13 | §4.11 Global shortcuts: optional per-profile and Revert shortcuts, unset by default |
 | 2026-11-13 | Version brought up to 0.11.1. Mirroring (after 1.0) and opt-in global hotkeys moved out of the non-goals |
