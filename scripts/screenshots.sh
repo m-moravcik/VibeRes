@@ -3,7 +3,7 @@
 # app itself. See VibeRes/Preview/ScreenshotHarness.swift.
 #
 #   scripts/screenshots.sh        # English, into build/screenshots/en
-#   scripts/screenshots.sh sk     # Slovak, for the web.pexelo portfolio
+#   scripts/screenshots.sh sk     # Slovak, for the build.pexelo portfolio
 #
 # Writes root, detail, save, revert, notes (the outcome note's three tones),
 # countdown (the Keep row with its draining bar part way),
