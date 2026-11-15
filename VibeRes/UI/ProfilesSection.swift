@@ -74,7 +74,7 @@ struct ProfilesSection: View {
         /// popover doesn't dismiss while the user reads.
         case confirmingApply(ConfirmApplyState)
         /// Deleting a profile is the one irreversible action in the app —
-        /// there is no undo and `⌘Z` is wired to display revert, not to the
+        /// there is no undo, and Revert undoes display changes, not the
         /// profile store. Inline for the same reason as `confirmingApply`: an
         /// NSAlert dismisses the popover out from under the question.
         case confirmingDelete(profileID: UUID, name: String)

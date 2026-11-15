@@ -226,7 +226,7 @@ private struct PreviewRow: View {
 /// Asks before deleting a profile.
 ///
 /// The one irreversible action in the app: there is no undo for a profile, and
-/// `⌘Z` is wired to display revert. Inline for the same reason as the apply
+/// Revert undoes display changes only. Inline for the same reason as the apply
 /// confirmation.
 struct ProfileDeleteConfirmation: View {
     let profileName: String

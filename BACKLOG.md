@@ -224,7 +224,7 @@ clipboard, which the Debug tab says.
 VISION.md: a shortcut or script applies like the CLI, and Revert takes it
 back. Profiles, shortcuts and auto-apply record Revert; the `viberes` CLI
 (a separate process) and the Set Resolution App Intent (which calls the
-switcher directly) still record none, so Revert and ⌘Z afterwards offer the
+switcher directly) still record none, so Revert afterwards offers the
 action before them. Open: how the CLI hands its change to the running app,
 and whether the intent should go through `DisplayStore` instead.
 

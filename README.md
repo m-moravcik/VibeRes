@@ -127,11 +127,11 @@ When you click a pill, a note under the pills shows the outcome. A green check m
 
 ### Editing a profile
 
-Right-click any pill to apply, update, rename, or delete. Delete asks first — there is no undo for a profile, and `⌘Z` undoes display changes, not profile ones. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile. When saving or editing, you can optionally choose which display becomes main (hosts the menu bar) when the profile applies; the default "Don't change" keeps today's behaviour. For a one-off change without a profile, drill into a display and hit **Make main display** — the menu bar moves there, relative positions stay put, and Revert takes it back.
+Right-click any pill to apply, update, rename, or delete. Delete asks first: there is no undo for a profile, and Revert undoes display changes, not profile ones. **Update with current setup** rewrites the profile's saved resolutions from whatever the displays are currently doing — useful when you've fine-tuned the setup and want to overwrite the snapshot without losing the profile's identity. **Make flexible / Make specific** flips external entries between EDID-locked and "any external" without recreating the profile. When saving or editing, you can optionally choose which display becomes main (hosts the menu bar) when the profile applies; the default "Don't change" keeps today's behaviour. For a one-off change without a profile, drill into a display and hit **Make main display** — the menu bar moves there, relative positions stay put, and Revert takes it back.
 
 ### Keyboard shortcuts
 
-Give a profile a global shortcut and it applies from any app, without opening VibeRes. Set one in the profile's Edit form (right-click the pill, **Edit…**) or in **Settings → Shortcuts**, which lists every profile and **Revert last change**. Nothing is set until you record one; for Revert, Settings offers ⌃⌥⌘R with one click.
+Give a profile a global shortcut and it applies from any app, without opening VibeRes. Set one in the profile's Edit form (right-click the pill, **Edit…**) or in **Settings → Shortcuts**, which lists every profile and **Revert last change**. Nothing is set until you record one; for Revert, Settings offers ⌃⌥⌘R with one click. Once the Revert shortcut is set and active, the popover shows it next to Revert.
 
 <p align="center">
   <picture>

@@ -810,9 +810,13 @@ struct DisplayDetailView: View {
 /// Footer rendered as a native-looking vertical menu list directly in the popover.
 /// Each row mimics NSMenuItem chrome: SF symbol on the left, label in the middle,
 /// keyboard shortcut on the right, accent-color highlight on hover. Real ⌘-shortcuts
-/// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
+/// are wired via `.keyboardShortcut` modifiers on the underlying buttons, except
+/// Revert, which names the global Revert shortcut instead.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
+    @Environment(Preferences.self) private var preferences
+    /// Optional: the offscreen demos render the footer without shortcuts.
+    @Environment(HotkeyCenter.self) private var hotkeys: HotkeyCenter?
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
@@ -835,20 +839,21 @@ private struct FooterBar: View {
                         icon: "arrow.uturn.backward.circle",
                         label: revertLabel,
                         detail: revertDetail,
-                        // The label was previously omitted because applying a
-                        // resolution dismissed the popover, so ⌘Z lost key focus
-                        // before anyone could press it. That dismissal was a bug
-                        // in the debounced refresh path and is fixed, so the
-                        // shortcut now works exactly when this row is visible
-                        // and can be advertised honestly.
-                        shortcut: "⌘Z",
+                        // One Revert shortcut: the global one the user sets in
+                        // Settings, which works with the popover open too. A
+                        // second, popover-only ⌘Z next to it read as two
+                        // different actions.
+                        shortcut: RevertRowShortcut.label(
+                            saved: preferences.revertHotkey,
+                            inactive: hotkeys?.inactive[.revert]
+                        ),
+                        shortcutIsGlobal: true,
                         action: {
                             store.performRevert()
                             // No toast — displays jump back, the row
                             // disappears, that's the feedback.
                         }
                     )
-                    .keyboardShortcut("z")
                     // Waits for Refresh and Settings to make room.
                     .transition(.row(reduceMotion: reduceMotion))
                 }
@@ -964,6 +969,18 @@ private struct FooterBar: View {
     }
 }
 
+/// What the popover's Revert row shows as its shortcut.
+@MainActor
+enum RevertRowShortcut {
+    /// The user's global Revert shortcut, once one is set and actually
+    /// registered; nothing otherwise. A combination another app holds does
+    /// not work, so naming it would promise something that does nothing.
+    static func label(saved: KeyCombo?, inactive: HotkeyProblem?) -> String? {
+        guard let saved, inactive == nil else { return nil }
+        return saved.localizedDisplayString()
+    }
+}
+
 private struct MenuRow: View {
     let icon: String
     /// A key, not a `String`: `Text(String)` is verbatim, which is how the
@@ -974,6 +991,9 @@ private struct MenuRow: View {
     /// tooltip and read by VoiceOver instead of the label.
     var detail: LocalizedStringKey? = nil
     let shortcut: String?
+    /// True when `shortcut` is a global hotkey rather than a
+    /// `.keyboardShortcut` on this button, so VoiceOver has to be told it.
+    var shortcutIsGlobal = false
     let action: () -> Void
     var isEnabled: Bool = true
 
@@ -999,7 +1019,7 @@ private struct MenuRow: View {
                     Text(shortcut)
                         .font(.system(size: 12).monospacedDigit())
                         .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.secondary))
-                        .accessibilityHidden(true) // VoiceOver already announces the keyboardShortcut
+                        .accessibilityHidden(true) // Announced by the keyboardShortcut or the value below
                 }
             }
             .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
@@ -1019,6 +1039,7 @@ private struct MenuRow: View {
         .onHover { isHovering = $0 }
         .help(ifPresent: detail)
         .accessibilityLabel(detail ?? label)
+        .accessibilityValue(Text(verbatim: shortcutIsGlobal ? shortcut ?? "" : ""))
     }
 }
 
