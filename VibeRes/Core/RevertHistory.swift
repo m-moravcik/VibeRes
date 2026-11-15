@@ -44,17 +44,18 @@ final class RevertHistory {
         }
     }
 
-    /// Capture the current state of one display before a user-initiated
-    /// apply. Replaces any pending entry for the same display so we always
-    /// undo the most recent action, never an older one.
+    /// Adds one display to the history without dropping the others. Used
+    /// when a pick joins a running countdown trial, and only for a display
+    /// the trial has not touched yet, so it keeps its pre-trial mode.
+    /// Replaces any pending entry for the same display.
     func record(displayID: CGDirectDisplayID, displayName: String, before: CGDisplayMode) {
         entries.removeAll { $0.displayID == displayID }
         entries.append(Entry(displayID: displayID, displayName: displayName, before: before))
     }
 
-    /// Capture multiple displays atomically — used when a single click
-    /// changes several monitors (profile apply). Replaces any prior history
-    /// so Revert undoes "the last action" not "the last single switch".
+    /// Capture a new action atomically: a profile apply, auto-apply, Make
+    /// main display, or a hand-pick outside a running trial. Replaces any
+    /// prior history so Revert undoes "the last action" alone.
     func recordBatch(
         _ batch: [(id: CGDirectDisplayID, name: String, before: CGDisplayMode)],
         beforeMain: CGDirectDisplayID? = nil

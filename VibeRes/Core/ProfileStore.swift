@@ -1015,8 +1015,9 @@ final class ProfileStore {
     private(set) var lastAutoApply: AutoApplyRecord?
 
     /// Applies the profile `profileForAutoApply` picks for `displays`, if
-    /// any. Called by the app when the display set changes or a wake settles
-    /// (`DisplayStore.onAutoApplyNeeded`), never from a view.
+    /// any. The app reaches it through `autoApply(for:)` when the display set
+    /// changes or a wake settles (`DisplayStore.onAutoApplyNeeded`), never
+    /// from a view.
     @discardableResult
     func autoApply(
         to displays: [DisplayInfo],
