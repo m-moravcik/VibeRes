@@ -10,7 +10,9 @@ don't keep re-deciding the same questions every few weeks.
 tour, confirmation on by default, the one-line Revert row) so it gets real
 use first. 1.0 is the polished core that says what happened, not more
 features. It ships these, then one break-it QA pass over the whole app and
-fresh README screenshots:
+fresh README screenshots. The list and the QA fixes shipped as 0.13.0
+(2026-11-15) for about a week of real use; 1.0 follows with the fresh
+screenshots:
 
 1. The safety countdown drains (motion audit item 2). Confirmation is on by
    default now, so every new user sees it.
