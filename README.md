@@ -192,7 +192,7 @@ Set `VIBERES_PROFILE_DIR` to read and write profiles somewhere other than
 `~/Library/Application Support/VibeRes` — useful for scripting against a
 throwaway set, and how the CLI's own tests avoid touching yours.
 
-Exit code is `0` for full success, `1` for an error (including a profile write failure), and `2` if anything fell back or was skipped. Easy to drop into shell pipelines or git hooks.
+Exit code is `0` for full success, `1` for an error (including a profile write failure or a profile catalog that cannot be read), and `2` if anything fell back or was skipped. Easy to drop into shell pipelines or git hooks.
 
 ---
 
