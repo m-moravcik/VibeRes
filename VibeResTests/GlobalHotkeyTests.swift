@@ -302,6 +302,27 @@ struct RevertHotkeyPreferenceTests {
         UserDefaults.standard.set(Data("not json".utf8), forKey: key)
         #expect(Preferences().revertHotkey == nil)
     }
+
+    /// scripts/screenshots.sh passes preferences as launch arguments and relies
+    /// on UserDefaults serving them from the argument domain without writing
+    /// anything. Reading the shortcut at launch must not save it.
+    @Test("Reading a shortcut passed as a launch argument does not save it")
+    func launchArgumentIsNotPersisted() throws {
+        let defaults = UserDefaults.standard
+        let domain = try #require(Bundle.main.bundleIdentifier)
+        let arguments = defaults.volatileDomain(forName: UserDefaults.argumentDomain)
+        defaults.removeObject(forKey: key)
+        defer {
+            defaults.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
+            defaults.removeObject(forKey: key)
+        }
+        var staged = arguments
+        staged[key] = try JSONEncoder().encode(KeyCombo.suggestedRevert)
+        defaults.setVolatileDomain(staged, forName: UserDefaults.argumentDomain)
+
+        #expect(Preferences().revertHotkey == .suggestedRevert)
+        #expect(defaults.persistentDomain(forName: domain)?[key] == nil)
+    }
 }
 
 /// Stands in for Carbon: records what is registered and lets a test decide

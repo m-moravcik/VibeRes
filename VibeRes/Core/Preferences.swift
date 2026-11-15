@@ -202,7 +202,10 @@ final class Preferences {
         self.debugLogLevel = (UserDefaults.standard.object(forKey: Self.debugLogLevelKey) as? Int)
             .flatMap(LogLevel.init(rawValue:)) ?? .info
         // Unreadable data reads as "no shortcut" rather than taking a guess.
-        self.revertHotkey = UserDefaults.standard.data(forKey: Self.revertHotkeyKey)
+        // Written to the backing storage: an Optional starts out nil, so `self`
+        // is fully initialised by now and `self.revertHotkey =` would run didSet
+        // and save a value that came from a launch argument.
+        self._revertHotkey = UserDefaults.standard.data(forKey: Self.revertHotkeyKey)
             .flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) }
         // didSet does not run in init, so hand the stored choice to the sink here.
         applyDebugLog()
