@@ -111,17 +111,47 @@ struct Profile: Identifiable, Codable, Hashable {
         case id, name, entries, createdAt, mainDisplay, hotkey
     }
 
+    /// Reads a profile leniently: what this version cannot read is dropped
+    /// and counted in the decoder's `CatalogDecodeReport`, never fatal to the
+    /// catalog (VISION: "a field the app cannot read is dropped, never the
+    /// whole catalog"). Only a profile with no id, no name, or entries none
+    /// of which can be read is refused, and then only that profile.
     init(from decoder: Decoder) throws {
+        let report = CatalogDecodeReport.of(decoder)
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         name = try c.decode(String.self, forKey: .name)
-        entries = try c.decode([Entry].self, forKey: .entries)
-        createdAt = try c.decode(Date.self, forKey: .createdAt)
-        mainDisplay = try c.decodeIfPresent(DisplayMatcher.self, forKey: .mainDisplay)
-        // A shortcut the app cannot read is dropped, not fatal: refusing it
-        // would make the whole catalog unreadable over the one field that is
-        // purely a convenience. The next save writes the profile without it.
-        hotkey = (try? c.decodeIfPresent(KeyCombo.self, forKey: .hotkey)) ?? nil
+        // One entry with a matcher kind from a newer version, or a hand-edit
+        // typo, costs that entry rather than the profile.
+        let lenient = try c.decode([Lenient<Entry>].self, forKey: .entries)
+        entries = lenient.compactMap(\.value)
+        if !lenient.isEmpty, entries.isEmpty {
+            throw DecodingError.dataCorruptedError(
+                forKey: .entries, in: c,
+                debugDescription: "none of the profile's entries could be read"
+            )
+        }
+        // The date only breaks auto-apply ties, so an unreadable one sorts
+        // last rather than costing the profile.
+        createdAt = Self.lenientField(Date.self, .createdAt, in: c, report: report) ?? .distantPast
+        mainDisplay = Self.lenientField(DisplayMatcher.self, .mainDisplay, in: c, report: report)
+        hotkey = Self.lenientField(KeyCombo.self, .hotkey, in: c, report: report)
+    }
+
+    /// The field's value, or `nil` when it is absent, `null`, or unreadable;
+    /// only the last counts as dropped.
+    private static func lenientField<T: Decodable>(
+        _ type: T.Type,
+        _ key: CodingKeys,
+        in c: KeyedDecodingContainer<CodingKeys>,
+        report: CatalogDecodeReport?
+    ) -> T? {
+        do {
+            return try c.decodeIfPresent(type, forKey: key)
+        } catch {
+            report?.dropped += 1
+            return nil
+        }
     }
 
     /// Per-display target. The matcher decides which live display this entry
@@ -291,6 +321,38 @@ struct Profile: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.mainDisplay = mainDisplay
         self.hotkey = hotkey
+    }
+}
+
+/// Counts what a lenient decode of the catalog had to leave out, so the store
+/// can say so and keep the original file before anything is saved over it.
+///
+/// Travels in the decoder's `userInfo`, which is how a nested `init(from:)`
+/// reports to whoever started the decode. `@unchecked Sendable` because
+/// `userInfo` requires it: a decode runs synchronously on the caller's thread
+/// and the report never outlives it.
+final class CatalogDecodeReport: @unchecked Sendable {
+    var dropped = 0
+
+    nonisolated static let key = CodingUserInfoKey(rawValue: "sk.moravcik.VibeRes.catalogDecodeReport")!
+
+    static func of(_ decoder: Decoder) -> CatalogDecodeReport? {
+        decoder.userInfo[key] as? CatalogDecodeReport
+    }
+}
+
+/// One element of an array decoded on its own: an element that fails yields
+/// `nil` and is counted, instead of failing the whole array.
+struct Lenient<Value: Decodable>: Decodable {
+    let value: Value?
+
+    init(from decoder: Decoder) throws {
+        do {
+            value = try Value(from: decoder)
+        } catch {
+            CatalogDecodeReport.of(decoder)?.dropped += 1
+            value = nil
+        }
     }
 }
 

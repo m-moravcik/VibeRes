@@ -314,10 +314,15 @@ struct ProfilesSection: View {
                             announce("'\(profile.name)' now matches any external monitor", tone: .info)
                         case .madeSpecific:
                             announce("'\(profile.name)' is locked to current monitors", tone: .info)
-                        case .failedToSave:
+                        case .failedToSave, .notFound:
+                            // A failed save shows the store's error row; a
+                            // profile another process deleted is already gone
+                            // from the list.
                             return
                         case .blockedNoExternal:
                             announce("Connect the external monitor first to lock '\(profile.name)' to it.", tone: .problem)
+                        case .blockedSeveralExternals:
+                            announce("Only one monitor in '\(profile.name)' can be set to 'match any external monitor'. Choose which one in Edit…", tone: .problem)
                         }
                     } onEdit: {
                         mode = .editing(buildInitialEditState(for: profile))

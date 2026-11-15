@@ -24,8 +24,12 @@ enum UserFacingProblem: Equatable {
     case mainDisplayAdjusted
     /// Revert restored the modes but could not put the menu bar back.
     case previousMainNotRestored
-    /// `profiles.json` is too large or does not decode.
-    case profilesUnreadable
+    /// `profiles.json` is too large, does not decode, or cannot be opened.
+    /// `keptAs` names the copy of the file kept beside it, when there is one.
+    case profilesUnreadable(keptAs: String?)
+    /// `profiles.json` decoded, but some profiles, entries or fields in it
+    /// could not be read and were left out. `keptAs` as above.
+    case profilesPartlyUnreadable(keptAs: String?)
     /// Writing `profiles.json` failed.
     case profilesNotSaved
     /// An error that is not one of ours. There is nothing to map, so the text
@@ -44,12 +48,29 @@ enum UserFacingProblem: Equatable {
             return "main display set, but macOS adjusted the arrangement"
         case .previousMainNotRestored:
             return "the previous main display could not be restored — macOS adjusted the arrangement"
-        case .profilesUnreadable:
-            return "Saved profiles look corrupted and were not loaded."
+        case .profilesUnreadable(let keptAs?):
+            return "Saved profiles could not be read. The original file is kept next to profiles.json as \(keptAs)."
+        case .profilesUnreadable(nil):
+            return "Saved profiles could not be read and were not loaded."
+        case .profilesPartlyUnreadable(let keptAs?):
+            return "Some saved profile settings could not be read and were left out. The original file is kept next to profiles.json as \(keptAs)."
+        case .profilesPartlyUnreadable(nil):
+            return "Some saved profile settings could not be read and were left out."
         case .profilesNotSaved:
             return "Failed to save profiles."
         case .other(let text):
             return text
+        }
+    }
+}
+
+extension UserFacingProblem {
+    /// True for a problem reading `profiles.json`. A successful save leaves
+    /// it up, where it clears a failed save's.
+    var isCatalogReadProblem: Bool {
+        switch self {
+        case .profilesUnreadable, .profilesPartlyUnreadable: return true
+        default: return false
         }
     }
 }

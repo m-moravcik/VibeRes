@@ -38,11 +38,32 @@ extension UserFacingProblem {
                 comment: "Revert put the modes back but could not move the menu bar back"
             ))
 
-        case .profilesUnreadable:
+        case .profilesUnreadable(nil):
             return String(localized: LocalizedStringResource(
                 "problem.profilesUnreadable",
                 defaultValue: "Saved profiles could not be read and were not loaded.",
                 comment: "profiles.json is too large, or does not decode"
+            ))
+
+        case .profilesUnreadable(let keptAs?):
+            return String(localized: LocalizedStringResource(
+                "problem.profilesUnreadable.keptAside",
+                defaultValue: "Saved profiles could not be read. The original file is kept next to profiles.json as \(keptAs).",
+                comment: "profiles.json does not decode; the argument is the file name of the untouched copy kept in the same folder"
+            ))
+
+        case .profilesPartlyUnreadable(nil):
+            return String(localized: LocalizedStringResource(
+                "problem.profilesPartlyUnreadable",
+                defaultValue: "Some saved profile settings could not be read and were left out.",
+                comment: "profiles.json decoded, but some profiles, displays or settings in it could not be read and were dropped"
+            ))
+
+        case .profilesPartlyUnreadable(let keptAs?):
+            return String(localized: LocalizedStringResource(
+                "problem.profilesPartlyUnreadable.keptAside",
+                defaultValue: "Some saved profile settings could not be read and were left out. The original file is kept next to profiles.json as \(keptAs).",
+                comment: "Some profiles, displays or settings in profiles.json were dropped; the argument is the file name of the untouched copy kept in the same folder"
             ))
 
         case .profilesNotSaved:

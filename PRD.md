@@ -212,9 +212,19 @@ against the code. "Evidence" names where it lives.
   connected set routes through an inline confirmation showing what will be
   skipped and what will be left alone. Global shortcuts follow §4.11.
 - Deleting a profile asks first. There is no undo for it.
+- A profile, entry or field the app cannot read is left out, never the whole
+  catalog. A profile is dropped only without an id, a name or any readable
+  entry. Before anything is saved over such a file, the original is copied
+  aside as `profiles-unreadable-<timestamp>.json`; when no copy can be made, or
+  the file is there but cannot be opened, saving is refused. The problem row
+  says what was left out and names the copy.
+- The app and the CLI share one `profiles.json`. Every change re-reads the file
+  first, and the app reloads it when another process changes it, so neither
+  writes a stale catalog over the other's edit.
 
 *Evidence:* `Core/Profile.swift`, `Core/ProfileStore.swift`,
-`Core/DisplaySetClassifier.swift`, `UI/ProfilesSection.swift`.
+`Core/CatalogWatcher.swift`, `Core/DisplaySetClassifier.swift`,
+`UI/ProfilesSection.swift`.
 
 ### 4.6 Not stranding the user
 
@@ -291,6 +301,9 @@ room to negotiate.
   tested — against a throwaway set.
 - A refused operation exits non-zero. It must never print success over a
   no-op.
+- A catalog that cannot be read at all fails every `profile` command with the
+  problem on stderr, never "(no profiles)"; a partly readable one prints a
+  warning to stderr and carries on.
 
 *Evidence:* `VibeResCLI/main.swift`.
 

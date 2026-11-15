@@ -4355,6 +4355,47 @@
         }
       }
     },
+    "Only one monitor in '%@' can be set to 'match any external monitor'. Choose which one in Edit…": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V „%@“ může být jen jeden monitor nastaven na „odpovídat libovolnému externímu monitoru“. Vyber který v Upravit…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In „%@“ darf nur ein Monitor auf „zu jedem externen Monitor passen“ gesetzt sein. Wähle ihn unter Bearbeiten…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only one monitor in '%@' can be set to 'match any external monitor'. Choose which one in Edit…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En “%@” solo un monitor puede configurarse como “coincidir con cualquier monitor externo”. Elige cuál en Editar…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans « %@ », un seul moniteur peut être réglé sur « correspondre à n’importe quel moniteur externe ». Choisissez lequel dans Modifier…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V „%@“ môže byť len jeden monitor nastavený na „zodpovedať ľubovoľnému externému monitoru“. Vyber ktorý v Upraviť…"
+          }
+        }
+      }
+    },
     "Open log file": {
       "extractionState": "manual",
       "localizations": {
@@ -10775,6 +10816,90 @@
         }
       }
     },
+    "problem.profilesPartlyUnreadable": {
+      "comment": "profiles.json decoded, but some profiles, displays or settings in it could not be read and were dropped",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Některá nastavení uložených profilů se nepodařilo načíst a byla vynechána."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einige gespeicherte Profileinstellungen konnten nicht gelesen werden und wurden ausgelassen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some saved profile settings could not be read and were left out."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algunos ajustes de los perfiles guardados no se pudieron leer y se omitieron."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certains réglages des profils enregistrés n’ont pas pu être lus et ont été ignorés."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niektoré nastavenia uložených profilov sa nepodarilo načítať a boli vynechané."
+          }
+        }
+      }
+    },
+    "problem.profilesPartlyUnreadable.keptAside": {
+      "comment": "Some profiles, displays or settings in profiles.json were dropped; the argument is the file name of the untouched copy kept in the same folder",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Některá nastavení uložených profilů se nepodařilo načíst a byla vynechána. Původní soubor zůstal vedle profiles.json jako %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einige gespeicherte Profileinstellungen konnten nicht gelesen werden und wurden ausgelassen. Die Originaldatei liegt neben profiles.json als %@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some saved profile settings could not be read and were left out. The original file is kept next to profiles.json as %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algunos ajustes de los perfiles guardados no se pudieron leer y se omitieron. El archivo original se conserva junto a profiles.json como %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certains réglages des profils enregistrés n’ont pas pu être lus et ont été ignorés. Le fichier d’origine est conservé à côté de profiles.json sous le nom %@."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niektoré nastavenia uložených profilov sa nepodarilo načítať a boli vynechané. Pôvodný súbor zostal vedľa profiles.json ako %@."
+          }
+        }
+      }
+    },
     "problem.profilesUnreadable": {
       "comment": "profiles.json is too large, or does not decode",
       "extractionState": "manual",
@@ -10813,6 +10938,48 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uložené profily sa nepodarilo načítať."
+          }
+        }
+      }
+    },
+    "problem.profilesUnreadable.keptAside": {
+      "comment": "profiles.json does not decode; the argument is the file name of the untouched copy kept in the same folder",
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložené profily se nepodařilo načíst. Původní soubor zůstal vedle profiles.json jako %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeicherte Profile konnten nicht gelesen werden. Die Originaldatei liegt neben profiles.json als %@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved profiles could not be read. The original file is kept next to profiles.json as %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron leer los perfiles guardados. El archivo original se conserva junto a profiles.json como %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les profils enregistrés n’ont pas pu être lus. Le fichier d’origine est conservé à côté de profiles.json sous le nom %@."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložené profily sa nepodarilo načítať. Pôvodný súbor zostal vedľa profiles.json ako %@."
           }
         }
       }
