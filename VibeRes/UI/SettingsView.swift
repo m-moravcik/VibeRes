@@ -14,6 +14,7 @@ struct SettingsView: View {
     /// True for a moment after "Copy diagnostics", so the button can say it worked
     /// in place instead of raising an alert.
     @State private var diagnosticsCopied = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Report a problem had to put the diagnostics on the clipboard, because
     /// they did not fit the link; says so until the next report.
     @State private var reportOnClipboard = false
@@ -259,10 +260,16 @@ struct SettingsView: View {
                     Button {
                         copyDiagnostics()
                     } label: {
-                        if diagnosticsCopied {
-                            Label("Copied", systemImage: "checkmark")
-                        } else {
-                            Text("Copy diagnostics")
+                        // One label whose symbol and words swap in place. Both
+                        // labels sit hidden underneath, so the button keeps the
+                        // wider one's width and the row stays still.
+                        ZStack {
+                            Label("Copy diagnostics", systemImage: "doc.on.doc").hidden()
+                            Label("Copied", systemImage: "checkmark").hidden()
+                            Label(diagnosticsCopied ? LocalizedStringKey("Copied") : "Copy diagnostics",
+                                  systemImage: diagnosticsCopied ? "checkmark" : "doc.on.doc")
+                                .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
+                                .animation(Design.Motion.quick, value: diagnosticsCopied)
                         }
                     }
                 }

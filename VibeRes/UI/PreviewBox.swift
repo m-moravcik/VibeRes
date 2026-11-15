@@ -18,6 +18,11 @@ struct PreviewBox: View {
     /// outline so the user reads "this is the chunk you'd actually see".
     var desktopImage: NSImage? = nil
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The proposed size, which the frames follow.
+    private var proposed: PointSize { PointSize(width: proposedWidth, height: proposedHeight) }
+
     var body: some View {
         let cur = CGSize(width: max(1, currentWidth), height: max(1, currentHeight))
         let prop = CGSize(width: max(1, proposedWidth), height: max(1, proposedHeight))
@@ -39,6 +44,28 @@ struct PreviewBox: View {
             // Inner (proposed mode) — either a flat tinted rect, or a
             // cropped slice of the live desktop image scaled into the
             // proposed mode's aspect.
+            proposedFrame(propFrame)
+                // Under Reduce Motion one size crossfades into the next
+                // instead of springing to it.
+                .id(reduceMotion ? AnyHashable(proposed) : AnyHashable(0))
+                .transition(.opacity.animation(Design.Motion.quick))
+        }
+        .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
+        // Under Reduce Motion the old frame fades out at its old size after
+        // the box has jumped, so keep it inside the box. Only then: a clip
+        // changes how the material and shadow render at rest.
+        .clipped(when: reduceMotion)
+        .padding(6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        // Moving down the size list, the proposed frame springs from one size
+        // to the next, so "bigger" or "smaller" reads as a change rather than
+        // a jump. Reduce Motion: the outline and box jump to their new size
+        // and only the crossfade above moves.
+        .animation(reduceMotion ? nil : Design.Motion.chip, value: proposed)
+    }
+
+    @ViewBuilder
+    private func proposedFrame(_ propFrame: CGSize) -> some View {
             if let image = desktopImage {
                 Image(nsImage: image)
                     .resizable()
@@ -58,10 +85,19 @@ struct PreviewBox: View {
                     )
                     .frame(width: propFrame.width, height: propFrame.height)
             }
+    }
+}
+
+private extension View {
+    /// Clips to the view's frame only when `active`. Fixed while Reduce Motion
+    /// stays put, so the branch does not swap identity mid-animation.
+    @ViewBuilder
+    func clipped(when active: Bool) -> some View {
+        if active {
+            clipped()
+        } else {
+            self
         }
-        .frame(width: max(curFrame.width, propFrame.width), height: max(curFrame.height, propFrame.height), alignment: .topLeading)
-        .padding(6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
     }
 }
 

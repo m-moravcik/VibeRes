@@ -226,7 +226,7 @@ the travelling MAIN badge and rate highlight, the pill checkmark bounce, the
 menu bar glyph moment, Reduce Motion handled throughout. What is left sits
 around it: the hover preview, the safety countdown, the global shortcuts that
 run with the popover closed, and the Settings window. Ranked by value for
-effort; none is built yet.
+effort; each item says when it was built.
 
 ### 1. Hover preview morphs between sizes
 - **Moment:** moving the pointer down the size list in a display's detail.
@@ -239,6 +239,9 @@ effort; none is built yet.
   and scales in from 0.96 on first hover (`rowIn` timing), out with `rowOut`.
 - **Reduce Motion:** the rectangle crossfades (`quick`); the box fades only.
 - **Effort:** S. `PreviewBox.swift`, `DisplayDetailView` overlay.
+- **Built 2026-11-14:** as above, except the box appears with `quick` at
+  once rather than `rowIn`: a hover preview answers the pointer, and the
+  0.2 s delay made it lag behind it.
 
 ### 2. The safety countdown drains
 - **Moment:** "Keep this resolution? Reverting in 12s" with Confirm
@@ -295,6 +298,8 @@ effort; none is built yet.
   confirmation symbol. No confetti.
 - **Reduce Motion:** no bounce, the crossfade stays.
 - **Effort:** XS. `OnboardingView.swift`.
+- **Built 2026-11-14.** The confirmation is now one view that shows rather
+  than a branch that appears, so the bounce sees the name change.
 
 ### 6. "Copied" in Settings swaps in place
 - **Moment:** Settings → Debug → Copy diagnostics.
@@ -303,6 +308,8 @@ effort; none is built yet.
   the checkmark replaces the text instead of cutting.
 - **Reduce Motion:** crossfade.
 - **Effort:** XS. `SettingsView.swift`.
+- **Built 2026-11-14:** one label, "Copy diagnostics" with a copy symbol
+  that swaps to "Copied" with a checkmark.
 
 ### Product suggestions (not motion)
 - **The Revert row wraps onto two lines.** "Revert Built-in Retina Display →

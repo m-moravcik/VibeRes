@@ -181,6 +181,7 @@ struct OnboardingView: View {
 private struct FirstProfileSaver: View {
     @Environment(ProfileStore.self) private var profiles
     @Environment(DisplayStore.self) private var displays
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var name = ""
     /// The name the profile was saved under, once it was.
@@ -217,11 +218,12 @@ private struct FirstProfileSaver: View {
         ZStack {
             // Laid out before saving too, with the name as typed, so the slot
             // is already tall enough for the confirmation's two lines.
-            if let savedName {
-                confirmation(savedName)
-            } else {
-                confirmation(canonicalName).hidden()
-            }
+            // One view that shows, not two branches: the checkmark's bounce
+            // needs to see `savedName` change on a view that was already
+            // there.
+            confirmation(savedName ?? canonicalName)
+                .opacity(savedName == nil ? 0 : 1)
+                .accessibilityHidden(savedName == nil)
             VStack(spacing: 6) {
                 HStack(spacing: 6) {
                     TextField(String(localized: "onboarding.save.field"), text: $name)
@@ -256,6 +258,10 @@ private struct FirstProfileSaver: View {
         .font(Design.Typography.note)
         .foregroundStyle(.secondary)
         .symbolRenderingMode(.multicolor)
+        // The first profile is the one milestone in the app: its checkmark
+        // bounces once, as a pill's does when it turns active. No confetti.
+        // Reduce Motion: no bounce, the crossfade stays.
+        .symbolEffect(.bounce, options: .nonRepeating, value: reduceMotion ? nil : savedName)
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
     }
