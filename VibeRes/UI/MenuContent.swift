@@ -846,6 +846,7 @@ private struct FooterBar: View {
                             saved: preferences.revertHotkey,
                             inactive: hotkeys?.inactive[.revert]
                         ),
+                        shortcutIsGlobal: true,
                         action: {
                             store.performRevert()
                             // No toast — displays jump back, the row
@@ -989,6 +990,9 @@ private struct MenuRow: View {
     /// tooltip and read by VoiceOver instead of the label.
     var detail: LocalizedStringKey? = nil
     let shortcut: String?
+    /// True when `shortcut` is a global hotkey rather than a
+    /// `.keyboardShortcut` on this button, so VoiceOver has to be told it.
+    var shortcutIsGlobal = false
     let action: () -> Void
     var isEnabled: Bool = true
 
@@ -1014,7 +1018,7 @@ private struct MenuRow: View {
                     Text(shortcut)
                         .font(.system(size: 12).monospacedDigit())
                         .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.secondary))
-                        .accessibilityHidden(true) // VoiceOver already announces the keyboardShortcut
+                        .accessibilityHidden(true) // Announced by the keyboardShortcut or the value below
                 }
             }
             .foregroundStyle(isHovering && isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
@@ -1034,6 +1038,7 @@ private struct MenuRow: View {
         .onHover { isHovering = $0 }
         .help(ifPresent: detail)
         .accessibilityLabel(detail ?? label)
+        .accessibilityValue(Text(verbatim: shortcutIsGlobal ? shortcut ?? "" : ""))
     }
 }
 
