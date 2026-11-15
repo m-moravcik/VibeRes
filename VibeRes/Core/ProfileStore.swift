@@ -1018,17 +1018,34 @@ final class ProfileStore {
     /// any. Called by the app when the display set changes or a wake settles
     /// (`DisplayStore.onAutoApplyNeeded`), never from a view.
     @discardableResult
-    func autoApply(to displays: [DisplayInfo], now: Date = Date()) -> ProfileApplyResult? {
+    func autoApply(
+        to displays: [DisplayInfo],
+        revert: RevertHistory? = nil,
+        now: Date = Date()
+    ) -> ProfileApplyResult? {
         guard let match = profileForAutoApply(displays) else {
             Log.autoApply.info("autoApply: no matching profile, skipping")
             return nil
         }
         Log.autoApply.info("autoApply: invoking applyDetailed across \(displays.count) display(s)", detail: "profile '\(match.name)'")
         let result = applyDetailed(match, displays: displays,
-                                   excludingFromAnyExternal: knownExternals(in: displays))
+                                   excludingFromAnyExternal: knownExternals(in: displays),
+                                   revert: revert)
         Log.autoApply.info("autoApply: outcomes=\(result.outcomes.count) didChange=\(result.didChangeAnything)")
         if result.didChangeAnything {
             lastAutoApply = AutoApplyRecord(profileName: match.name, date: now)
+        }
+        return result
+    }
+
+    /// Auto-apply as the app runs it on a display change. Like a profile from
+    /// the popover, Revert takes it back, and the countdown of a size picked
+    /// just before the dock cannot time out into what it set.
+    @discardableResult
+    func autoApply(for store: DisplayStore, now: Date = Date()) -> ProfileApplyResult? {
+        let result = autoApply(to: store.displays, revert: store.revert, now: now)
+        if result?.didChangeAnything == true {
+            store.endPendingConfirmation()
         }
         return result
     }

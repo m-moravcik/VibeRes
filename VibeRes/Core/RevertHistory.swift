@@ -73,6 +73,16 @@ final class RevertHistory {
         return snapshot
     }
 
+    /// Drops the entries for displays that are no longer connected, and the
+    /// previous main when it is one of them. Used while a trial of hand-picked
+    /// sizes is pending, so the displays still here keep their way back.
+    func forget(displaysOtherThan connected: Set<CGDirectDisplayID>) {
+        entries.removeAll { !connected.contains($0.displayID) }
+        if let main = beforeMainID, !connected.contains(main) {
+            beforeMainID = nil
+        }
+    }
+
     /// Drop history without applying anything. Called when external display
     /// state changes make a saved `before` mode stale.
     func clear() {

@@ -445,7 +445,15 @@ final class DisplayStore {
             nowMainID: nowMainID
         )
 
-        if transition.setChanged,
+        if transition.setChanged, !pendingConfirmations.isEmpty {
+            // A trial on a display that is gone has nothing left to keep or
+            // undo; the displays still here keep their countdown.
+            pendingConfirmations.removeAll { !nowIDs.contains($0.display) }
+            revert.forget(displaysOtherThan: nowIDs)
+            if pendingConfirmations.isEmpty {
+                endPendingConfirmation()
+            }
+        } else if transition.setChanged,
            revert.entries.contains(where: { !nowIDs.contains($0.displayID) })
             || revert.beforeMainID.map({ !nowIDs.contains($0) }) == true {
             revert.clear()
@@ -554,24 +562,42 @@ final class DisplayStore {
     }
 
     func apply(_ mode: CGDisplayMode, to display: CGDirectDisplayID, confirmFirst: Bool = false) {
+        let info = displays.first(where: { $0.id == display })
+        // A click on the mode already in use changes nothing, so it arms no
+        // countdown and leaves every older safety net as it was: a countdown
+        // over nothing would time out into an older action's Revert, and
+        // Keep would throw that Revert away.
+        guard info?.currentMode?.ioDisplayModeID != mode.ioDisplayModeID else {
+            Log.apply.info("apply: \(DisplayLabel.label(for: display)) already at \(mode.width)x\(mode.height), nothing to do", detail: info?.name)
+            return
+        }
+        // Sizes tried while a countdown runs are one trial: Keep keeps all of
+        // them, and the timeout or Revert takes each display back to the mode
+        // it had before the trial, never to a size nobody kept.
+        let joinsTrial = confirmFirst && !pendingConfirmations.isEmpty
         do {
-            // Capture the pre-change mode so a follow-up Revert click can
-            // restore it. Skip when the click is a no-op (mode === current).
-            let info = displays.first(where: { $0.id == display })
-            let changed = info?.currentMode?.ioDisplayModeID != mode.ioDisplayModeID
-            if changed, let info, let current = info.currentMode {
-                revert.record(displayID: display, displayName: info.name, before: current)
-            }
             // `.forSession` while awaiting confirmation: if the screen turns out
             // to be unreadable *and* the app is somehow unable to revert, a
             // reboot still recovers. Made permanent by `confirmDisplayChange()`.
             try applyMode(mode, display, confirmFirst ? .forSession : .permanently)
-            Log.apply.info("apply: \(DisplayLabel.label(for: display)) -> \(mode.width)x\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) changed=\(changed) confirmFirst=\(confirmFirst)", detail: info?.name)
+            Log.apply.info("apply: \(DisplayLabel.label(for: display)) -> \(mode.width)x\(mode.height) @ \(mode.refreshHz ?? 0)Hz hidpi=\(mode.isHiDPI) confirmFirst=\(confirmFirst) joinsTrial=\(joinsTrial)", detail: info?.name)
+            // Recorded only once the switch went through: a refused switch
+            // changed nothing and must not replace the Revert already armed.
+            if let info, let current = info.currentMode {
+                if joinsTrial {
+                    if !revert.entries.contains(where: { $0.displayID == display }) {
+                        revert.record(displayID: display, displayName: info.name, before: current)
+                    }
+                } else {
+                    // A new action: Revert undoes this pick alone, never an
+                    // older profile's other displays or its main display.
+                    endPendingConfirmation()
+                    revert.recordBatch([(id: display, name: info.name, before: current)])
+                }
+            }
             lastError = nil
             refresh()
-            if changed {
-                onModeSwitch?()
-            }
+            onModeSwitch?()
             if confirmFirst {
                 armConfirmation(mode: mode, display: display)
             }
@@ -604,7 +630,9 @@ final class DisplayStore {
             return
         }
         Log.apply.info("makeMain: display \(live.main) -> \(id)")
-        // Replaces prior history on purpose: Revert undoes the last action.
+        // A newer action: the countdown of an earlier pick must not time out
+        // into this one, and Revert undoes this one alone.
+        endPendingConfirmation()
         revert.recordBatch([], beforeMain: live.main)
         let after = liveArrangement()
         if after.main != id || !MainDisplayPlanner.verified(plan: plan, actualBounds: after.bounds) {
@@ -633,7 +661,9 @@ final class DisplayStore {
     var confirmationWindow: RevertCountdown.Window? {
         countdown.window
     }
-    private var pendingConfirmation: (mode: CGDisplayMode, display: CGDirectDisplayID)?
+    /// The hand-picked modes waiting for Keep, one per display, in the order
+    /// they were picked. Their modes before the trial are the Revert entries.
+    private var pendingConfirmations: [(mode: CGDisplayMode, display: CGDirectDisplayID)] = []
     private var countdownTask: Task<Void, Never>?
 
     /// How long the user gets. Long enough to notice an unreadable screen and
@@ -641,7 +671,8 @@ final class DisplayStore {
     static let confirmationWindowSeconds = 12
 
     private func armConfirmation(mode: CGDisplayMode, display: CGDirectDisplayID) {
-        pendingConfirmation = (mode, display)
+        pendingConfirmations.removeAll { $0.display == display }
+        pendingConfirmations.append((mode, display))
         countdown.arm(at: Date(), seconds: Self.confirmationWindowSeconds)
         confirmationSecondsRemaining = Self.confirmationWindowSeconds
 
@@ -672,15 +703,18 @@ final class DisplayStore {
         countdownTask = nil
         countdown.confirm()
         confirmationSecondsRemaining = nil
-        pendingConfirmation = nil
+        pendingConfirmations = []
     }
 
-    /// The user can see the screen and wants to keep it. Re-applies the same mode
-    /// permanently so the choice survives a reboot.
+    /// The user can see the screen and wants to keep it. Re-applies every mode
+    /// of the trial permanently so the choice survives a reboot, the first
+    /// display's as much as the last one's.
     func confirmDisplayChange() {
-        guard let pending = pendingConfirmation else { return }
+        guard !pendingConfirmations.isEmpty else { return }
         do {
-            try applyMode(pending.mode, pending.display, .permanently)
+            for pending in pendingConfirmations {
+                try applyMode(pending.mode, pending.display, .permanently)
+            }
         } catch {
             // The mode is still session-scoped and the screen may be
             // unreadable. Tearing down the countdown here would remove the

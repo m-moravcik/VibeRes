@@ -41,7 +41,7 @@ struct VibeResApp: App {
         // from a view, it waited until the popover was next opened.
         displays.onAutoApplyNeeded = { [weak displays, weak profiles] in
             guard let displays, let profiles, prefs.autoApplyOnDisplayChange else { return }
-            profiles.autoApply(to: displays.displays)
+            profiles.autoApply(for: displays)
         }
         // Global shortcuts. Nothing is registered until the user records one;
         // a unit-test host registers nothing at all, so a test run cannot take
