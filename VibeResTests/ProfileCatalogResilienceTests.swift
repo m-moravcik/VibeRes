@@ -144,6 +144,67 @@ struct ProfileCatalogResilienceTests {
         #expect(try Data(contentsOf: copies[0]) == original)
     }
 
+    @Test("A catalog where every profile was dropped is unreadable, not partly readable")
+    func everyProfileDroppedIsUnreadable() throws {
+        let dir = makeDirectory()
+        var json = try jsonCatalog([Profile(name: "Only", entries: [entry(lg, "LG")])])
+        json[0]["entries"] = [["matcher": ["kind": "hologram"]]]
+        let original = try write(json, to: dir)
+
+        let store = ProfileStore(directory: dir)
+
+        #expect(store.profiles.isEmpty)
+        guard case .profilesUnreadable(let keptAs?) = store.lastError else {
+            Issue.record("Nothing readable must be reported as unreadable, got \(String(describing: store.lastError))")
+            return
+        }
+        let copies = try keptCopies(in: dir)
+        #expect(copies.map(\.lastPathComponent) == [keptAs])
+        #expect(try Data(contentsOf: copies[0]) == original)
+    }
+
+    @Test("A symlinked catalog is read through the link, and a damaged one is kept as a real copy")
+    func symlinkedCatalogFollowed() throws {
+        let dir = makeDirectory()
+        let elsewhere = makeDirectory()
+        let target = elsewhere.appendingPathComponent("profiles.json")
+        let desk = Profile(name: "Desk", entries: [entry(lg, "LG")])
+        try JSONEncoder().encode([desk]).write(to: target)
+        try FileManager.default.createSymbolicLink(at: catalogURL(in: dir), withDestinationURL: target)
+
+        let store = ProfileStore(directory: dir)
+        #expect(store.profiles == [desk])
+        #expect(store.lastError == nil)
+        #expect(store.add(Profile(name: "Sofa", entries: [entry(acer, "Acer")])) == .saved)
+
+        let damaged = Data("not json at all".utf8)
+        try FileManager.default.removeItem(at: catalogURL(in: dir))
+        try damaged.write(to: target)
+        try FileManager.default.createSymbolicLink(at: catalogURL(in: dir), withDestinationURL: target)
+        let reread = ProfileStore(directory: dir)
+        guard case .profilesUnreadable(let keptAs?) = reread.lastError else {
+            Issue.record("A damaged symlinked catalog must be kept aside, got \(String(describing: reread.lastError))")
+            return
+        }
+        let copy = dir.appendingPathComponent(keptAs)
+        let type = try FileManager.default.attributesOfItem(atPath: copy.path)[.type] as? FileAttributeType
+        #expect(type == .typeRegular)
+        #expect(try Data(contentsOf: copy) == damaged)
+    }
+
+    @Test("A symlink to nothing reads as no catalog yet")
+    func danglingSymlinkIsMissing() throws {
+        let dir = makeDirectory()
+        try FileManager.default.createSymbolicLink(
+            at: catalogURL(in: dir),
+            withDestinationURL: dir.appendingPathComponent("nowhere.json"))
+
+        let store = ProfileStore(directory: dir)
+
+        #expect(store.profiles.isEmpty)
+        #expect(store.lastError == nil)
+    }
+
     // MARK: - Never save over what could not be read
 
     @Test("A wholly unreadable file is kept aside before the first save replaces it")

@@ -127,23 +127,22 @@ final class ProfileStore {
     }
 
     private func readDisk() -> DiskRead {
-        // FileManager rather than `URL.resourceValues`: a URL caches resource
+        // `stat` rather than `URL.resourceValues`: a URL caches resource
         // values for its lifetime, and this one lives as long as the store,
-        // so a reload would keep seeing the file as it was at launch.
-        let attributes: [FileAttributeKey: Any]
-        do {
-            attributes = try FileManager.default.attributesOfItem(atPath: storeURL.path)
-        } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
-            return .missing
-        } catch {
-            return .failed(Self.errorCode(error))
+        // so a reload would keep seeing the file as it was at launch. `stat`
+        // also follows a symlinked catalog to the file it points at, so the
+        // type and size checks describe what `Data(contentsOf:)` would read.
+        var info = stat()
+        guard stat(storeURL.path, &info) == 0 else {
+            let code = errno
+            return code == ENOENT ? .missing : .failed("errno \(code)")
         }
-        guard attributes[.type] as? FileAttributeType == .typeRegular else {
+        guard info.st_mode & S_IFMT == S_IFREG else {
             return .failed("not a regular file")
         }
         // Check the size before reading rather than after: the point is to not
         // pull an implausible file into memory on the main actor at launch.
-        let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
+        let size = Int(info.st_size)
         guard Self.isWithinSizeLimit(bytes: size) else { return .tooLarge(bytes: size) }
         do {
             return .data(try Data(contentsOf: storeURL))
@@ -185,7 +184,10 @@ final class ProfileStore {
                 if report.dropped > 0 {
                     Log.profiles.error("load: \(report.dropped) unreadable item(s) left out of the catalog")
                     unkeptDamage = true
-                    settle(catalog, problem: .profilesPartlyUnreadable(keptAs: keepDamagedFileAside()))
+                    let keptAs = keepDamagedFileAside()
+                    settle(catalog, problem: catalog.isEmpty
+                        ? .profilesUnreadable(keptAs: keptAs)
+                        : .profilesPartlyUnreadable(keptAs: keptAs))
                 } else {
                     unkeptDamage = false
                     settle(catalog, problem: nil)
@@ -221,10 +223,11 @@ final class ProfileStore {
     private func keepDamagedFileAside() -> String? {
         let fm = FileManager.default
         let directory = storeURL.deletingLastPathComponent()
+        let original = storeURL.resolvingSymlinksInPath()
         let existing = (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
         if let twin = existing.first(where: {
             $0.lastPathComponent.hasPrefix(Self.keptCopyPrefix)
-                && fm.contentsEqual(atPath: $0.path, andPath: storeURL.path)
+                && fm.contentsEqual(atPath: $0.path, andPath: original.path)
         }) {
             unkeptDamage = false
             return twin.lastPathComponent
@@ -239,7 +242,7 @@ final class ProfileStore {
             let name = "\(Self.keptCopyPrefix)\(stamp)\(suffix).json"
             do {
                 // `copyItem` fails rather than replace an existing file.
-                try fm.copyItem(at: storeURL, to: directory.appendingPathComponent(name))
+                try fm.copyItem(at: original, to: directory.appendingPathComponent(name))
                 Log.profiles.info("load: kept the unreadable catalog aside as \(name)")
                 unkeptDamage = false
                 return name

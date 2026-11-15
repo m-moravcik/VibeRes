@@ -192,6 +192,21 @@ struct CLIIntegrationTests {
         #expect(result.stderr.contains("left out"))
     }
 
+    @Test("A catalog with no readable profile is an error, not an empty list")
+    func noReadableProfileFails() throws {
+        let dir = try temporaryDirectory()
+        let data = try JSONEncoder().encode([profile("Work")])
+        var json = try #require(JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+        json[0]["entries"] = [["matcher": ["kind": "hologram"]]]
+        try JSONSerialization.data(withJSONObject: json)
+            .write(to: dir.appendingPathComponent("profiles.json"))
+
+        let result = try run(["profile", "list"], profileDirectory: dir)
+        #expect(result.status == 1)
+        #expect(!result.stdout.contains("(no profiles)"))
+        #expect(result.stderr.contains("could not be read"))
+    }
+
     // MARK: Refusals are reported
 
     @Test("A blank profile name is refused instead of reported as saved")
