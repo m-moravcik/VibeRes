@@ -226,7 +226,7 @@ the travelling MAIN badge and rate highlight, the pill checkmark bounce, the
 menu bar glyph moment, Reduce Motion handled throughout. What is left sits
 around it: the hover preview, the safety countdown, the global shortcuts that
 run with the popover closed, and the Settings window. Ranked by value for
-effort; none is built yet.
+effort; each item says when it was built.
 
 ### 1. Hover preview morphs between sizes
 - **Moment:** moving the pointer down the size list in a display's detail.
