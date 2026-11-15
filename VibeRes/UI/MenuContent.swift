@@ -813,6 +813,9 @@ struct DisplayDetailView: View {
 /// are wired via `.keyboardShortcut` modifiers on the underlying buttons.
 private struct FooterBar: View {
     @Environment(DisplayStore.self) private var store
+    @Environment(Preferences.self) private var preferences
+    /// Optional: the offscreen demos render the footer without shortcuts.
+    @Environment(HotkeyCenter.self) private var hotkeys: HotkeyCenter?
     @Environment(UpdateStatus.self) private var updateStatus
     @Environment(\.updater) private var updater
     @Environment(\.openSettings) private var openSettings
@@ -835,20 +838,20 @@ private struct FooterBar: View {
                         icon: "arrow.uturn.backward.circle",
                         label: revertLabel,
                         detail: revertDetail,
-                        // The label was previously omitted because applying a
-                        // resolution dismissed the popover, so ⌘Z lost key focus
-                        // before anyone could press it. That dismissal was a bug
-                        // in the debounced refresh path and is fixed, so the
-                        // shortcut now works exactly when this row is visible
-                        // and can be advertised honestly.
-                        shortcut: "⌘Z",
+                        // One Revert shortcut: the global one the user sets in
+                        // Settings, which works with the popover open too. A
+                        // second, popover-only ⌘Z next to it read as two
+                        // different actions.
+                        shortcut: RevertRowShortcut.label(
+                            saved: preferences.revertHotkey,
+                            inactive: hotkeys?.inactive[.revert]
+                        ),
                         action: {
                             store.performRevert()
                             // No toast — displays jump back, the row
                             // disappears, that's the feedback.
                         }
                     )
-                    .keyboardShortcut("z")
                     // Waits for Refresh and Settings to make room.
                     .transition(.row(reduceMotion: reduceMotion))
                 }
@@ -961,6 +964,18 @@ private struct FooterBar: View {
             .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1",
         ])
         NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+/// What the popover's Revert row shows as its shortcut.
+@MainActor
+enum RevertRowShortcut {
+    /// The user's global Revert shortcut, once one is set and actually
+    /// registered; nothing otherwise. A combination another app holds does
+    /// not work, so naming it would promise something that does nothing.
+    static func label(saved: KeyCombo?, inactive: HotkeyProblem?) -> String? {
+        guard let saved, inactive == nil else { return nil }
+        return saved.localizedDisplayString()
     }
 }
 

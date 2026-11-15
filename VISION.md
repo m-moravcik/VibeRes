@@ -16,7 +16,7 @@ Motion has a job (confirm, locate, show progress, connect two states), uses the 
 
 ## Never strand the user
 
-A resolution change can make the screen unreadable, so every risky path has a way back that needs no sight: Revert, ⌘Z, the Revert shortcut, the confirmation timeout.
+A resolution change can make the screen unreadable, so every risky path has a way back that needs no sight: Revert, the Revert shortcut, the confirmation timeout.
 The confirmation timeout is on by default, so a black screen undoes itself even for someone who never opened Settings.
 It guards a size picked by hand; a profile, a shortcut or auto-apply applies modes the user saved after seeing them work, and arms no countdown.
 A newer action never lets an older safety net act on it, and a safety net is never dropped by an action that changed nothing.

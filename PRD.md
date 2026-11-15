@@ -231,7 +231,7 @@ against the code. "Evidence" names where it lives.
 This is principle 2 made concrete, and it is the requirement with the least
 room to negotiate.
 
-- **Revert** (`⌘Z`, or the footer row) undoes the last action — one display or
+- **Revert** (the footer row, or the Revert shortcut once set) undoes the last action — one display or
   a whole profile, including the main-display change. A revert that fails keeps
   the entry so it can be tried again, and reports only what actually came back.
 - **Confirm resolution changes** applies a size or rate picked by hand for the

@@ -1008,6 +1008,14 @@ struct HotkeyRetryTests {
         #expect(registrar.live.isEmpty)
     }
 
+    @Test("The popover's Revert row names the global Revert shortcut only once it is set and working")
+    func revertRowShowsTheOneShortcut() {
+        // No ⌘Z of its own: one Revert shortcut, the one the user chose.
+        #expect(RevertRowShortcut.label(saved: nil, inactive: nil) == nil)
+        #expect(RevertRowShortcut.label(saved: comboA, inactive: nil) == comboA.localizedDisplayString())
+        #expect(RevertRowShortcut.label(saved: comboA, inactive: .usedByAnotherApp) == nil)
+    }
+
     @Test("Stopping a recording clears its refusal, so the saved shortcut's state shows again")
     func stopClearsRefusal() {
         var session = RecorderSession(isRecording: true, problem: .usedByRevert)
