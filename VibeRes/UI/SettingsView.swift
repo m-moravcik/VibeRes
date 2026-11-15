@@ -116,8 +116,9 @@ struct SettingsView: View {
                         // quietly leaving the setting off.
                         preferences.launchAtLoginIntent = newValue
                         loginChangeFailed = !LoginItem.setEnabled(newValue)
-                        // SMAppService applies async; give it a runloop tick
-                        // before reading the canonical state back.
+                        loginStatus = LoginItem.status
+                        // Read again a runloop tick later, in case macOS
+                        // settles the registration after the call returns.
                         Task { @MainActor in
                             try? await Task.sleep(for: .milliseconds(150))
                             loginStatus = LoginItem.status

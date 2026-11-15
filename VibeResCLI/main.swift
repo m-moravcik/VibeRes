@@ -159,7 +159,7 @@ func mainKindLabel(_ matcher: DisplayMatcher) -> String {
 
 func cmdHelp() {
     let help = """
-    viberes — VibeRes command-line companion
+    viberes: VibeRes command-line companion
 
     Usage:
       viberes list                              List all connected displays
