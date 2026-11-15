@@ -18,7 +18,7 @@ which survived contact with the implementation. The reasoning that was worth
 keeping — the competitive gap, the CoreGraphics pitfalls, the App Store
 decision — is carried forward below. The original is in git history.
 
-- **Current version:** 0.12.0
+- **Current version:** 0.13.0
 - **Status of this document:** current as of 2026-11-15
 
 ---
@@ -503,6 +503,7 @@ Lowering the deployment target is mostly one line in `project.yml`:
 
 | Date | Change |
 |---|---|
+| 2026-11-15 | Version brought up to 0.13.0 |
 | 2026-11-15 | §4.6, §4.11: one Revert shortcut, the global one; the popover's Revert row shows it once set, no ⌘Z |
 | 2026-11-15 | §4.6, §4.7: one countdown trial per run of picks; Make main and auto-apply end the countdown, auto-apply arms Revert |
 | 2026-11-14 | Version brought up to 0.12.0 |
