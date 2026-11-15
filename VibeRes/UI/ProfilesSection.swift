@@ -444,7 +444,7 @@ struct ProfilesSection: View {
             .map(\.name)
         let listed = Set(names).sorted().joined(separator: ", ")
         announce(
-            "Saved, but \(listed) report the same identity — this profile cannot tell them apart and will set both the same way.",
+            "Saved, but \(listed) report the same identity. This profile cannot tell them apart and will set both the same way.",
             tone: .fallback
         )
     }
@@ -452,10 +452,8 @@ struct ProfilesSection: View {
     /// Says "VRR" where the display also offers the fixed rate, so the save
     /// form shows which of the two the profile will remember.
     private func currentModeDescription(_ m: CGDisplayMode, on display: DisplayInfo) -> String {
-        var parts = ["\(m.width)×\(m.height)"]
-        if let hz = m.refreshHz { parts.append(display.isVRRTwin(m) ? "\(hz)Hz VRR" : "\(hz)Hz") }
-        if m.isHiDPI { parts.append("HiDPI") }
-        return parts.joined(separator: " · ")
+        ModeSummary.text(width: m.width, height: m.height, refreshHz: m.refreshHz,
+                         isVRR: display.isVRRTwin(m), isHiDPI: m.isHiDPI)
     }
 
     /// Performs the actual apply on a background task and announces the
@@ -772,13 +770,13 @@ struct ProfilesSection: View {
                 // replaceEntries just saved, but the profile vanished before
                 // the re-fetch — unreachable in practice, but the prior code
                 // announced success here regardless.
-                announce("Could not update the profile — it no longer exists.", tone: .problem)
+                announce("Could not update the profile. It no longer exists.", tone: .problem)
                 mode = .idle
             }
         case .failedToSave:
             return
         case .rejectedMultipleAnyExternal:
-            announce("Only one entry can match 'any external monitor' — remove or lock the duplicates first.", tone: .problem)
+            announce("Only one entry can match 'any external monitor'. Remove or lock the duplicates first.", tone: .problem)
         case .rejectedEmpty:
             announce("Keep at least one entry to save the profile.", tone: .problem)
         case .rejectedDuplicateName(let name):
@@ -786,7 +784,7 @@ struct ProfilesSection: View {
         case .rejectedEmptyName:
             announce("Give the profile a name.", tone: .problem)
         case .rejectedNotFound:
-            announce("Could not update the profile — it no longer exists.", tone: .problem)
+            announce("Could not update the profile. It no longer exists.", tone: .problem)
             mode = .idle
         }
     }
@@ -835,7 +833,7 @@ struct ProfilesSection: View {
         case .failedToSave:
             return
         case .rejectedMultipleAnyExternal:
-            announce("Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.", tone: .problem)
+            announce("Only one display can be set to 'match any external monitor'. Lock the others to a specific monitor instead.", tone: .problem)
         case .rejectedEmpty:
             announce("Pick at least one display to save.", tone: .problem)
         case .rejectedDuplicateName(let name):
@@ -845,7 +843,7 @@ struct ProfilesSection: View {
         case .rejectedEmptyName:
             announce("Give the profile a name.", tone: .problem)
         case .rejectedNotFound:
-            announce("Could not save the profile — it is no longer in the list.", tone: .problem)
+            announce("Could not save the profile. It is no longer in the list.", tone: .problem)
         }
     }
 

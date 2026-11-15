@@ -22,7 +22,7 @@ enum ResolutionSwitcher {
             let code: CGError
             switch self {
             case .originCoverage:
-                return "the display set changed while applying — arrangement left unchanged"
+                return "the display set changed while applying; arrangement left unchanged"
             case .beginConfig(let c), .applyMode(let c), .completeConfig(let c), .applyOrigin(let c):
                 code = c
             }
@@ -33,7 +33,7 @@ enum ResolutionSwitcher {
             let explanation: String
             switch code {
             case .cannotComplete:
-                explanation = "macOS refused the change — the display may be busy, try again"
+                explanation = "macOS refused the change; the display may be busy, try again"
             case .rangeCheck, .illegalArgument:
                 explanation = "that mode is not supported by this display"
             case .invalidConnection, .invalidContext, .invalidOperation:

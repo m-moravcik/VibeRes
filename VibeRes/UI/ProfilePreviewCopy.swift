@@ -75,7 +75,7 @@ extension ProfileApplyPreview.Row {
         case .skippedNotConnected:
             return String(localized: LocalizedStringResource(
                 "preview.row.notConnected",
-                defaultValue: "not connected — skip",
+                defaultValue: "not connected: skip",
                 comment: "The entry's display is not attached, so it will be skipped"
             ))
 

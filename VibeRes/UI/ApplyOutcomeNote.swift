@@ -326,7 +326,7 @@ extension ApplyOutcomeNote.Detail {
         case .mainNotConnected:
             return String(localized: LocalizedStringResource(
                 "note.detail.mainNotConnected",
-                defaultValue: "Main display unchanged — the saved display is not connected",
+                defaultValue: "Main display unchanged: the saved display is not connected",
                 locale: locale,
                 comment: "The profile's main display is not attached"
             ))
@@ -334,7 +334,7 @@ extension ApplyOutcomeNote.Detail {
         case let .mainAmbiguous(count):
             return String(localized: LocalizedStringResource(
                 "note.detail.mainAmbiguous",
-                defaultValue: "Main display unchanged — \(count) connected displays match",
+                defaultValue: "Main display unchanged: \(count) connected displays match",
                 locale: locale,
                 comment: "Several displays match the saved main. 1: how many"
             ))
@@ -342,7 +342,7 @@ extension ApplyOutcomeNote.Detail {
         case .mainMirrored:
             return String(localized: LocalizedStringResource(
                 "note.detail.mainMirrored",
-                defaultValue: "Main display unchanged — displays are mirrored",
+                defaultValue: "Main display unchanged: displays are mirrored",
                 locale: locale,
                 comment: "Arrangement is not touched while mirroring is on"
             ))

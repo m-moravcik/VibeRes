@@ -43,11 +43,11 @@ enum UserFacingProblem: Equatable {
         case .switchFailed(let failure):
             return failure.userFacingDescription
         case .mirroredArrangement:
-            return "displays are mirrored — main display left unchanged"
+            return "displays are mirrored; main display left unchanged"
         case .mainDisplayAdjusted:
             return "main display set, but macOS adjusted the arrangement"
         case .previousMainNotRestored:
-            return "the previous main display could not be restored — macOS adjusted the arrangement"
+            return "the previous main display could not be restored; macOS adjusted the arrangement"
         case .profilesUnreadable(let keptAs?):
             return "Saved profiles could not be read. The original file is kept next to profiles.json as \(keptAs)."
         case .profilesUnreadable(nil):

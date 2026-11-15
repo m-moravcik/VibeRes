@@ -115,7 +115,7 @@ func requireProfile(_ needle: String, in store: ProfileStore) -> Profile {
         fail("no profile named \"\(needle)\"")
     case .ambiguous(let count):
         fail("""
-        \(count) profiles are named "\(needle)" — rename one, or address it by id:
+        \(count) profiles are named "\(needle)". Rename one, or address it by id:
           viberes profile list
         """)
     }
@@ -139,7 +139,7 @@ func failOnRejection(_ result: ProfileStore.SaveResult) {
     case .rejectedEmpty:
         fail("no displays selected for the profile")
     case .rejectedMultipleAnyExternal:
-        fail("a profile can have at most one 'any external' entry — remove --any-external from one of the displays")
+        fail("a profile can have at most one 'any external' entry; remove --any-external from one of the displays")
     }
 }
 
@@ -159,7 +159,7 @@ func mainKindLabel(_ matcher: DisplayMatcher) -> String {
 
 func cmdHelp() {
     let help = """
-    viberes — VibeRes command-line companion
+    viberes: VibeRes command-line companion
 
     Usage:
       viberes list                              List all connected displays
@@ -334,7 +334,7 @@ func cmdProfileSave(_ name: String, args: [String]) {
     switch result {
     case .savedWithMissingDisplays(let count):
         // Worth saying in a script too: the profile is smaller than asked for.
-        print("saved profile \"\(name)\" — \(count) selected display(s) were not connected and were skipped")
+        print("saved profile \"\(name)\"; \(count) selected display(s) were not connected and were skipped")
     default:
         print("saved profile \"\(name)\" with \(selection.count) display\(selection.count == 1 ? "" : "s")")
     }
@@ -430,7 +430,7 @@ func cmdProfileFlex(_ name: String) {
     case .failedToSave:
         fail(UserFacingProblem.profilesNotSaved.englishDescription)
     case .blockedNoExternal:
-        fail("can't lock \"\(profile.name)\" — connect the external monitor first")
+        fail("can't lock \"\(profile.name)\": connect the external monitor first")
     case .blockedSeveralExternals:
         fail("can't make \"\(profile.name)\" flexible: only one of its monitors can match any external monitor")
     case .notFound:

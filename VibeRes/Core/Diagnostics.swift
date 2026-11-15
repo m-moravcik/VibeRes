@@ -49,7 +49,8 @@ enum Diagnostics {
     /// Reads the live state. Main actor because the preferences and stores are.
     @MainActor
     static func collect(
-        preferences: Preferences, displays: [DisplayInfo], profileCount: Int, log: LogSink = .shared
+        preferences: Preferences, displays: [DisplayInfo], profileCount: Int, log: LogSink = .shared,
+        loginItem: LoginItem.Status = LoginItem.status
     ) -> Report {
         func onOff(_ value: Bool) -> String { value ? "on" : "off" }
         let info = Bundle.main.infoDictionary
@@ -64,7 +65,9 @@ enum Diagnostics {
                 ("Confirm resolution changes", onOff(preferences.confirmDisplayChanges)),
                 ("Auto-apply matching profile", onOff(preferences.autoApplyOnDisplayChange)),
                 ("Live preview on hover", onOff(preferences.livePreviewEnabled)),
-                ("Launch at login", onOff(preferences.launchAtLoginIntent ?? false)),
+                // What macOS reports, with the wish beside it when they
+                // differ: the intent alone hid a registration that failed.
+                ("Launch at login", Self.loginItemLabel(loginItem, intent: preferences.launchAtLoginIntent)),
                 ("Revert shortcut", onOff(preferences.revertHotkey != nil)),
                 ("Debug log", preferences.debugLogEnabled ? preferences.debugLogLevel.label.lowercased() : "off"),
             ],
@@ -73,6 +76,12 @@ enum Diagnostics {
             logLines: log.lastLines(logLineCount),
             logEnabled: preferences.debugLogEnabled
         )
+    }
+
+    static func loginItemLabel(_ status: LoginItem.Status, intent: Bool?) -> String {
+        let label = LoginItem.diagnosticLabel(status)
+        guard let intent, intent != (status == .enabled) else { return label }
+        return "\(label) (wanted \(intent ? "on" : "off"))"
     }
 
     /// `hw.model` ("MacBookPro18,3", "Mac15,6"): the model identifier, not the serial.

@@ -338,7 +338,10 @@ room to negotiate.
   Carbon reports only exclusive registrations, so a clash with an app that
   registered without exclusivity goes unnoticed.
 - A saved shortcut that cannot be registered at launch (taken since, or
-  hand-edited) is visibly marked not active, never silently dead.
+  hand-edited) is visibly marked not active, never silently dead. One held
+  by another app or refused by macOS is tried again whenever the running
+  apps change (an app quitting frees its combinations), never while a
+  recorder listens.
 - Registered with Carbon `RegisterEventHotKey`, exclusively: no Accessibility
   permission, no dependency. Every shortcut is released while one is being
   recorded, so an existing combination can be recorded again.
@@ -399,7 +402,11 @@ room to negotiate.
 
 - Launch at login via `SMAppService`, with the user's *intent* stored
   separately so a registration invalidated by an update or a move is
-  re-registered rather than silently forgotten.
+  re-registered rather than silently forgotten. It is never re-registered
+  over a switch-off in System Settings → Login Items: only the user can undo
+  that. The Settings toggle and Diagnostics show what macOS reports, not the
+  stored intent; a note under the toggle explains a switch-off there, with a
+  button that opens Login Items, or says that a change did not take.
 - A three-step welcome tour on first launch, replayable from Settings. Its
   profile step offers the [first-profile workflow](README.md#profiles).
 - Settings in a standard `⌘,` scene: General, Display, Shortcuts, Updates,

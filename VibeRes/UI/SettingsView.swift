@@ -18,7 +18,8 @@ struct SettingsView: View {
     /// Report a problem had to put the diagnostics on the clipboard, because
     /// they did not fit the link; says so until the next report.
     @State private var reportOnClipboard = false
-    @State private var launchAtLogin: Bool = LoginItem.isEnabled
+    @State private var loginStatus: LoginItem.Status = LoginItem.status
+    @State private var loginChangeFailed = false
     /// Forces the TabView to start on General every time the Settings
     /// window is opened. SwiftUI keeps the SettingsView instance alive
     /// across opens, so without this the user would land on whichever
@@ -63,40 +64,72 @@ struct SettingsView: View {
         // longest language.
         .frame(width: 470, height: 490)
         .task {
-            // Prefer the recorded intent: if the registration was invalidated
-            // and re-registration failed, the toggle should still show what the
-            // user asked for rather than silently reverting to off.
-            launchAtLogin = preferences.launchAtLoginIntent ?? LoginItem.isEnabled
+            // What macOS says now. A registration that went missing shows as
+            // off with a note, not as the intent's "on".
+            loginStatus = LoginItem.status
+            loginChangeFailed = false
             // Reset on every appear — covers re-opens after close.
             selectedTab = .general
+        }
+        // Back from System Settings, where the user may have switched VibeRes
+        // on or off under Login Items.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            loginStatus = LoginItem.status
         }
     }
 
     // MARK: General
 
     @ViewBuilder
+    private func loginItemNote(_ note: LoginItem.Note) -> some View {
+        switch note {
+        case .needsApproval:
+            HStack(alignment: .firstTextBaseline) {
+                Text("VibeRes is switched off in System Settings, so it does not open at login.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button("Open System Settings…") { LoginItem.openSystemSettings() }
+                    .controlSize(.small)
+            }
+        case .couldNotChange:
+            Text("Launch at login could not be changed. Try again.")
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
+    }
+
+    @ViewBuilder
     private func generalTab(prefs: Bindable<Preferences>) -> some View {
         Form {
             Section {
+                // Shows what macOS reports, not what was asked for: a toggle
+                // that stayed on over a failed registration said VibeRes
+                // would open at login when it would not.
                 Toggle("Launch at login", isOn: Binding(
-                    get: { launchAtLogin },
+                    get: { LoginItem.toggleIsOn(loginStatus) },
                     set: { newValue in
                         // Record the intent before touching the service. It is
                         // what the user asked for and has to outlive a failed
                         // registration, so the next launch can retry instead of
                         // quietly leaving the setting off.
                         preferences.launchAtLoginIntent = newValue
-                        launchAtLogin = newValue
-
-                        guard LoginItem.setEnabled(newValue) else { return }
-                        // SMAppService applies async — give it a runloop
-                        // tick before reading the canonical state back.
+                        loginChangeFailed = !LoginItem.setEnabled(newValue)
+                        loginStatus = LoginItem.status
+                        // Read again a runloop tick later, in case macOS
+                        // settles the registration after the call returns.
                         Task { @MainActor in
                             try? await Task.sleep(for: .milliseconds(150))
-                            launchAtLogin = LoginItem.isEnabled
+                            loginStatus = LoginItem.status
                         }
                     }
                 ))
+                if let note = LoginItem.note(status: loginStatus,
+                                             storedIntent: preferences.launchAtLoginIntent,
+                                             lastChangeFailed: loginChangeFailed) {
+                    loginItemNote(note)
+                }
             } header: {
                 Text("Startup")
             }

@@ -470,17 +470,31 @@ struct DisplayDetailView: View {
 
     // MARK: Header
 
+    private var navTitle: some View {
+        Text(display?.name ?? "Display")
+            .font(Design.Typography.navTitle)
+            .lineLimit(1)
+    }
+
     private var navHeader: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Text(display?.name ?? "Display")
-                    .font(Design.Typography.navTitle)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
-
-                HStack {
+            // Centred while the title fits between the back button and an
+            // invisible copy of it on the other side; otherwise it follows
+            // the button, leading-aligned, and truncates. Centring across the
+            // full width in a ZStack drew a long title under "Zurück".
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Design.Spacing.s) {
                     BackButton { dismiss() }
-                    Spacer()
+                    navTitle.frame(maxWidth: .infinity)
+                    // A label, not a second button: BackButton carries the
+                    // cancel shortcut, which must have one owner.
+                    BackButtonLabel(isHovering: false)
+                        .hidden()
+                        .accessibilityHidden(true)
+                }
+                HStack(spacing: Design.Spacing.s) {
+                    BackButton { dismiss() }
+                    navTitle.frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding(.horizontal, Design.Spacing.m)
@@ -601,7 +615,7 @@ struct DisplayDetailView: View {
         .controlSize(.small)
         .labelsHidden()
         .fixedSize()
-        .help("'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors.")
+        .help("'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping. Typical for non-Retina external monitors.")
     }
 
     private func makeMainButton(for display: DisplayInfo) -> some View {
@@ -619,7 +633,7 @@ struct DisplayDetailView: View {
         }
         .buttonStyle(PillButtonStyle())
         .fixedSize()
-        .help("Moves the menu bar and Dock to this display. The arrangement only shifts — relative positions are preserved.")
+        .help("Moves the menu bar and Dock to this display. The arrangement only shifts. Relative positions are preserved.")
     }
 
     // MARK: Live preview hint
@@ -1057,26 +1071,36 @@ private struct UpdateReadyBanner: View {
 
 // MARK: - Back button
 
+/// The back button's capsule, on its own so the detail header can reserve
+/// the same width on the other side of the title without a second button.
+private struct BackButtonLabel: View {
+    let isHovering: Bool
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 11, weight: .bold))
+                .accessibilityHidden(true)
+            Text("Back")
+                .font(Design.Typography.control)
+        }
+        .foregroundStyle(isHovering ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.primary))
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(isHovering ? Color.accentColor : Color.secondary.opacity(0.18))
+        )
+    }
+}
+
 private struct BackButton: View {
     let action: () -> Void
     @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 3) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 11, weight: .bold))
-                    .accessibilityHidden(true)
-                Text("Back")
-                    .font(Design.Typography.control)
-            }
-            .foregroundStyle(isHovering ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.primary))
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(isHovering ? Color.accentColor : Color.secondary.opacity(0.18))
-            )
+            BackButtonLabel(isHovering: isHovering)
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }

@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Observation
 
 /// What a global shortcut does.
@@ -106,6 +106,46 @@ final class HotkeyCenter {
         suspensions -= 1
         if suspensions == 0 { registerAll() }
     }
+
+    /// Tries again the shortcuts that another app held, or that macOS
+    /// refused, the last time they were registered.
+    ///
+    /// Registration otherwise happens only when the bindings change or a
+    /// recorder stops listening, so a combination lost to another app stayed
+    /// dead after that app quit, and Settings kept saying "used by another
+    /// app". Shape, system and clash problems cannot clear on their own and
+    /// do not trigger a retry.
+    func retryInactive() {
+        guard !isSuspended else { return }
+        let retriable = inactive.values.contains {
+            switch $0 {
+            case .usedByAnotherApp, .notRegistered: return true
+            default: return false
+            }
+        }
+        guard retriable else { return }
+        registerAll()
+    }
+
+    /// Retries inactive shortcuts whenever the running apps change, since an
+    /// app quitting is when a combination it held comes free. `source` is
+    /// `NSWorkspace.shared` in the app, and a stand-in in tests.
+    ///
+    /// Watches `runningApplications` rather than
+    /// `NSWorkspace.didTerminateApplicationNotification`: that notification
+    /// is posted only for Dock apps, never for menu bar (LSUIElement) apps,
+    /// which are the ones that usually claim global shortcuts. A launch
+    /// triggers a retry too; it finds nothing new and costs one attempt.
+    func retryWhenAppsQuit<Source: NSObject>(
+        observing source: Source, _ runningApps: KeyPath<Source, [NSRunningApplication]>
+    ) {
+        // NSWorkspace changes `runningApplications` on the main thread.
+        appsObservation = source.observe(runningApps) { [weak self] _, _ in
+            MainActor.assumeIsolated { self?.retryInactive() }
+        }
+    }
+
+    @ObservationIgnored private var appsObservation: NSKeyValueObservation?
 
     /// Why `combo` cannot be given to `owner`, or nil when it can.
     ///

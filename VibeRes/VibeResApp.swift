@@ -56,6 +56,7 @@ struct VibeResApp: App {
             // The CLI saves to the same file; follow it, so the popover and
             // the shortcuts never act on a catalog read at launch.
             profiles.watchForExternalChanges()
+            hotkeys.retryWhenAppsQuit(observing: NSWorkspace.shared, \.runningApplications)
         }
         _hotkeys = State(initialValue: hotkeys)
         _iconAnimator = State(initialValue: iconAnimator)

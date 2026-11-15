@@ -112,7 +112,7 @@ struct ProfilePill: View {
             comment: "First line of a profile pill's hover preview, followed by one line per display. 1: profile name"
         ))]
         for row in preview.rows {
-            lines.append("  \(row.tooltipMarker) \(row.displayName) — \(row.detailText)")
+            lines.append("  \(row.tooltipMarker) \(row.displayName): \(row.detailText)")
         }
         if !preview.untouched.isEmpty {
             let names = ProfileCopy.list(preview.untouched)

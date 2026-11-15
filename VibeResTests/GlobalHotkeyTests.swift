@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import Testing
@@ -942,5 +943,81 @@ struct CarbonHotkeyRegistrarTests {
         #expect(other.register(combo, id: 2) == .takenByAnotherApp)
         holder.unregister(id: 1)
         #expect(other.register(combo, id: 2) == .registered)
+    }
+}
+
+@Suite("Hotkey retry and recorder messages")
+@MainActor
+struct HotkeyRetryTests {
+    private let desk = UUID()
+    private let comboA = KeyCombo(keyCode: 0x12, modifiers: [.control, .option]) // ⌃⌥1
+    private let comboB = KeyCombo(keyCode: 0x13, modifiers: [.control, .option]) // ⌃⌥2
+
+    /// Stands in for `NSWorkspace.shared`: only the KVO-observable list of
+    /// running apps. A menu bar app that quits shows up there and nowhere
+    /// else: macOS posts no didTerminateApplicationNotification for it.
+    private final class FakeWorkspace: NSObject {
+        @objc dynamic var runningApplications: [NSRunningApplication] = [.current]
+    }
+
+    @Test("A shortcut another app held registers once that app quits, menu bar apps included")
+    func retriesWhenAnAppQuits() {
+        let registrar = FakeRegistrar()
+        let center = HotkeyCenter(registrar: registrar)
+        let workspace = FakeWorkspace()
+        center.retryWhenAppsQuit(observing: workspace, \.runningApplications)
+        registrar.takenElsewhere = [comboB]
+        center.setBindings([HotkeyBinding(owner: .profile(desk), combo: comboB, name: "Desk")])
+        #expect(center.inactive == [.profile(desk): .usedByAnotherApp])
+
+        registrar.takenElsewhere = []
+        workspace.runningApplications = []
+
+        #expect(Array(registrar.live.values) == [comboB])
+        #expect(center.inactive.isEmpty)
+    }
+
+    @Test("Nothing is re-registered when no shortcut is waiting on another app")
+    func noRetryWithoutAnotherAppsHold() {
+        let registrar = FakeRegistrar()
+        let center = HotkeyCenter(registrar: registrar)
+        registrar.reserved = [comboA]
+        center.setBindings([
+            HotkeyBinding(owner: .revert, combo: comboA, name: "Revert"),
+            HotkeyBinding(owner: .profile(desk), combo: comboB, name: "Desk"),
+        ])
+        let calls = registrar.registerCalls
+
+        center.retryInactive()
+
+        #expect(registrar.registerCalls == calls)
+        #expect(center.inactive == [.revert: .reservedBySystem])
+    }
+
+    @Test("No retry while a recorder listens")
+    func noRetryWhileSuspended() {
+        let registrar = FakeRegistrar()
+        let center = HotkeyCenter(registrar: registrar)
+        registrar.takenElsewhere = [comboB]
+        center.setBindings([HotkeyBinding(owner: .profile(desk), combo: comboB, name: "Desk")])
+        center.suspend()
+        registrar.takenElsewhere = []
+
+        center.retryInactive()
+
+        #expect(registrar.live.isEmpty)
+    }
+
+    @Test("Stopping a recording clears its refusal, so the saved shortcut's state shows again")
+    func stopClearsRefusal() {
+        var session = RecorderSession(isRecording: true, problem: .usedByRevert)
+        #expect(session.note(combo: comboA, savedCombo: comboA, inactive: .usedByAnotherApp)
+            == .refused(.usedByRevert))
+
+        session.stop()
+
+        #expect(session.problem == nil)
+        #expect(session.note(combo: comboA, savedCombo: comboA, inactive: .usedByAnotherApp)
+            == .notActive(.usedByAnotherApp))
     }
 }

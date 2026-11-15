@@ -20,7 +20,7 @@ extension UserFacingProblem {
         case .mirroredArrangement:
             return String(localized: LocalizedStringResource(
                 "problem.mirroredArrangement",
-                defaultValue: "Displays are mirrored — the main display was left unchanged.",
+                defaultValue: "Displays are mirrored. The main display was left unchanged.",
                 comment: "Shown when a main-display change is refused because mirroring is on"
             ))
 
@@ -34,7 +34,7 @@ extension UserFacingProblem {
         case .previousMainNotRestored:
             return String(localized: LocalizedStringResource(
                 "problem.previousMainNotRestored",
-                defaultValue: "The previous main display could not be restored — macOS adjusted the arrangement.",
+                defaultValue: "The previous main display could not be restored. macOS adjusted the arrangement.",
                 comment: "Revert put the modes back but could not move the menu bar back"
             ))
 
@@ -92,7 +92,7 @@ extension ResolutionSwitcher.Failure {
         case .originCoverage:
             return String(localized: LocalizedStringResource(
                 "problem.originCoverage",
-                defaultValue: "The display setup changed while applying — the arrangement was left unchanged.",
+                defaultValue: "The display setup changed while applying. The arrangement was left unchanged.",
                 comment: "An origin plan no longer covers exactly the active displays, so it is refused"
             ))
         case .beginConfig(let c), .applyMode(let c), .completeConfig(let c), .applyOrigin(let c):
@@ -104,7 +104,7 @@ extension ResolutionSwitcher.Failure {
         case .cannotComplete:
             explanation = String(localized: LocalizedStringResource(
                 "problem.switch.busy",
-                defaultValue: "macOS refused the change — the display may be busy, try again",
+                defaultValue: "macOS refused the change. The display may be busy, try again",
                 comment: "CoreGraphics returned cannotComplete for a display reconfiguration"
             ))
         case .rangeCheck, .illegalArgument:

@@ -638,7 +638,9 @@ private struct NoteGallery: View {
         ]),
         ApplyOutcomeNote.make(from: [outcome("LG UltraFine", .appliedWithFallback, wanted: 75)]),
         ApplyOutcomeNote.make(from: [
-            outcome("LG UltraFine", .failed(.other("the display refused the mode"))),
+            // A real refusal, so the shot shows the localised reason; `.other`
+            // carries fixed English text into every language's screenshot.
+            outcome("LG UltraFine", .failed(.switchFailed(.applyMode(.rangeCheck)))),
             outcome("GN246HL", .skippedNoMatch),
         ]),
     ].compactMap { $0 }

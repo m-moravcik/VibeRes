@@ -1,25 +1,25 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "%@ on GitHub — click to view": {
+    "%@ on GitHub: click to view": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ na GitHubu – kliknutím zobrazíš"
+            "value": "%@ na GitHubu: kliknutím zobrazíš"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ auf GitHub – zum Ansehen klicken"
+            "value": "%@ auf GitHub: zum Ansehen klicken"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ on GitHub — click to view"
+            "value": "%@ on GitHub: click to view"
           }
         },
         "es": {
@@ -37,7 +37,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ na GitHube — kliknutím zobrazíš"
+            "value": "%@ na GitHube: kliknutím zobrazíš"
           }
         }
       }
@@ -490,7 +490,7 @@
         }
       }
     },
-    "'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors.": {
+    "'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping. Typical for non-Retina external monitors.": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
@@ -502,13 +502,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "„Skaliert“ nutzt HiDPI-Rendering, damit Text auf Retina scharf bleibt (Standard für eingebaute Displays). „Nativ“ ist 1:1-Pixelabbildung – typisch für externe Monitore ohne Retina."
+            "value": "„Skaliert“ nutzt HiDPI-Rendering, damit Text auf Retina scharf bleibt (Standard für eingebaute Displays). „Nativ“ ist 1:1-Pixelabbildung. Typisch für externe Monitore ohne Retina."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping — typical for non-Retina external monitors."
+            "value": "'Scaled' uses HiDPI rendering so text stays sharp on Retina (the default for built-in displays). 'Native' is 1:1 pixel mapping. Typical for non-Retina external monitors."
           }
         },
         "es": {
@@ -526,7 +526,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "„Škálované“ používa HiDPI vykresľovanie, takže text zostane ostrý na Retine (predvolené pre vstavané displeje). „Natívne“ je mapovanie 1:1 — typické pre externé monitory bez Retiny."
+            "value": "„Škálované“ používa HiDPI vykresľovanie, takže text zostane ostrý na Retine (predvolené pre vstavané displeje). „Natívne“ je mapovanie 1:1. Typické pre externé monitory bez Retiny."
           }
         }
       }
@@ -737,7 +737,7 @@
         }
       }
     },
-    "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button.": {
+    "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable. The undo happens on its own, so it works even when you cannot see the button.": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
@@ -773,13 +773,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wendet eine neue Auflösung nur für diese Sitzung an und macht sie nach %lld Sekunden rückgängig, sofern du nicht bestätigst. Nützlich, wenn ein Modus deinen Bildschirm schon einmal unlesbar gemacht hat – das Rückgängigmachen passiert von selbst und funktioniert daher auch, wenn du den Knopf nicht sehen kannst."
+            "value": "Wendet eine neue Auflösung nur für diese Sitzung an und macht sie nach %lld Sekunden rückgängig, sofern du nicht bestätigst. Nützlich, wenn ein Modus deinen Bildschirm schon einmal unlesbar gemacht hat. Das Rückgängigmachen passiert von selbst und funktioniert daher auch, wenn du den Knopf nicht sehen kannst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable — the undo happens on its own, so it works even when you cannot see the button."
+            "value": "Applies a new resolution for this session only and undoes it after %lld seconds unless you confirm. Useful if a mode has ever left your screen unreadable. The undo happens on its own, so it works even when you cannot see the button."
           }
         },
         "es": {
@@ -833,7 +833,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Použije nové rozlíšenie len pre túto sesiu a po %lld sekundách ho vráti, ak ho nepotvrdíš. Užitočné, ak ti niektorý režim už niekedy nechal nečitateľnú obrazovku — vrátenie prebehne samo, takže funguje aj vtedy, keď tlačidlo nevidíš."
+            "value": "Použije nové rozlíšenie len pre túto sesiu a po %lld sekundách ho vráti, ak ho nepotvrdíš. Užitočné, ak ti niektorý režim už niekedy nechal nečitateľnú obrazovku. Vrátenie prebehne samo, takže funguje aj vtedy, keď tlačidlo nevidíš."
           }
         }
       }
@@ -1719,7 +1719,7 @@
         }
       }
     },
-    "Could not save the profile — it is no longer in the list.": {
+    "Could not save the profile. It is no longer in the list.": {
       "comment": "The profile vanished between opening the form and saving",
       "extractionState": "manual",
       "localizations": {
@@ -1732,13 +1732,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil konnte nicht gespeichert werden — es ist nicht mehr in der Liste."
+            "value": "Profil konnte nicht gespeichert werden. Es ist nicht mehr in der Liste."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not save the profile — it is no longer in the list."
+            "value": "Could not save the profile. It is no longer in the list."
           }
         },
         "es": {
@@ -1756,12 +1756,12 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil sa nepodarilo uložiť — už nie je v zozname."
+            "value": "Profil sa nepodarilo uložiť. Už nie je v zozname."
           }
         }
       }
     },
-    "Could not update the profile — it no longer exists.": {
+    "Could not update the profile. It no longer exists.": {
       "comment": "The profile vanished between opening the edit form and saving",
       "extractionState": "manual",
       "localizations": {
@@ -1774,13 +1774,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil konnte nicht aktualisiert werden — es existiert nicht mehr."
+            "value": "Profil konnte nicht aktualisiert werden. Es existiert nicht mehr."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not update the profile — it no longer exists."
+            "value": "Could not update the profile. It no longer exists."
           }
         },
         "es": {
@@ -1798,7 +1798,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil sa nepodarilo aktualizovať — už neexistuje."
+            "value": "Profil sa nepodarilo aktualizovať. Už neexistuje."
           }
         }
       }
@@ -3490,6 +3490,47 @@
         }
       }
     },
+    "Launch at login could not be changed. Try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spouštění po přihlášení se nepodařilo změnit. Zkus to znovu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Öffnen beim Anmelden konnte nicht geändert werden. Versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch at login could not be changed. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo cambiar el inicio al iniciar sesión. Inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de modifier l’ouverture à la connexion. Réessayez."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spúšťanie po prihlásení sa nepodarilo zmeniť. Skús to znova."
+          }
+        }
+      }
+    },
     "Live preview on hover": {
       "extractionState": "manual",
       "localizations": {
@@ -3821,7 +3862,7 @@
         }
       }
     },
-    "Moves the menu bar and Dock to this display. The arrangement only shifts — relative positions are preserved.": {
+    "Moves the menu bar and Dock to this display. The arrangement only shifts. Relative positions are preserved.": {
       "comment": "Tooltip for the Make main display button",
       "extractionState": "manual",
       "localizations": {
@@ -3840,7 +3881,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Moves the menu bar and Dock to this display. The arrangement only shifts — relative positions are preserved."
+            "value": "Moves the menu bar and Dock to this display. The arrangement only shifts. Relative positions are preserved."
           }
         },
         "es": {
@@ -4191,7 +4232,7 @@
         }
       }
     },
-    "Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead.": {
+    "Only one display can be set to 'match any external monitor'. Lock the others to a specific monitor instead.": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
@@ -4203,13 +4244,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur ein Display darf auf „zu jedem externen Monitor passen“ gesetzt sein – binde die anderen an einen bestimmten Monitor."
+            "value": "Nur ein Display darf auf „zu jedem externen Monitor passen“ gesetzt sein. Binde die anderen an einen bestimmten Monitor."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only one display can be set to 'match any external monitor' — lock the others to a specific monitor instead."
+            "value": "Only one display can be set to 'match any external monitor'. Lock the others to a specific monitor instead."
           }
         },
         "es": {
@@ -4227,7 +4268,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Len jeden displej môže byť nastavený na „zodpovedať ľubovoľnému externému monitoru“ — ostatné uzamkni na konkrétny monitor."
+            "value": "Len jeden displej môže byť nastavený na „zodpovedať ľubovoľnému externému monitoru“. Ostatné uzamkni na konkrétny monitor."
           }
         }
       }
@@ -4273,7 +4314,7 @@
         }
       }
     },
-    "Only one entry can match 'any external monitor' — remove or lock the duplicates first.": {
+    "Only one entry can match 'any external monitor'. Remove or lock the duplicates first.": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
@@ -4285,13 +4326,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur ein Eintrag darf zu „jedem externen Monitor“ passen – entferne oder binde die Duplikate zuerst."
+            "value": "Nur ein Eintrag darf zu „jedem externen Monitor“ passen. Entferne oder binde die Duplikate zuerst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only one entry can match 'any external monitor' — remove or lock the duplicates first."
+            "value": "Only one entry can match 'any external monitor'. Remove or lock the duplicates first."
           }
         },
         "es": {
@@ -4309,7 +4350,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "„Ľubovoľnému externému monitoru“ môže zodpovedať len jedna položka — duplikáty najprv odstráň alebo uzamkni."
+            "value": "„Ľubovoľnému externému monitoru“ môže zodpovedať len jedna položka. Duplikáty najprv odstráň alebo uzamkni."
           }
         }
       }
@@ -4392,6 +4433,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "V „%@“ môže byť len jeden monitor nastavený na „zodpovedať ľubovoľnému externému monitoru“. Vyber ktorý v Upraviť…"
+          }
+        }
+      }
+    },
+    "Open System Settings…": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít Nastavení systému…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemeinstellungen öffnen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Ajustes del Sistema…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Réglages Système…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otvoriť Systémové nastavenia…"
           }
         }
       }
@@ -6325,7 +6407,7 @@
         }
       }
     },
-    "Saved, but %@ report the same identity — this profile cannot tell them apart and will set both the same way.": {
+    "Saved, but %@ report the same identity. This profile cannot tell them apart and will set both the same way.": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
@@ -6337,13 +6419,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gespeichert, aber %@ melden dieselbe Kennung – dieses Profil kann sie nicht unterscheiden und stellt beide gleich ein."
+            "value": "Gespeichert, aber %@ melden dieselbe Kennung. Dieses Profil kann sie nicht unterscheiden und stellt beide gleich ein."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved, but %@ report the same identity — this profile cannot tell them apart and will set both the same way."
+            "value": "Saved, but %@ report the same identity. This profile cannot tell them apart and will set both the same way."
           }
         },
         "es": {
@@ -6361,7 +6443,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uložené, ale %@ hlásia rovnakú identitu — tento profil ich nedokáže rozlíšiť a nastaví oba rovnako."
+            "value": "Uložené, ale %@ hlásia rovnakú identitu. Tento profil ich nedokáže rozlíšiť a nastaví oba rovnako."
           }
         }
       }
@@ -7577,25 +7659,25 @@
         }
       }
     },
-    "Update available — %@ on GitHub": {
+    "Update available: %@ on GitHub": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dostupná aktualizace – %@ na GitHubu"
+            "value": "Dostupná aktualizace: %@ na GitHubu"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Update verfügbar – %@ auf GitHub"
+            "value": "Update verfügbar: %@ auf GitHub"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Update available — %@ on GitHub"
+            "value": "Update available: %@ on GitHub"
           }
         },
         "es": {
@@ -7613,7 +7695,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dostupná aktualizácia — %@ na GitHube"
+            "value": "Dostupná aktualizácia: %@ na GitHube"
           }
         }
       }
@@ -8106,6 +8188,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "VibeRes navyše kontroluje raz denne na pozadí. Používatelia brew môžu nový build nainštalovať príkazom `brew upgrade --cask m-moravcik/viberes/viberes-app`."
+          }
+        }
+      }
+    },
+    "VibeRes is switched off in System Settings, so it does not open at login.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes je vypnutý v Nastavení systému, takže se po přihlášení neotevře."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes ist in den Systemeinstellungen ausgeschaltet und öffnet sich daher nicht beim Anmelden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes is switched off in System Settings, so it does not open at login."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes está desactivado en Ajustes del Sistema, así que no se abre al iniciar sesión."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes est désactivé dans Réglages Système et ne s’ouvre donc pas à l’ouverture de session."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes je vypnutý v Systémových nastaveniach, takže sa po prihlásení neotvorí."
           }
         }
       }
@@ -8805,13 +8928,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hauptbildschirm unverändert — %lld angeschlossene Bildschirme passen"
+            "value": "Hauptbildschirm unverändert: %lld angeschlossene Bildschirme passen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Main display unchanged — %lld connected displays match"
+            "value": "Main display unchanged: %lld connected displays match"
           }
         },
         "es": {
@@ -8865,7 +8988,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hlavný displej bez zmeny — zodpovedá mu %lld pripojených displejov"
+            "value": "Hlavný displej bez zmeny: zodpovedá mu %lld pripojených displejov"
           }
         }
       }
@@ -8967,13 +9090,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hauptbildschirm unverändert — Bildschirme werden gespiegelt"
+            "value": "Hauptbildschirm unverändert: Bildschirme werden gespiegelt"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Main display unchanged — displays are mirrored"
+            "value": "Main display unchanged: displays are mirrored"
           }
         },
         "es": {
@@ -8991,7 +9114,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hlavný displej bez zmeny — displeje sú zrkadlené"
+            "value": "Hlavný displej bez zmeny: displeje sú zrkadlené"
           }
         }
       }
@@ -9009,13 +9132,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hauptbildschirm unverändert — der gespeicherte Bildschirm ist nicht angeschlossen"
+            "value": "Hauptbildschirm unverändert: der gespeicherte Bildschirm ist nicht angeschlossen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Main display unchanged — the saved display is not connected"
+            "value": "Main display unchanged: the saved display is not connected"
           }
         },
         "es": {
@@ -9033,7 +9156,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hlavný displej bez zmeny — uložený displej nie je pripojený"
+            "value": "Hlavný displej bez zmeny: uložený displej nie je pripojený"
           }
         }
       }
@@ -9611,7 +9734,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Einfachen Modus genügt ein Klick auf eine Auflösung – die höchste verfügbare Bildwiederholrate wird automatisch gewählt. Profis können das in den Einstellungen (⌘,) ausschalten und dort auch die Live-Vorschau und automatische Updates regeln."
+            "value": "Im Einfachen Modus genügt ein Klick auf eine Auflösung. Die höchste verfügbare Bildwiederholrate wird automatisch gewählt. Profis können das in den Einstellungen (⌘,) ausschalten und dort auch die Live-Vorschau und automatische Updates regeln."
           }
         },
         "en": {
@@ -9635,7 +9758,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "V Jednoduchom režime stačí jeden klik na rozlíšenie — použije sa s najvyššou Hz. Pokročilí ho môžu vypnúť v Nastaveniach (⌘,), kde sú aj možnosti živého náhľadu a aktualizácií."
+            "value": "V Jednoduchom režime stačí jeden klik na rozlíšenie. Použije sa s najvyššou Hz. Pokročilí ho môžu vypnúť v Nastaveniach (⌘,), kde sú aj možnosti živého náhľadu a aktualizácií."
           }
         }
       }
@@ -10493,13 +10616,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "nicht angeschlossen — überspringen"
+            "value": "nicht angeschlossen: überspringen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "not connected — skip"
+            "value": "not connected: skip"
           }
         },
         "es": {
@@ -10517,7 +10640,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "nie je pripojený — preskočiť"
+            "value": "nie je pripojený: preskočiť"
           }
         }
       }
@@ -10661,13 +10784,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bildschirme werden gespiegelt — der Hauptbildschirm blieb unverändert."
+            "value": "Bildschirme werden gespiegelt. Der Hauptbildschirm blieb unverändert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Displays are mirrored — the main display was left unchanged."
+            "value": "Displays are mirrored. The main display was left unchanged."
           }
         },
         "es": {
@@ -10685,7 +10808,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Displeje sú zrkadlené — hlavný displej zostal nezmenený."
+            "value": "Displeje sú zrkadlené. Hlavný displej zostal nezmenený."
           }
         }
       }
@@ -10703,13 +10826,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Bildschirmkonfiguration hat sich während des Anwendens geändert — die Anordnung blieb unverändert."
+            "value": "Die Bildschirmkonfiguration hat sich während des Anwendens geändert. Die Anordnung blieb unverändert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The display setup changed while applying — the arrangement was left unchanged."
+            "value": "The display setup changed while applying. The arrangement was left unchanged."
           }
         },
         "es": {
@@ -10727,7 +10850,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zostava displejov sa počas aplikovania zmenila — rozloženie zostalo nezmenené."
+            "value": "Zostava displejov sa počas aplikovania zmenila. Rozloženie zostalo nezmenené."
           }
         }
       }
@@ -10745,13 +10868,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der vorherige Hauptbildschirm konnte nicht wiederhergestellt werden — macOS hat die Anordnung angepasst."
+            "value": "Der vorherige Hauptbildschirm konnte nicht wiederhergestellt werden. macOS hat die Anordnung angepasst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The previous main display could not be restored — macOS adjusted the arrangement."
+            "value": "The previous main display could not be restored. macOS adjusted the arrangement."
           }
         },
         "es": {
@@ -10769,7 +10892,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Predchádzajúci hlavný displej sa nepodarilo obnoviť — macOS upravil rozloženie."
+            "value": "Predchádzajúci hlavný displej sa nepodarilo obnoviť. macOS upravil rozloženie."
           }
         }
       }
@@ -10997,13 +11120,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS hat die Änderung abgelehnt — der Bildschirm ist möglicherweise beschäftigt, bitte erneut versuchen"
+            "value": "macOS hat die Änderung abgelehnt. Der Bildschirm ist möglicherweise beschäftigt, bitte erneut versuchen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS refused the change — the display may be busy, try again"
+            "value": "macOS refused the change. The display may be busy, try again"
           }
         },
         "es": {
@@ -11021,7 +11144,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS zmenu odmietol — displej môže byť zaneprázdnený, skúste to znova"
+            "value": "macOS zmenu odmietol. Displej môže byť zaneprázdnený, skúste to znova"
           }
         }
       }
