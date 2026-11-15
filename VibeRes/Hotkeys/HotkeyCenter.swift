@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Observation
 
 /// What a global shortcut does.
@@ -106,6 +106,39 @@ final class HotkeyCenter {
         suspensions -= 1
         if suspensions == 0 { registerAll() }
     }
+
+    /// Tries again the shortcuts that another app held, or that macOS
+    /// refused, the last time they were registered.
+    ///
+    /// Registration otherwise happens only when the bindings change or a
+    /// recorder stops listening, so a combination lost to another app stayed
+    /// dead after that app quit, and Settings kept saying "used by another
+    /// app". Shape, system and clash problems cannot clear on their own and
+    /// do not trigger a retry.
+    func retryInactive() {
+        guard !isSuspended else { return }
+        let retriable = inactive.values.contains {
+            switch $0 {
+            case .usedByAnotherApp, .notRegistered: return true
+            default: return false
+            }
+        }
+        guard retriable else { return }
+        registerAll()
+    }
+
+    /// Retries inactive shortcuts whenever an app quits, since that is when
+    /// a combination it held comes free. `center` is the workspace's
+    /// notification center in the app, and a private one in tests.
+    func retryWhenAppsQuit(observing center: NotificationCenter) {
+        terminationObserver = center.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.retryInactive() }
+        }
+    }
+
+    @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 
     /// Why `combo` cannot be given to `owner`, or nil when it can.
     ///

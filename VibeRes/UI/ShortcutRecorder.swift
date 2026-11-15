@@ -29,10 +29,20 @@ struct ShortcutRecorder<Accessory: View>: View {
     @ViewBuilder var accessory: () -> Accessory
 
     @Environment(HotkeyCenter.self) private var hotkeys
-    @State private var isRecording = false
-    @State private var problem: HotkeyProblem?
+    @State private var session: RecorderSession
+    private var isRecording: Bool {
+        get { session.isRecording }
+        nonmutating set { session.isRecording = newValue }
+    }
+    private var problem: HotkeyProblem? {
+        get { session.problem }
+        nonmutating set { session.problem = newValue }
+    }
+    private var showsUnrecordedHint: Bool {
+        get { session.showsUnrecordedHint }
+        nonmutating set { session.showsUnrecordedHint = newValue }
+    }
     @State private var modifierOnlyPress = ModifierOnlyPress()
-    @State private var showsUnrecordedHint = false
     @State private var monitor: Any?
     /// The click that stopped a recording, so the same click's release does
     /// not start a new one when it lands on the recorder itself.
@@ -58,7 +68,7 @@ struct ShortcutRecorder<Accessory: View>: View {
         self.title = title
         self.accessory = accessory
         // Seeds a refusal for offscreen screenshots and layout checks.
-        _problem = State(initialValue: initialProblem)
+        _session = State(initialValue: RecorderSession(problem: initialProblem))
     }
 
     var body: some View {
@@ -135,17 +145,19 @@ struct ShortcutRecorder<Accessory: View>: View {
         }
     }
 
-    /// The most urgent recorder message takes precedence.
     private var message: Text? {
-        if showsUnrecordedHint {
+        switch session.note(combo: combo, savedCombo: savedCombo, inactive: hotkeys.inactive[owner]) {
+        case .unrecorded?:
             return Text("Nothing was recorded. If you pressed a key, another app already uses that combination. Try another.")
-        }
-        if let problem { return Text(problem.message) }
-        if isRecording { return Text("Press the keys, or Esc to cancel.") }
-        if let combo, combo == savedCombo, let inactive = hotkeys.inactive[owner] {
+        case .refused(let problem)?:
+            return Text(problem.message)
+        case .listening?:
+            return Text("Press the keys, or Esc to cancel.")
+        case .notActive(let inactive)?:
             return Text("Not active: \(Text(inactive.message))")
+        case nil:
+            return nil
         }
-        return nil
     }
 
     /// The recording prompt is guidance; everything else is a warning.
@@ -189,8 +201,7 @@ struct ShortcutRecorder<Accessory: View>: View {
 
     private func stopRecording() {
         guard isRecording else { return }
-        isRecording = false
-        showsUnrecordedHint = false
+        session.stop()
         modifierOnlyPress = ModifierOnlyPress()
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
@@ -239,6 +250,43 @@ struct ShortcutRecorder<Accessory: View>: View {
         combo = candidate
         acceptances += 1
         stopRecording()
+        return nil
+    }
+}
+
+/// What a recorder is doing and has to say, apart from the view so the rules
+/// can be tested without AppKit events.
+struct RecorderSession: Equatable {
+    var isRecording = false
+    /// The refusal of the combination just pressed. It belongs to that
+    /// recording: kept while the recorder listens for another try, gone once
+    /// it stops.
+    var problem: HotkeyProblem?
+    var showsUnrecordedHint = false
+
+    /// The line under the field. The most urgent one wins.
+    enum Note: Equatable {
+        case unrecorded
+        case refused(HotkeyProblem)
+        case listening
+        /// The saved shortcut is not registered, and why.
+        case notActive(HotkeyProblem)
+    }
+
+    /// Ends a recording, by Esc, a click elsewhere, an accepted combination
+    /// or the window closing. A refusal left behind used to stay up in
+    /// orange after Esc and hid the "Not active" line beneath it.
+    mutating func stop() {
+        isRecording = false
+        showsUnrecordedHint = false
+        problem = nil
+    }
+
+    func note(combo: KeyCombo?, savedCombo: KeyCombo?, inactive: HotkeyProblem?) -> Note? {
+        if showsUnrecordedHint { return .unrecorded }
+        if let problem { return .refused(problem) }
+        if isRecording { return .listening }
+        if let combo, combo == savedCombo, let inactive { return .notActive(inactive) }
         return nil
     }
 }

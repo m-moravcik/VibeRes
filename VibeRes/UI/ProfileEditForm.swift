@@ -326,10 +326,8 @@ extension ProfilesSection.EntryEdit {
     /// says VRR whenever the entry is variable: with nothing attached there
     /// is no fixed twin to check for.
     var savedModeDescription: String {
-        var parts = ["\(pointWidth)×\(pointHeight)"]
-        if let refreshHz { parts.append(isVariableRefresh ? "\(refreshHz) Hz VRR" : "\(refreshHz) Hz") }
-        if isHiDPI { parts.append("HiDPI") }
-        return parts.joined(separator: " · ")
+        ModeSummary.text(width: pointWidth, height: pointHeight, refreshHz: refreshHz,
+                         isVRR: isVariableRefresh, isHiDPI: isHiDPI)
     }
 
     /// The rate a row points at, among `choices`: the saved (Hz, kind) pair

@@ -167,6 +167,9 @@ Bind global keyboard shortcuts to apply a specific profile (e.g.
 **Why it was deferred**
 - Already addressable via Shortcuts.app (the App Intents integration): a
   keyboard shortcut can run a Shortcut that applies a profile.
+  *Corrected 2026-11-15: this was never true. The App Intents are Set
+  Resolution and Get Resolution; applying a profile from Shortcuts needs the
+  Apply Profile intent listed under the break-it QA findings below.*
 
 **Decided 2026-11-13: build it, next after the first-profile onboarding.**
 The Shortcuts route needs one hand-built Shortcut per profile; a shortcut
@@ -224,6 +227,49 @@ back. Profiles, shortcuts and auto-apply record Revert; the `viberes` CLI
 switcher directly) still record none, so Revert and ⌘Z afterwards offer the
 action before them. Open: how the CLI hands its change to the running app,
 and whether the intent should go through `DisplayStore` instead.
+
+## Break-it QA findings, deferred (2026-11-15)
+
+Found in the 1.0 QA pass and left for later on purpose. The pass fixed the
+safety nets, the profile catalog, and Settings, shortcuts and copy; these did
+not make that cut.
+
+### Apply Profile App Intent
+VISION.md and the README imply a Shortcut can apply a profile, but the App
+Intents are only Set Resolution and Get Resolution. An Apply Profile intent
+(with the profile as an `AppEntity`) would close that. Open question for
+1.0: build it as its own change, or document the gap.
+
+### Identical twin monitors saved at different modes
+Two monitors that report the same vendor, model and serial bind to both
+`.edid` entries of a profile, so applying stages the same display twice and
+both rows of the outcome report success (`ProfileStore.applyDetailed`). The
+save already warns that such displays cannot be told apart; apply should say
+so too, or bind entries to displays one to one.
+
+### More than 200 profiles
+`ProfileStore.capped` keeps the first 200 profiles of a hand-edited or
+merged catalog, and the next save writes only those. Since the catalog fix,
+a file the app could not fully read is copied aside before it is replaced,
+but the cap does not count as "could not read" yet, so the profiles past 200
+are lost without a copy or a note.
+
+### Duplicate profile ids in a hand-edited file
+Two profiles with the same id: delete removes both, and the profile list's
+`ForEach` gets non-unique ids. Decoding could give the second a new id, or
+keep only the first and report the drop like any unreadable item.
+
+### A shortcut that fails at launch is easy to miss
+A saved shortcut that cannot be registered at launch is reported in Settings
+→ Shortcuts and in the profile's Edit form, nowhere else. VISION.md wants
+problems "reported, never hidden"; a quiet note in the popover would be
+enough. (Falling back quietly when a shortcut is pressed while the action
+cannot run is accepted in PRD §4.11.)
+
+### One format for a refresh rate in notes
+The profile forms and the display rows write "120 Hz"; the apply notes and
+the hover preview still write "@60Hz" and "@ 60Hz". Rendered with numbers
+from code, so one shared formatter would align them in every language.
 
 ## Motion and polish audit (2026-11-13)
 
