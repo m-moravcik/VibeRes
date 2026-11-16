@@ -35,7 +35,7 @@ final class RevertHistory {
     var canRevert: Bool { !entries.isEmpty || beforeMainID != nil }
 
     /// Human-readable description of what Revert will do, e.g.
-    /// "Built-in → 1800×1169" or "Built-in, LG UltraFine".
+    /// "Built-in → 1 800 × 1 169" or "Built-in, LG UltraFine".
     var summary: String {
         if entries.isEmpty, beforeMainID != nil { return "main display" }
         let mainSuffix = beforeMainID != nil ? " + main display" : ""

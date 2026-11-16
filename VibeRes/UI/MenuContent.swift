@@ -909,7 +909,7 @@ private struct FooterBar: View {
     /// `revertDetail`, the tooltip and what VoiceOver reads.
     ///
     /// Built from the history's values rather than `RevertHistory.summary`,
-    /// which stays English for the CLI and the log.
+    /// which is a finished English sentence a catalog cannot translate.
     private var revertLabel: LocalizedStringKey {
         let revert = store.revert
         let alsoMain = revert.beforeMainID != nil
