@@ -37,7 +37,7 @@ enum IntentProblem: Error, Equatable {
     /// macOS refused the switch. The text is the store's own explanation.
     case switchFailed(String)
     /// The profile ran and nothing it names could be applied.
-    case notApplied(profile: String, summary: String)
+    case notApplied(ShortcutAnnouncement)
 
     func localizedDescription(locale: Locale = .appLanguage) -> String {
         switch self {
@@ -74,13 +74,8 @@ enum IntentProblem: Error, Equatable {
             ))
         case let .switchFailed(reason):
             return reason
-        case let .notApplied(profile, summary):
-            return String(localized: LocalizedStringResource(
-                "shortcut.announce.applied",
-                defaultValue: "\(profile): \(summary)",
-                locale: locale,
-                comment: "Spoken by VoiceOver after a profile's shortcut. 1: profile name, 2: what happened, as in the note under the pills"
-            ))
+        case let .notApplied(announcement):
+            return announcement.localizedDescription(locale: locale)
         }
     }
 }
@@ -157,11 +152,7 @@ enum IntentActions {
                 ?? ApplyOutcomeNote(tone: .info, content: .alreadyAtSavedSettings)
             let said = ShortcutAnnouncement.applied(profile: profile.name, note: note)
             if ShortcutActions.landedNothing(result) {
-                var summary = note.localizedDescription(locale: .appLanguage)
-                if let skipped = note.localizedSkipped(locale: .appLanguage) {
-                    summary += "; " + skipped
-                }
-                throw IntentProblem.notApplied(profile: profile.name, summary: summary)
+                throw IntentProblem.notApplied(said)
             }
             return said.localizedDescription()
         }

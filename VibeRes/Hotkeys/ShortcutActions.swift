@@ -121,8 +121,10 @@ enum ShortcutActions {
         return outcomeMissed || result.mainChange?.problemSummary != nil
     }
 
-    /// Nothing the profile names is at its saved settings after the run, and
-    /// something went wrong: every switch failed or every display was left out.
+    /// Nothing changed on screen and nothing the profile names was already at
+    /// its saved settings, and something went wrong: every switch failed or
+    /// every display was left out. A main display that was already main
+    /// changed nothing, so it does not count as landing.
     static func landedNothing(_ result: ProfileStore.ProfileApplyResult) -> Bool {
         let landed = result.outcomes.contains { outcome in
             switch outcome.status {
@@ -132,7 +134,7 @@ enum ShortcutActions {
         }
         let mainLanded: Bool
         switch result.mainChange {
-        case .changed?, .changedButAdjusted?, .alreadyMain?: mainLanded = true
+        case .changed?, .changedButAdjusted?: mainLanded = true
         default: mainLanded = false
         }
         return !landed && !mainLanded && missedSomething(result)

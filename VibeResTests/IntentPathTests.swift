@@ -256,6 +256,53 @@ struct IntentPathTests {
         #expect(said.hasPrefix("Desk: "))
     }
 
+    /// A profile that pins the main display to fake 101, which is already
+    /// main. The live arrangement holds 101 and the real main display, whose
+    /// EDID is not all-ones, so the pin binds to exactly one display.
+    private func pinnedToCurrentMain(_ r: Rig, mode: CGDisplayMode) -> Profile {
+        r.profiles.isInMirrorSet = { _ in false }
+        r.profiles.liveArrangement = {
+            (main: 101, bounds: [
+                101: CGRect(x: 0, y: 0, width: 1920, height: 1080),
+                CGMainDisplayID(): CGRect(x: -1800, y: 0, width: 1800, height: 1169),
+            ])
+        }
+        r.profiles.applyOrigins = { _, _ in Issue.record("main is already main; no origin change expected") }
+        let profile = Profile(name: "Desk", entries: [entry(mode)],
+                              mainDisplay: .edid(vendor: .max, model: .max, serial: .max))
+        r.profiles.add(profile)
+        return profile
+    }
+
+    @Test("A main-pinned profile whose main is already main and whose switches all fail throws")
+    func applyProfilePinnedMainSwitchesFail() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[1], modes: modes)
+        let profile = pinnedToCurrentMain(r, mode: modes[0])
+        r.profiles.applyBatch = { changes, _ in
+            ResolutionSwitcher.BatchOutcome(
+                applied: [], rejected: Dictionary(uniqueKeysWithValues: changes.map { ($0.display, .applyMode(.failure)) })
+            )
+        }
+
+        #expect(throws: IntentProblem.self) {
+            try IntentActions.applyProfile(id: profile.id, displays: r.displays, profiles: r.profiles)
+        }
+        #expect(!r.displays.revert.canRevert)
+    }
+
+    @Test("A main-pinned profile already at its saved settings succeeds")
+    func applyProfilePinnedMainAlreadyApplied() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[0], modes: modes)
+        let profile = pinnedToCurrentMain(r, mode: modes[0])
+
+        let said = try IntentActions.applyProfile(id: profile.id, displays: r.displays, profiles: r.profiles)
+
+        #expect(r.batches() == 0)
+        #expect(said.hasPrefix("Desk: "))
+    }
+
     // MARK: - Profile entity
 
     @Test("The profile picker lists the saved profiles and resolves them by id")
@@ -296,7 +343,7 @@ struct IntentPathTests {
             .displayNotConnected, .profileMissing, .noDisplayConnected(profile: "Desk"),
             .appNotReady, .switchFailed("boom"), .noCloseMode(width: 800, height: 600, display: "Mon"),
             .widthOutOfRange, .heightOutOfRange, .refreshOutOfRange,
-            .notApplied(profile: "Desk", summary: "Could not switch"),
+            .notApplied(.applied(profile: "Desk", note: ApplyOutcomeNote(tone: .info, content: .alreadyAtSavedSettings))),
         ]
         for problem in problems {
             let text = problem.localizedDescription(locale: Locale(identifier: "en"))
