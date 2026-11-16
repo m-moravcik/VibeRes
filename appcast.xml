@@ -6,33 +6,29 @@
     <description>Updates for VibeRes</description>
     <language>en</language>
     <item>
-      <title>0.13.0</title>
-      <pubDate>Sun, 15 Nov 2026 22:05:33 +0000</pubDate>
-      <sparkle:version>33</sparkle:version>
-      <sparkle:shortVersionString>0.13.0</sparkle:shortVersionString>
+      <title>0.14.0</title>
+      <pubDate>Mon, 16 Nov 2026 17:40:09 +0000</pubDate>
+      <sparkle:version>34</sparkle:version>
+      <sparkle:shortVersionString>0.14.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <description><![CDATA[
 <ul>
-<li>The safety countdown is easier to trust. A thin bar drains along the &quot;Keep this resolution?&quot; row, so you see the time left at a glance. Picking the size you already have no longer starts a countdown, several picks in a row count as one trial that goes back to where you started, and Keep keeps all of them. Making a display main, or a profile that applies on its own when you dock, ends the countdown, so it never undoes what came after it.</li>
-<li>One Revert shortcut. The popover no longer has its own ⌘Z; set a Revert shortcut in Settings &gt; Shortcuts and it works from any app, and the Revert row shows it once it is set.</li>
-<li>Your profiles are safer. One profile or display VibeRes cannot read no longer empties the whole list: the rest load, and the original file is kept next to it as <code>profiles-unreadable-&lt;date&gt;.json</code> before anything is saved. Changes you make with the <code>viberes</code> command line tool show up in the menu right away.</li>
-<li>A profile whose monitors are all unplugged is dimmed, and its tooltip says which monitor it is waiting for. The tooltip and the Apply question are now translated into every language.</li>
-<li>With VoiceOver, a shortcut now tells you what it did, for example which profile applied or that there was nothing to revert.</li>
-<li>Settings &gt; Debug has Report a problem…, which opens a GitHub issue with your diagnostics filled in. Nothing is sent until you submit it yourself.</li>
-<li>Shortcut fields show when they are listening and shake when a combination is refused, and the reason goes away when you stop recording. A shortcut another app was holding starts working once that app quits.</li>
-<li>Launch at login shows what macOS actually does. If VibeRes is switched off in System Settings, Settings says so and offers to open System Settings.</li>
-<li>Smaller fixes: the hover preview glides between sizes, the display title no longer overlaps the Back button in German, refresh rates read &quot;120 Hz&quot; everywhere, and long dashes are gone from the text.</li>
+<li>New Apply Profile action in Shortcuts. Pick one of your saved profiles and it applies just like its pill or its global shortcut, then says what happened. If none of the profile&#x27;s displays is connected, or every switch fails, the action fails so your Shortcut can react.</li>
+<li>Revert now also takes back what Shortcuts changed. Apply Profile and Set Display Resolution are remembered like a click in the popover, so Revert in the popover, or its shortcut, undoes them.</li>
+<li>Sizes and refresh rates look the same everywhere: the display list, both profile forms, the notes after applying, the hover preview, the &quot;Keep this resolution?&quot; row and Revert all write &quot;2 560 × 1 440 · 60 Hz&quot;, in every language.</li>
+<li>If a saved shortcut cannot be turned on when VibeRes starts, for example because another app already uses it, the popover now shows a quiet note pointing to Settings &gt; Shortcuts. You can dismiss it.</li>
+<li>Two identical monitors saved at different sizes are no longer guessed at. macOS cannot tell them apart, so VibeRes leaves them unchanged and says so, in the preview and after applying. Identical monitors saved at the same size and rate apply as before.</li>
 </ul>
 <p>Signed with an Apple Developer ID and notarized by Apple. Requires macOS 26 or later.</p>
       ]]></description>
-      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.13.0/VibeRes-0.13.0.zip"
-                 sparkle:edSignature="DLuhNBWTHzXu1O2gpDa/f9sINIqSGaDaGIJLAz7NqTUTGqBSxRfrPJ0JK3gedXPFccnODxnmgtfR9UYiit1gCA=="
-                 length="4881822"
+      <enclosure url="https://github.com/m-moravcik/VibeRes/releases/download/v0.14.0/VibeRes-0.14.0.zip"
+                 sparkle:edSignature="7LD9B8n+vWE4t6zUIVLA4WYzwpH5EXYb1Z8F0SfTlT5KeL5dk0h0lwyxbf7cV6XbaVPFLk7dZ6seV425dliNAA=="
+                 length="4945608"
                  type="application/octet-stream" />
     </item>
   </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: mBhF2K8gLSs1sOwS1DK6L/hknfQru3A2ViZUGSUWjxYTx+nwFvbVbD+AAO/w9S9iU61xc2w+082KtXLjFXz5Dw==
-length: 3194
+edSignature: Gh2F1dAtvDoHN6zCx14h0oOan2uvmCQWPznjr1bqBMvPk7w7BsegHy+Y9ou1JRo9n7fliilBBciys1Zod3fbBg==
+length: 2342
 -->
