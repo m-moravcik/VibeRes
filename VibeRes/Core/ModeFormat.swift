@@ -7,6 +7,11 @@ import Foundation
 /// notes used to write three dialects of this ("2 560 × 1 440", "2560×1440",
 /// "2560×1440 @60Hz"). Every one of them now calls this, so they cannot drift.
 ///
+/// Deliberate exemptions, because scripts consume them: Shortcuts output
+/// (`SetResolutionIntent`) keeps "1800 × 1169 @ 120 Hz" so existing Shortcut
+/// conditions keep matching, and `viberes` CLI text keeps "2560x1440 @60Hz",
+/// the syntax `viberes set` reads (`ProfileStore.ApplyOutcome.cliMode`).
+///
 /// Deliberately independent of the locale: digits, a narrow no-break space as
 /// the thousands separator, the multiplication sign, and the unit symbol "Hz"
 /// read the same in en, sk, cs, de, es and fr. Grouping by hand rather than

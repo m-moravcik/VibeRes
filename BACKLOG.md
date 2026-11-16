@@ -395,7 +395,7 @@ effort; each item says when it was built.
 
 ## Shipped, kept here so they are not re-proposed
 
-### One format for sizes and refresh rates — shipped in 0.14.0
+### One format for sizes and refresh rates - shipped in 0.14.0
 
 Cards, both profile forms, apply notes, the hover preview, the confirmation
 rows and Revert notes wrote three dialects ("2 560 × 1 440 · 60 Hz",

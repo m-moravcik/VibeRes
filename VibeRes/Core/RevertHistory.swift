@@ -16,6 +16,11 @@ final class RevertHistory {
         let displayID: CGDirectDisplayID
         let displayName: String
         let before: CGDisplayMode
+
+        /// The size Revert goes back to, in the shared format.
+        var beforeSize: String {
+            ModeFormat.size(width: before.width, height: before.height)
+        }
     }
 
     private(set) var entries: [Entry] = []
@@ -38,7 +43,7 @@ final class RevertHistory {
         case 0: return ""
         case 1:
             let e = entries[0]
-            return "\(e.displayName) → \(ModeFormat.size(width: e.before.width, height: e.before.height))\(mainSuffix)"
+            return "\(e.displayName) → \(e.beforeSize)\(mainSuffix)"
         default:
             return entries.map(\.displayName).joined(separator: ", ") + mainSuffix
         }

@@ -231,7 +231,7 @@ struct ProfileEditForm: View {
         if let hz = rate.hz {
             Text(verbatim: ModeFormat.rate(hz, vrr: rate.isVRRTwin))
         } else {
-            Text(verbatim: "—")
+            Text(verbatim: "-")
         }
     }
 

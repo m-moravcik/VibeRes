@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import VibeRes
@@ -50,14 +51,40 @@ struct ModeFormatTests {
         #expect(!text.contains("@"))
     }
 
-    @Test("Revert and outcome summaries use the shared format")
-    func summaries() {
+    @Test("Point sizes use the shared format")
+    func pointSize() {
+        #expect(PointSize(width: 2560, height: 1440).formatted == Self.size)
+    }
+
+    /// Reads a mode of the main display; never sets one.
+    @Test("The Revert row's size uses the shared format")
+    @MainActor
+    func revertSize() throws {
+        let mode = try #require((CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nil) as? [CGDisplayMode])?.first)
+        let history = RevertHistory()
+        history.recordBatch([(id: 1, name: "Built-in", before: mode)], beforeMain: nil)
+        let entry = try #require(history.entries.first)
+        let expected = "\(ModeFormat.number(mode.width)) \u{00D7} \(ModeFormat.number(mode.height))"
+        #expect(entry.beforeSize == expected)
+        #expect(history.summary == "Built-in \u{2192} \(expected)")
+    }
+
+    /// `viberes apply` prints this; it must read like `viberes list` and parse
+    /// back through `viberes set`, so it stays out of the UI format.
+    @Test("The CLI apply line keeps the CLI's WxH @Hz form")
+    func cliApplyLine() {
         let outcome = ProfileStore.ApplyOutcome(
             displayName: "LG", matcherKind: .specific,
             requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 75,
             appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 60,
             status: .appliedWithFallback)
-        #expect(outcome.summary == "LG: wanted \(Self.size) \u{00B7} 75 Hz, used \(Self.size) \u{00B7} 60 Hz (closest available)")
-        #expect(PointSize(width: 2560, height: 1440).formatted == Self.size)
+        #expect(outcome.summary == "LG: wanted 2560x1440 @75Hz, used 2560x1440 @60Hz (closest available)")
+
+        let applied = ProfileStore.ApplyOutcome(
+            displayName: "LG", matcherKind: .specific,
+            requestedSize: PointSize(width: 2560, height: 1440), requestedHz: 160,
+            appliedSize: PointSize(width: 2560, height: 1440), appliedHz: 160,
+            status: .applied, appliedVRR: true)
+        #expect(applied.summary == "LG \u{2192} 2560x1440 @160Hz VRR")
     }
 }

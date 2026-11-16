@@ -317,7 +317,7 @@ struct VariableRefreshProfileCodingTests {
             requestedVRR: true,
             appliedVRR: false
         )
-        #expect(outcome.summary == "Adaptive: wanted 2 560 × 1 440 · 160 Hz VRR, used 2 560 × 1 440 · 160 Hz (closest available)")
+        #expect(outcome.summary == "Adaptive: wanted 2560x1440 @160Hz VRR, used 2560x1440 @160Hz (closest available)")
     }
 }
 

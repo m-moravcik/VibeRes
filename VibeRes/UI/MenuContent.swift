@@ -923,7 +923,7 @@ private struct FooterBar: View {
             // every language; the tooltip carries it.
             return alsoMain
                 ? "Revert size and main display"
-                : "Revert to \(Self.sizeText(revert.entries[0]))"
+                : "Revert to \(revert.entries[0].beforeSize)"
         case let n:
             return "Revert \(n) displays"
         }
@@ -939,7 +939,7 @@ private struct FooterBar: View {
             return alsoMain ? "Revert main display" : "Revert last change"
         case 1:
             let entry = revert.entries[0]
-            let size = Self.sizeText(entry)
+            let size = entry.beforeSize
             return alsoMain
                 ? "Revert \(entry.displayName) → \(size) and main display"
                 : "Revert \(entry.displayName) → \(size)"
@@ -947,10 +947,6 @@ private struct FooterBar: View {
             let names = revert.entries.map(\.displayName).formatted(.list(type: .and).locale(locale))
             return alsoMain ? "Revert \(names) and main display" : "Revert \(names)"
         }
-    }
-
-    private static func sizeText(_ entry: RevertHistory.Entry) -> String {
-        "\(entry.before.width)×\(entry.before.height)"
     }
 
     private func showAbout() {
@@ -1283,7 +1279,7 @@ private struct CompactResolutionRow: View {
             Button {
                 apply(only.mode)
             } label: {
-                Text(verbatim: only.hz > 0 ? ModeFormat.rate(only.hz) : "—")
+                Text(verbatim: only.hz > 0 ? ModeFormat.rate(only.hz) : "-")
                     .font(.system(size: 11, weight: only.mode.ioDisplayModeID == currentModeID ? .semibold : .regular).monospacedDigit())
                     .foregroundStyle(only.mode.ioDisplayModeID == currentModeID ? Color.white : .secondary)
                     .padding(.horizontal, 9)
@@ -1372,7 +1368,7 @@ private struct CompactResolutionRow: View {
 
     private var tooltipText: String {
         let kind = group.isHiDPI ? "Scaled (HiDPI)" : "Native (1:1)"
-        let pixels = "\(group.pixelWidth)×\(group.pixelHeight) pixels"
+        let pixels = "\(ModeFormat.size(width: group.pixelWidth, height: group.pixelHeight)) pixels"
         let area = areaDelta
         return "\(kind) · \(pixels)\(area)"
     }
