@@ -207,15 +207,20 @@ against the code. "Evidence" names where it lives.
   profile. A catalog written by an older version may contain duplicates; those
   are reported, never guessed between.
 - Applying a profile reports per display what happened: exact match, closest
-  available, not connected, no usable mode, or failed.
+  available, not connected, no usable mode, cannot be told apart, or failed.
+  Entries that name one identity (identical twin monitors) at different modes
+  are left unchanged, in apply and in its preview, whether one or both twins
+  are connected; twins asked for the same mode apply as usual.
 - In the popover, a profile whose saved displays do not exactly match the
   connected set routes through an inline confirmation showing what will be
   skipped and what will be left alone. Global shortcuts follow §4.11.
 - Deleting a profile asks first. There is no undo for it.
 - A profile, entry or field the app cannot read is left out, never the whole
   catalog. A profile is dropped only without an id, a name or any readable
-  entry. Before anything is saved over such a file, the original is copied
-  aside as `profiles-unreadable-<timestamp>.json`; when no copy can be made, or
+  entry. Profiles past the catalog limit, and any later profile reusing an id
+  already read, are left out the same way. Before anything is saved over such
+  a file, the original is copied aside as
+  `profiles-unreadable-<timestamp>.json`; when no copy can be made, or
   the file is there but cannot be opened, saving is refused. The problem row
   says what was left out and names the copy.
 - The app and the CLI share one `profiles.json`. Every change re-reads the file
@@ -344,7 +349,9 @@ room to negotiate.
   Carbon reports only exclusive registrations, so a clash with an app that
   registered without exclusivity goes unnoticed.
 - A saved shortcut that cannot be registered at launch (taken since, or
-  hand-edited) is visibly marked not active, never silently dead. One held
+  hand-edited) is visibly marked not active, never silently dead, and the
+  popover shows a quiet note until it is dismissed or the set of failing
+  shortcuts changes. One held
   by another app or refused by macOS is tried again whenever the running
   apps change (an app quitting frees its combinations), never while a
   recorder listens.
