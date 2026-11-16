@@ -229,12 +229,6 @@ App Intents record Revert; the `viberes` CLI (a separate process) still
 records none, so Revert afterwards offers the action before it. Open: how the
 CLI hands its change to the running app.
 
-## Break-it QA findings, deferred (2026-11-15)
-
-Found in the 1.0 QA pass and left for later on purpose. The pass fixed the
-safety nets, the profile catalog, and Settings, shortcuts and copy; these did
-not make that cut.
-
 ## Motion and polish audit (2026-11-13)
 
 A pass over the whole app with the motion-polish checklist. The popover

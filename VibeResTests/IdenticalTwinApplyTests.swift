@@ -104,11 +104,12 @@ struct IdenticalTwinApplyTests {
             staged += changes
             return ResolutionSwitcher.BatchOutcome(applied: Set(changes.map(\.display)), rejected: [:])
         }
-        let profile = Profile(name: "Twins", entries: [entry(modes[0])])
+        let profile = Profile(name: "Twins", entries: [entry(modes[0]), entry(modes[0])])
 
         let result = store.applyDetailed(profile, displays: displays(modes: modes, current: modes[2]))
 
         #expect(Set(staged.map(\.display)) == [201, 202])
+        #expect(!result.outcomes.isEmpty)
         #expect(result.outcomes.allSatisfy { $0.status == .applied })
     }
 }
