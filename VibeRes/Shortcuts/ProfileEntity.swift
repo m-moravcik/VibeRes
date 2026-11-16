@@ -19,8 +19,8 @@ struct ProfileEntity: AppEntity {
 }
 
 struct ProfileQuery: EntityQuery {
-    /// The saved profiles, in the order the popover lists them. Empty before
-    /// the app has registered its store.
+    /// The saved profiles, in the order the popover lists them. Fails with
+    /// `appNotReady` before the app has registered its store.
     @MainActor
     func suggestedEntitiesNow() throws -> [ProfileEntity] {
         try IntentRuntime.requireProfiles().profiles.map { ProfileEntity(id: $0.id, name: $0.name) }

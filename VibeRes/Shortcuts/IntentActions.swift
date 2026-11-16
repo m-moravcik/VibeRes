@@ -111,8 +111,8 @@ enum IntentActions {
             throw IntentProblem.refreshOutOfRange
         }
 
-        let live = displays.liveSnapshot()
-        guard let info = live.first(where: { Int($0.id) == displayID }) else {
+        displays.refresh()
+        guard let info = displays.displays.first(where: { Int($0.id) == displayID }) else {
             throw IntentProblem.displayNotConnected
         }
         guard let mode = ModeScoring.bestMatch(

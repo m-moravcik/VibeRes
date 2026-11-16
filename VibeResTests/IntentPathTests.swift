@@ -132,6 +132,26 @@ struct IntentPathTests {
         #expect(r.displays.revert.canRevert)
     }
 
+    @Test("Set Resolution reads the display as it is now, not the store's last refresh")
+    func setResolutionRefreshesStaleList() throws {
+        let modes = try realModes()
+        let r = rig(current: modes[0], modes: modes)
+        let moved = ids.map {
+            DisplayInfo(id: $0, name: "Mon \($0)", isMain: false, modes: modes, currentMode: modes[1], groups: [])
+        }
+        r.displays.demoSnapshot = { moved }
+
+        _ = try IntentActions.setResolution(
+            displayID: 101, width: modes[0].width, height: modes[0].height,
+            refreshHz: nil, preferHiDPI: modes[0].isHiDPI, variableRefresh: false,
+            displays: r.displays
+        )
+
+        #expect(r.modeSwitches().map(\.display) == [101])
+        #expect(r.modeSwitches().first?.mode.ioDisplayModeID == modes[0].ioDisplayModeID)
+        #expect(r.displays.revert.entries.first?.before.ioDisplayModeID == modes[1].ioDisplayModeID)
+    }
+
     @Test("Set Resolution for a display that is gone throws and changes nothing")
     func setResolutionDisplayGone() throws {
         let modes = try realModes()
