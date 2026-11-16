@@ -92,6 +92,19 @@ struct ApplyOutcomeNoteTests {
         ]))
     }
 
+    @Test("Identical twins left unchanged are named once, not once per entry")
+    func twinProblemSaidOnce() {
+        // Identical monitors report one name, so both twin entries carry it.
+        let note = ApplyOutcomeNote.make(from: [
+            outcome(.skippedIndistinguishable, display: "LG UltraFine"),
+            outcome(.skippedIndistinguishable, display: "LG UltraFine"),
+        ])
+
+        #expect(note?.content == .problems([
+            .indistinguishable(display: "LG UltraFine"),
+        ]))
+    }
+
     // MARK: Displays that are not connected
     //
     // A manual apply only gets this far for a missing display after the

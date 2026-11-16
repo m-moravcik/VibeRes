@@ -378,7 +378,7 @@ func cmdProfileApply(_ name: String) {
         case .applied: icon = "✓"
         case .alreadyApplied: icon = "="
         case .appliedWithFallback: icon = "~"; hadProblem = true
-        case .skippedNoMatch, .skippedNoMode, .failed: icon = "✗"; hadProblem = true
+        case .skippedNoMatch, .skippedNoMode, .skippedIndistinguishable, .failed: icon = "✗"; hadProblem = true
         }
         print("  \(icon) \(o.summary)")
     }

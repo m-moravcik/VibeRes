@@ -9054,6 +9054,47 @@
         }
       }
     },
+    "note.detail.indistinguishable": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vypadá stejně jako jiný monitor, proto zůstal beze změny"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ sieht genauso aus wie ein anderer Monitor und blieb daher unverändert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ looks the same as another monitor, so it was left unchanged"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ es idéntico a otro monitor, así que se dejó sin cambios"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ est identique à un autre moniteur, il a donc été laissé inchangé"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vyzerá rovnako ako iný monitor, preto zostal bez zmeny"
+          }
+        }
+      }
+    },
     "note.detail.mainAdjusted": {
       "comment": "Main display was set but the layout differs from what was requested. 1: display name",
       "extractionState": "manual",
@@ -9586,6 +9627,47 @@
           "stringUnit": {
             "state": "translated",
             "value": " (+%1$lld ďalších)"
+          }
+        }
+      }
+    },
+    "note.shortcutsNotWorking": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložená zkratka nefunguje. Viz Nastavení, Zkratky."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein gespeichertes Tastenkürzel funktioniert nicht. Siehe Einstellungen, Tastenkürzel."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A saved shortcut is not working. See Settings, Shortcuts."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un atajo guardado no funciona. Consulta Ajustes, Atajos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un raccourci enregistré ne fonctionne pas. Voir Réglages, Raccourcis."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložená skratka nefunguje. Pozri Nastavenia, Skratky."
           }
         }
       }
@@ -10762,6 +10844,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "už je na %@"
+          }
+        }
+      }
+    },
+    "preview.row.indistinguishable": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "stejné monitory, nelze rozlišit: přeskočí se"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "identische Monitore, nicht unterscheidbar: überspringen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "identical monitors, cannot tell apart: skip"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "monitores idénticos, no se distinguen: se omitirá"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "moniteurs identiques, indiscernables : ignoré"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rovnaké monitory, nedajú sa rozlíšiť: preskočiť"
           }
         }
       }

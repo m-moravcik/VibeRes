@@ -31,6 +31,7 @@ struct ApplyOutcomeNote: Equatable {
         case notConnected(display: String)
         case noExternalConnected
         case noUsableMode(display: String, width: Int, height: Int)
+        case indistinguishable(display: String)
         case failed(display: String, problem: UserFacingProblem)
 
         case mainChanged(display: String)
@@ -134,13 +135,19 @@ struct ApplyOutcomeNote: Equatable {
         // are different actions for the user.
         let problems = outcomes.filter {
             switch $0.status {
-            case .skippedNoMode, .failed: return true
+            case .skippedNoMode, .skippedIndistinguishable, .failed: return true
             case .skippedNoMatch, .applied, .alreadyApplied, .appliedWithFallback: return false
             }
         }
         if !problems.isEmpty {
+            // Identical twins report one name, so both of their entries would
+            // say the same sentence; an equal detail is said once.
+            var details: [Detail] = []
+            for problem in problems.map(detail(for:)) where !details.contains(problem) {
+                details.append(problem)
+            }
             return ApplyOutcomeNote(
-                tone: .problem, content: .problems(problems.map(detail(for:))), skipped: skipped
+                tone: .problem, content: .problems(details), skipped: skipped
             )
         }
 
@@ -226,6 +233,8 @@ struct ApplyOutcomeNote: Equatable {
                 width: outcome.requestedSize.width,
                 height: outcome.requestedSize.height
             )
+        case .skippedIndistinguishable:
+            return .indistinguishable(display: outcome.displayName)
         case .failed(let problem):
             return .failed(display: outcome.displayName, problem: problem)
         }
@@ -292,6 +301,14 @@ extension ApplyOutcomeNote.Detail {
                 defaultValue: "\(display): no usable mode for \(mode)",
                 locale: locale,
                 comment: "Display matched but offers no mode close to the saved one. 1: display, 2: saved mode"
+            ))
+
+        case let .indistinguishable(display):
+            return String(localized: LocalizedStringResource(
+                "note.detail.indistinguishable",
+                defaultValue: "\(display) looks the same as another monitor, so it was left unchanged",
+                locale: locale,
+                comment: "The profile names one monitor identity twice at different modes (identical twin monitors), whether one or both are connected, so that monitor is not changed. 1: display name"
             ))
 
         case let .failed(display, problem):

@@ -94,6 +94,15 @@ final class ProfileStore {
         }
     }
 
+    /// Keeps the first profile of each id. Two profiles sharing an id (a
+    /// hand edit, or a merged catalog) made delete remove both and gave the
+    /// profile list non-unique ids; a profile is addressed by its id, so the
+    /// second cannot be kept as it is. `load` reports the drop.
+    nonisolated static func uniquelyIdentified(_ profiles: [Profile]) -> [Profile] {
+        var seen = Set<UUID>()
+        return profiles.filter { seen.insert($0.id).inserted }
+    }
+
     /// True while the file on disk holds something the catalog in memory
     /// left out and no copy of it has been kept yet. `save` refuses to write
     /// over such a file: replacing it would lose for good what this version
@@ -180,9 +189,14 @@ final class ProfileStore {
             decoder.userInfo[CatalogDecodeReport.key] = report
             do {
                 let decoded = try decoder.decode([Lenient<Profile>].self, from: data)
-                let catalog = Self.capped(decoded.compactMap(\.value))
-                if report.dropped > 0 {
-                    Log.profiles.error("load: \(report.dropped) unreadable item(s) left out of the catalog")
+                let readable = decoded.compactMap(\.value)
+                let catalog = Self.capped(Self.uniquelyIdentified(readable))
+                // Past the limits or sharing an id counts like an item that
+                // could not be read: left out of the catalog, so the file is
+                // copied aside before a save writes it over.
+                let leftOut = report.dropped + (catalog == readable ? 0 : 1)
+                if leftOut > 0 {
+                    Log.profiles.error("load: \(leftOut) unreadable item(s) left out of the catalog")
                     unkeptDamage = true
                     let keptAs = keepDamagedFileAside()
                     settle(catalog, problem: catalog.isEmpty
@@ -679,6 +693,11 @@ final class ProfileStore {
             case alreadyApplied           // mode === current; nothing changed
             case skippedNoMatch           // nothing matched the matcher
             case skippedNoMode            // matched but no usable mode found
+            /// Another entry of the profile names the same identity (identical
+            /// twin monitors) and asks it for a different mode, whether one or
+            /// both twins are connected: which display gets which cannot be
+            /// told, so neither entry is applied.
+            case skippedIndistinguishable
             /// The transaction refused this display. Carries the problem as
             /// a value so the UI can localise it; the CLI renders
             /// `englishDescription`.
@@ -744,6 +763,8 @@ final class ProfileStore {
                 }
             case .skippedNoMode:
                 return "\(displayName): no usable mode for \(Self.cliMode(requestedSize, hz: nil, vrr: false))"
+            case .skippedIndistinguishable:
+                return "\(displayName): cannot be told apart from an identical monitor; left unchanged"
             case .failed(let problem):
                 return "\(displayName): \(problem.englishDescription)"
             }
@@ -752,7 +773,7 @@ final class ProfileStore {
         var isProblem: Bool {
             switch status {
             case .applied, .alreadyApplied: return false
-            case .appliedWithFallback, .skippedNoMatch, .skippedNoMode, .failed: return true
+            case .appliedWithFallback, .skippedNoMatch, .skippedNoMode, .skippedIndistinguishable, .failed: return true
             }
         }
 
@@ -762,7 +783,7 @@ final class ProfileStore {
         var didChange: Bool {
             switch status {
             case .applied, .appliedWithFallback: return true
-            case .alreadyApplied, .skippedNoMatch, .skippedNoMode, .failed: return false
+            case .alreadyApplied, .skippedNoMatch, .skippedNoMode, .skippedIndistinguishable, .failed: return false
             }
         }
     }
@@ -902,6 +923,24 @@ final class ProfileStore {
         return Set(displays.map(\.id).filter { id in named.contains { matches($0.matcher, id) } })
     }
 
+    /// True when another entry of the profile names the same identity as
+    /// `entry` (identical twin monitors) and asks for a different mode. Which
+    /// connected twin gets which mode cannot be known, even when only one of
+    /// them is connected, so apply and preview leave them alone and say so
+    /// instead of staging one display twice.
+    ///
+    /// Twins asked for one and the same mode are not ambiguous: either way
+    /// both end up where the profile wants them.
+    private static func isIndistinguishable(
+        _ entry: Profile.Entry,
+        in profile: Profile
+    ) -> Bool {
+        if case .anyExternal = entry.matcher { return false }
+        return profile.entries.contains { other in
+            other.matcher == entry.matcher && !other.asksSameMode(as: entry)
+        }
+    }
+
     /// Apply every entry of the profile to its matching live display, picking the
     /// best mode via the same scoring used by SetResolutionIntent. Returns a
     /// per-entry outcome so the UI can distinguish between success, fallback,
@@ -941,6 +980,18 @@ final class ProfileStore {
                     appliedSize: nil,
                     appliedHz: nil,
                     status: .skippedNoMatch
+                ))
+                continue
+            }
+            if Self.isIndistinguishable(entry, in: profile) {
+                outcomes.append(ApplyOutcome(
+                    displayName: entry.displayName,
+                    matcherKind: mk,
+                    requestedSize: PointSize(width: entry.pointWidth, height: entry.pointHeight),
+                    requestedHz: entry.refreshHz,
+                    appliedSize: nil,
+                    appliedHz: nil,
+                    status: .skippedIndistinguishable
                 ))
                 continue
             }
@@ -1309,6 +1360,18 @@ final class ProfileStore {
                     id: UUID(),
                     displayName: entry.displayName,
                     action: .skippedNotConnected,
+                    savedWidth: entry.pointWidth,
+                    savedHeight: entry.pointHeight,
+                    savedHz: entry.refreshHz,
+                    savedIsHiDPI: entry.isHiDPI
+                ))
+                continue
+            }
+            if Self.isIndistinguishable(entry, in: profile) {
+                rows.append(ProfileApplyPreview.Row(
+                    id: UUID(),
+                    displayName: entry.displayName,
+                    action: .skippedIndistinguishable,
                     savedWidth: entry.pointWidth,
                     savedHeight: entry.pointHeight,
                     savedHz: entry.refreshHz,

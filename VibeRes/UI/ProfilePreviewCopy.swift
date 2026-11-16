@@ -83,6 +83,13 @@ extension ProfileApplyPreview.Row {
                 defaultValue: "no usable mode for \(size)",
                 comment: "The display is attached but offers nothing close. 1: the saved size"
             ))
+
+        case .skippedIndistinguishable:
+            return String(localized: LocalizedStringResource(
+                "preview.row.indistinguishable",
+                defaultValue: "identical monitors, cannot tell apart: skip",
+                comment: "The profile names one monitor identity twice at different modes (identical twin monitors), whether one or both are connected, so that monitor is not changed"
+            ))
         }
     }
 
@@ -95,6 +102,7 @@ extension ProfileApplyPreview.Row {
         case .alreadyApplied: return "="
         case .skippedNotConnected: return "✗"
         case .skippedNoMode: return "?"
+        case .skippedIndistinguishable: return "✗"
         }
     }
 }

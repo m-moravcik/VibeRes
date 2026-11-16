@@ -63,6 +63,18 @@ final class HotkeyCenter {
     /// recorder so a shortcut that silently does nothing cannot happen.
     private(set) var inactive: [HotkeyOwner: HotkeyProblem] = [:]
 
+    /// True while at least one saved shortcut is not working and the note
+    /// for this set of failures has not been dismissed. The popover says so
+    /// quietly, so a shortcut lost at launch is not found only by pressing it
+    /// and getting nothing. A change in what is not working shows it again.
+    var showsShortcutNote: Bool { !inactive.isEmpty && !shortcutNoteDismissed }
+
+    private var shortcutNoteDismissed = false
+
+    /// Hides the popover note until the set of shortcuts that do not work
+    /// changes.
+    func dismissShortcutNote() { shortcutNoteDismissed = true }
+
     /// Fired on the main actor when a registered shortcut is pressed.
     @ObservationIgnored var onPress: ((HotkeyOwner) -> Void)?
 
@@ -211,7 +223,10 @@ final class HotkeyCenter {
                 problems[binding.owner] = .notRegistered(status: status)
             }
         }
-        if problems != inactive { inactive = problems }
+        if problems != inactive {
+            inactive = problems
+            shortcutNoteDismissed = false
+        }
         let summary = "\(registered.count) registered, \(problems.count) inactive"
         Log.app.info("hotkeys: \(summary)")
     }
