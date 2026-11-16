@@ -198,14 +198,17 @@ Exit code is `0` for full success, `1` for an error (including a profile write f
 
 ## Shortcuts.app
 
-Two AppIntents auto-register with Shortcuts, Spotlight, and Siri:
+Three AppIntents auto-register with Shortcuts, Spotlight, and Siri:
 
-- **Set Display Resolution** — pick a display + width + height (+ optional refresh, HiDPI and variable refresh preference). Closest-match scoring.
-- **Get Current Resolution** — for conditional workflows ("if my MacBook is at 1800×1169, switch to 1280×800").
+- **Apply Profile**: pick one of your saved profiles from the list. It applies exactly like the profile's pill and its global shortcut, with no confirmation. The result says what happened, as the note under the pills does, for example `Desk: Already at the saved settings.`. A profile whose displays are all missing, or whose switches all fail, fails the action so a Shortcut can branch on it.
+- **Set Display Resolution**: pick a display + width + height (+ optional refresh, HiDPI and variable refresh preference). Closest-match scoring.
+- **Get Current Resolution**: for conditional workflows ("if my MacBook is at 1800×1169, switch to 1280×800").
 
-Both actions return the resolution as text like `2560 × 1440 @ 160 Hz`. When a display that offers both a variable and a fixed mode at that rate runs the variable one, the text reads `2560 × 1440 @ 160 Hz VRR`, so a Shortcut comparing the text can tell Variable from fixed. A variable mode without a fixed twin, such as ProMotion's 120 Hz, keeps the plain `@ 120 Hz`.
+Apply Profile and Set Display Resolution record **Revert** like a click in the popover, so Revert in the popover, or its global shortcut, takes back what a Shortcut changed. The `viberes` CLI is a separate process and does not record Revert yet.
 
-For a profile or Revert, VibeRes has [its own shortcuts](#keyboard-shortcuts). For anything else, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings — pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
+Set Display Resolution and Get Current Resolution return the resolution as text like `2560 × 1440 @ 160 Hz`. When a display that offers both a variable and a fixed mode at that rate runs the variable one, the text reads `2560 × 1440 @ 160 Hz VRR`, so a Shortcut comparing the text can tell Variable from fixed. A variable mode without a fixed twin, such as ProMotion's 120 Hz, keeps the plain `@ 120 Hz`.
+
+For a profile or Revert, VibeRes has [its own shortcuts](#keyboard-shortcuts). For anything else, you can assign a global hotkey to any Shortcut from Shortcuts.app's settings, and pressing it from anywhere in the system flips the relevant displays. Stream Deck, BetterTouchTool, and Loupedeck inherit it for free since they all trigger Shortcuts.
 
 ---
 

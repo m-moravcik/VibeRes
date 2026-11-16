@@ -838,6 +838,47 @@
         }
       }
     },
+    "Applies a saved VibeRes profile. Displays it does not include are left as they are, and Revert in the menu takes it back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použije uložený profil VibeRes. Displeje, které neobsahuje, zůstanou beze změny a Vrátit v nabídce ho vezme zpět."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wendet ein gespeichertes VibeRes-Profil an. Displays, die es nicht enthält, bleiben unverändert, und Zurücksetzen im Menü nimmt es zurück."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies a saved VibeRes profile. Displays it does not include are left as they are, and Revert in the menu takes it back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplica un perfil guardado de VibeRes. Las pantallas que no incluye se quedan como están, y Revertir en el menú lo deshace."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applique un profil VibeRes enregistré. Les écrans qu’il n’inclut pas restent inchangés, et Rétablir dans le menu l’annule."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použije uložený profil VibeRes. Displeje, ktoré neobsahuje, zostanú bez zmeny a Vrátiť v ponuke ho vezme späť."
+          }
+        }
+      }
+    },
     "Applies for this session only and undoes it after %lld seconds unless you confirm. The undo runs on its own, so it works even when the screen is unreadable.": {
       "extractionState": "manual",
       "localizations": {
@@ -1021,6 +1062,47 @@
         }
       }
     },
+    "Apply ${profile}": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít ${profile}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${profile} anwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply ${profile}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar ${profile}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer ${profile}"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť ${profile}"
+          }
+        }
+      }
+    },
     "Apply '%@'?": {
       "extractionState": "manual",
       "localizations": {
@@ -1058,6 +1140,129 @@
           "stringUnit": {
             "state": "translated",
             "value": "Použiť „%@“?"
+          }
+        }
+      }
+    },
+    "Apply Profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít profil"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil anwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply Profile"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar perfil"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer le profil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť profil"
+          }
+        }
+      }
+    },
+    "Apply a profile in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít profil v ${applicationName}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil in ${applicationName} anwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply a profile in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar un perfil en ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer un profil dans ${applicationName}"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť profil v ${applicationName}"
+          }
+        }
+      }
+    },
+    "Apply profile with ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít profil přes ${applicationName}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil mit ${applicationName} anwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply profile with ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar perfil con ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliquer un profil avec ${applicationName}"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť profil cez ${applicationName}"
           }
         }
       }
@@ -4847,6 +5052,47 @@
         }
       }
     },
+    "Profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfil"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
+          }
+        }
+      }
+    },
     "Profile name": {
       "extractionState": "manual",
       "localizations": {
@@ -8558,6 +8804,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zapisovať ladiaci záznam do súboru"
+          }
+        }
+      }
+    },
+    "intent.problem.appNotReady": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes se ještě spouští. Zkus to za chvíli znovu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes startet noch. Versuche es gleich noch einmal."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes is still starting. Try again in a moment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes todavía se está iniciando. Inténtalo de nuevo en un momento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes démarre encore. Réessayez dans un instant."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VibeRes sa ešte spúšťa. Skús to o chvíľu znova."
           }
         }
       }

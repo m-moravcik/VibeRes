@@ -72,15 +72,22 @@ enum ShortcutActions {
         }
     }
 
+    /// What running a profile came to, before anyone is told. The global
+    /// shortcut turns it into an alert and a VoiceOver line; the Apply Profile
+    /// App Intent turns it into a result or an error.
+    enum ProfileRun {
+        case missing
+        case noDisplayConnected(profile: String)
+        case applied(Profile, ProfileStore.ProfileApplyResult)
+    }
+
     /// Applies what the profile can apply to the displays connected now, and
     /// records it for Revert. A profile that binds no connected display does
-    /// nothing; a missing display or a failed switch sounds the alert, since
-    /// no note can reach a popover that is not open.
-    private static func applyProfile(_ id: UUID, displays: DisplayStore, profiles: ProfileStore) {
+    /// nothing. Shared by the global shortcut and the App Intent, so both act
+    /// exactly like each other and like the popover's pill.
+    static func runProfile(_ id: UUID, displays: DisplayStore, profiles: ProfileStore) -> ProfileRun {
         guard let profile = profiles.profiles.first(where: { $0.id == id }) else {
-            alert()
-            announce(.profileMissing)
-            return
+            return .missing
         }
         let live = displays.liveSnapshot()
         let classification = DisplaySetClassifier.classify(
@@ -88,9 +95,7 @@ enum ShortcutActions {
         )
         if classification == .disjoint {
             Log.apply.info("shortcut: profile matches no connected display", detail: "profile '\(profile.name)'")
-            alert()
-            announce(.noDisplayConnected(profile: profile.name))
-            return
+            return .noDisplayConnected(profile: profile.name)
         }
         Log.apply.info("shortcut: applying profile", detail: "profile '\(profile.name)'")
         let result = profiles.applyDetailed(profile, displays: live, revert: displays.revert)
@@ -100,21 +105,57 @@ enum ShortcutActions {
         if result.mainChange?.didChange == true {
             displays.expectOwnMainChange()
         }
-        // A fallback rate is the profile working as designed (an "any
-        // external" entry on a slower monitor), so it stays quiet; a display
-        // left out or a switch that failed does not.
-        let missedSomething = result.outcomes.contains { outcome in
+        return .applied(profile, result)
+    }
+
+    /// A display left out or a switch that failed. A fallback rate is the
+    /// profile working as designed (an "any external" entry on a slower
+    /// monitor), so it does not count.
+    static func missedSomething(_ result: ProfileStore.ProfileApplyResult) -> Bool {
+        let outcomeMissed = result.outcomes.contains { outcome in
             switch outcome.status {
             case .applied, .alreadyApplied, .appliedWithFallback: return false
             case .skippedNoMatch, .skippedNoMode, .failed: return true
             }
         }
-        if missedSomething || result.mainChange?.problemSummary != nil {
-            alert()
+        return outcomeMissed || result.mainChange?.problemSummary != nil
+    }
+
+    /// Nothing the profile names is at its saved settings after the run, and
+    /// something went wrong: every switch failed or every display was left out.
+    static func landedNothing(_ result: ProfileStore.ProfileApplyResult) -> Bool {
+        let landed = result.outcomes.contains { outcome in
+            switch outcome.status {
+            case .applied, .alreadyApplied, .appliedWithFallback: return true
+            case .skippedNoMatch, .skippedNoMode, .failed: return false
+            }
         }
-        // Said only when the popover would show a note for it too.
-        if let note = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) {
-            announce(.applied(profile: profile.name, note: note))
+        let mainLanded: Bool
+        switch result.mainChange {
+        case .changed?, .changedButAdjusted?, .alreadyMain?: mainLanded = true
+        default: mainLanded = false
+        }
+        return !landed && !mainLanded && missedSomething(result)
+    }
+
+    /// A missing display or a failed switch sounds the alert, since no note
+    /// can reach a popover that is not open.
+    private static func applyProfile(_ id: UUID, displays: DisplayStore, profiles: ProfileStore) {
+        switch runProfile(id, displays: displays, profiles: profiles) {
+        case .missing:
+            alert()
+            announce(.profileMissing)
+        case .noDisplayConnected(let name):
+            alert()
+            announce(.noDisplayConnected(profile: name))
+        case let .applied(profile, result):
+            if missedSomething(result) {
+                alert()
+            }
+            // Said only when the popover would show a note for it too.
+            if let note = ApplyOutcomeNote.make(from: result.outcomes, mainChange: result.mainChange) {
+                announce(.applied(profile: profile.name, note: note))
+            }
         }
     }
 }
