@@ -40,8 +40,9 @@ struct IdenticalTwinApplyTests {
                       pointHeight: mode.height, refreshHz: nil, isHiDPI: mode.isHiDPI)
     }
 
-    private func displays(modes: [CGDisplayMode], current: CGDisplayMode) -> [DisplayInfo] {
-        [201, 202].map {
+    private func displays(modes: [CGDisplayMode], current: CGDisplayMode,
+                          ids: [CGDirectDisplayID] = [201, 202]) -> [DisplayInfo] {
+        ids.map {
             DisplayInfo(id: $0, name: "Twin \($0)", isMain: false, modes: modes,
                         currentMode: current, groups: [])
         }
@@ -67,6 +68,30 @@ struct IdenticalTwinApplyTests {
             #expect(outcome.isProblem)
         }
         #expect(result.didChangeAnything == false)
+    }
+
+    @Test("With one twin connected, entries at different modes are not applied to it twice")
+    func oneTwinConnectedIsReported() throws {
+        let modes = try realModes()
+        let store = makeStore()
+        var staged: [ResolutionSwitcher.BatchChange] = []
+        store.applyBatch = { changes, _ in
+            staged += changes
+            return ResolutionSwitcher.BatchOutcome(applied: Set(changes.map(\.display)), rejected: [:])
+        }
+        let profile = Profile(name: "Twins", entries: [entry(modes[0]), entry(modes[1])])
+        let connected = displays(modes: modes, current: modes[2], ids: [201])
+
+        let result = store.applyDetailed(profile, displays: connected)
+
+        #expect(staged.isEmpty, "one display must not be staged at two modes")
+        #expect(result.outcomes.count == 2)
+        #expect(result.outcomes.allSatisfy { $0.status == .skippedIndistinguishable })
+        #expect(result.didChangeAnything == false)
+
+        let preview = store.previewApply(profile, against: connected)
+        #expect(preview.rows.count == 2)
+        #expect(preview.rows.allSatisfy { $0.action == .skippedIndistinguishable })
     }
 
     @Test("Twins asked for the same mode are applied as before")

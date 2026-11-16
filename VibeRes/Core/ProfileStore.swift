@@ -923,20 +923,18 @@ final class ProfileStore {
         return Set(displays.map(\.id).filter { id in named.contains { matches($0.matcher, id) } })
     }
 
-    /// True when `entry` binds to several displays that look the same to the
-    /// matcher (identical twin monitors) while another entry of the profile
-    /// names that same identity and asks for a different mode. Which twin gets
-    /// which mode cannot be known, so apply and preview leave them alone and
-    /// say so instead of staging one display twice.
+    /// True when another entry of the profile names the same identity as
+    /// `entry` (identical twin monitors) and asks for a different mode. Which
+    /// connected twin gets which mode cannot be known, even when only one of
+    /// them is connected, so apply and preview leave them alone and say so
+    /// instead of staging one display twice.
     ///
     /// Twins asked for one and the same mode are not ambiguous: either way
     /// both end up where the profile wants them.
     private static func isIndistinguishable(
         _ entry: Profile.Entry,
-        boundTo matches: [DisplayInfo],
         in profile: Profile
     ) -> Bool {
-        guard matches.count > 1 else { return false }
         if case .anyExternal = entry.matcher { return false }
         return profile.entries.contains { other in
             other.matcher == entry.matcher && !other.asksSameMode(as: entry)
@@ -985,7 +983,7 @@ final class ProfileStore {
                 ))
                 continue
             }
-            if Self.isIndistinguishable(entry, boundTo: matches, in: profile) {
+            if Self.isIndistinguishable(entry, in: profile) {
                 outcomes.append(ApplyOutcome(
                     displayName: entry.displayName,
                     matcherKind: mk,
@@ -1369,7 +1367,7 @@ final class ProfileStore {
                 ))
                 continue
             }
-            if Self.isIndistinguishable(entry, boundTo: matches, in: profile) {
+            if Self.isIndistinguishable(entry, in: profile) {
                 rows.append(ProfileApplyPreview.Row(
                     id: UUID(),
                     displayName: entry.displayName,
