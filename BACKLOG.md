@@ -170,8 +170,8 @@ Bind global keyboard shortcuts to apply a specific profile (e.g.
 - Already addressable via Shortcuts.app (the App Intents integration): a
   keyboard shortcut can run a Shortcut that applies a profile.
   *Corrected 2026-11-15: this was never true. The App Intents are Set
-  Resolution and Get Resolution; applying a profile from Shortcuts needs the
-  Apply Profile intent listed under the break-it QA findings below.*
+  Resolution and Get Resolution; applying a profile from Shortcuts needed the
+  Apply Profile intent, added in 0.14.0.*
 
 **Decided 2026-11-13: build it, next after the first-profile onboarding.**
 The Shortcuts route needs one hand-built Shortcut per profile; a shortcut
