@@ -711,27 +711,39 @@ final class ProfileStore {
             case anyExternal
         }
 
-        /// Human-readable summary used in tooltips and CLI output.
+        /// A mode in the `viberes` CLI's own form, "2560x1440 @60Hz VRR", the
+        /// one `viberes list` prints and `viberes set` reads back; "?" when no
+        /// size is known.
+        static func cliMode(_ size: PointSize?, hz: Int?, vrr: Bool) -> String {
+            guard let size else { return "?" }
+            var parts = ["\(size.width)x\(size.height)"]
+            if let hz { parts.append("@\(hz)Hz") }
+            if vrr, hz != nil { parts.append("VRR") }
+            return parts.joined(separator: " ")
+        }
+
+        private var appliedMode: String {
+            Self.cliMode(appliedSize, hz: appliedHz, vrr: appliedVRR)
+        }
+
+        /// English summary for `viberes apply` and the log. Sizes and rates use
+        /// the CLI's form, not `ModeFormat`: the UI note is `ApplyOutcomeNote`.
         var summary: String {
             switch status {
             case .applied:
-                let hz = appliedHz.map { " @ \($0)Hz" + (appliedVRR ? " VRR" : "") } ?? ""
-                return "\(displayName) → \(appliedSize?.formatted ?? "?")\(hz)"
+                return "\(displayName) → \(appliedMode)"
             case .alreadyApplied:
                 return "\(displayName) already at requested mode"
             case .appliedWithFallback:
-                let req = requestedSize.formatted
-                    + (requestedHz.map { " @\($0)Hz" + (requestedVRR ? " VRR" : "") } ?? "")
-                let got = (appliedSize?.formatted ?? "?")
-                    + (appliedHz.map { " @\($0)Hz" + (appliedVRR ? " VRR" : "") } ?? "")
-                return "\(displayName): wanted \(req), used \(got) (closest available)"
+                let req = Self.cliMode(requestedSize, hz: requestedHz, vrr: requestedVRR)
+                return "\(displayName): wanted \(req), used \(appliedMode) (closest available)"
             case .skippedNoMatch:
                 switch matcherKind {
                 case .anyExternal: return "no external monitor connected"
                 case .specific: return "\(displayName) not connected"
                 }
             case .skippedNoMode:
-                return "\(displayName): no usable mode for \(requestedSize.formatted)"
+                return "\(displayName): no usable mode for \(Self.cliMode(requestedSize, hz: nil, vrr: false))"
             case .failed(let problem):
                 return "\(displayName): \(problem.englishDescription)"
             }

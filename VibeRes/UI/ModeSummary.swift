@@ -1,13 +1,9 @@
 import Foundation
 
-/// "1920×1080 · 120 Hz VRR · HiDPI": how the profile forms name a mode. One
-/// function for the save form and the edit form, so the two cannot drift;
-/// the save form used to write "120Hz" next to the edit form's "120 Hz".
+/// "1 920 × 1 080 · 120 Hz VRR · HiDPI": how the profile forms name a mode.
+/// A thin wrapper over `ModeFormat`, which every other surface uses too.
 enum ModeSummary {
     static func text(width: Int, height: Int, refreshHz: Int?, isVRR: Bool, isHiDPI: Bool) -> String {
-        var parts = ["\(width)×\(height)"]
-        if let refreshHz { parts.append(isVRR ? "\(refreshHz) Hz VRR" : "\(refreshHz) Hz") }
-        if isHiDPI { parts.append("HiDPI") }
-        return parts.joined(separator: " · ")
+        ModeFormat.mode(width: width, height: height, hz: refreshHz, vrr: isVRR, hiDPI: isHiDPI)
     }
 }

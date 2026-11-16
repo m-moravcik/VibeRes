@@ -183,9 +183,7 @@ struct ApplyOutcomeNote: Equatable {
     ///
     /// "VRR" is an acronym like "Hz" and stays as it is in every language.
     static func modeString(width: Int, height: Int, hz: Int?, vrr: Bool = false) -> String {
-        let size = "\(width)×\(height)"
-        guard let hz else { return size }
-        return "\(size) @\(hz)Hz" + (vrr ? " VRR" : "")
+        ModeFormat.mode(width: width, height: height, hz: hz, vrr: vrr)
     }
 
     private static func detail(for outcome: ProfileStore.ApplyOutcome) -> Detail {
@@ -245,7 +243,7 @@ struct ApplyOutcomeNote: Equatable {
 // OnboardingView, rather than letting the compiler derive keys like
 // "%@ \u{2192} %@" from the literal. A translator sees a name and a comment
 // instead of a puzzle. Numbers arrive pre-formatted via `modeString`, so no
-// language has to reassemble "2560\u{00D7}1440 @60Hz".
+// language has to reassemble "2 560 \u{00D7} 1 440 \u{00B7} 60 Hz".
 
 extension ApplyOutcomeNote.Detail {
     /// `locale` decides the plural form as well as the table, so it defaults to
@@ -258,7 +256,7 @@ extension ApplyOutcomeNote.Detail {
                 "note.detail.applied",
                 defaultValue: "\(display) \u{2192} \(mode)",
                 locale: locale,
-                comment: "Display was set to a mode. 1: display name, 2: mode e.g. 2560x1440 @60Hz"
+                comment: "Display was set to a mode. 1: display name, 2: mode e.g. 2 560 \u{00D7} 1 440 \u{00B7} 60 Hz"
             ))
 
         case let .fallback(display, wantedWidth, wantedHeight, wantedHz, usedWidth, usedHeight, usedHz, wantedVRR, usedVRR):

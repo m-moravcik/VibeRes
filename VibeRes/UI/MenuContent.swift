@@ -334,10 +334,8 @@ private struct DisplayCard: View {
     /// "2 560 × 1 440 · 160 Hz VRR · HiDPI". VRR is named only where the
     /// display also offers a fixed 160 Hz, the one case it is ambiguous.
     private func currentModeSubtitle(_ m: CGDisplayMode, isVRRTwin: Bool) -> String {
-        var parts = ["\(formatThousands(m.width)) × \(formatThousands(m.height))"]
-        if let hz = m.refreshHz { parts.append(isVRRTwin ? "\(hz) Hz VRR" : "\(hz) Hz") }
-        if m.isHiDPI { parts.append("HiDPI") }
-        return parts.joined(separator: " · ")
+        ModeFormat.mode(width: m.width, height: m.height, hz: m.refreshHz,
+                        vrr: isVRRTwin, hiDPI: m.isHiDPI)
     }
 }
 
@@ -526,12 +524,12 @@ struct DisplayDetailView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     // Rolls to the size just picked: the click is answered
                     // here, at the top, while the displays come back.
-                    Text("\(formatThousands(cur.width)) × \(formatThousands(cur.height))")
+                    Text(verbatim: ModeFormat.size(width: cur.width, height: cur.height))
                         .font(.system(size: 15, weight: .semibold).monospacedDigit())
                         .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                     HStack(spacing: 4) {
                         if let hz = cur.refreshHz {
-                            Text("\(hz) Hz")
+                            Text(verbatim: ModeFormat.rate(hz))
                                 .foregroundStyle(Design.Palette.rollingSecondary)
                                 .rollingNumbers(on: cur.ioDisplayModeID, reduceMotion: reduceMotion)
                             if display.isVRRTwin(cur) {
@@ -911,7 +909,7 @@ private struct FooterBar: View {
     /// `revertDetail`, the tooltip and what VoiceOver reads.
     ///
     /// Built from the history's values rather than `RevertHistory.summary`,
-    /// which stays English for the CLI and the log.
+    /// which is a finished English sentence a catalog cannot translate.
     private var revertLabel: LocalizedStringKey {
         let revert = store.revert
         let alsoMain = revert.beforeMainID != nil
@@ -925,7 +923,7 @@ private struct FooterBar: View {
             // every language; the tooltip carries it.
             return alsoMain
                 ? "Revert size and main display"
-                : "Revert to \(Self.sizeText(revert.entries[0]))"
+                : "Revert to \(revert.entries[0].beforeSize)"
         case let n:
             return "Revert \(n) displays"
         }
@@ -941,7 +939,7 @@ private struct FooterBar: View {
             return alsoMain ? "Revert main display" : "Revert last change"
         case 1:
             let entry = revert.entries[0]
-            let size = Self.sizeText(entry)
+            let size = entry.beforeSize
             return alsoMain
                 ? "Revert \(entry.displayName) → \(size) and main display"
                 : "Revert \(entry.displayName) → \(size)"
@@ -949,10 +947,6 @@ private struct FooterBar: View {
             let names = revert.entries.map(\.displayName).formatted(.list(type: .and).locale(locale))
             return alsoMain ? "Revert \(names) and main display" : "Revert \(names)"
         }
-    }
-
-    private static func sizeText(_ entry: RevertHistory.Entry) -> String {
-        "\(entry.before.width)×\(entry.before.height)"
     }
 
     private func showAbout() {
@@ -1248,7 +1242,7 @@ private struct CompactResolutionRow: View {
     }
 
     private var sizeLabel: some View {
-        Text("\(formatThousands(group.pointWidth)) × \(formatThousands(group.pointHeight))")
+        Text(verbatim: ModeFormat.size(width: group.pointWidth, height: group.pointHeight))
             .font(.system(size: 13, weight: isCurrentSize ? .semibold : .regular).monospacedDigit())
             .foregroundStyle(isCurrentSize ? AnyShapeStyle(Design.Palette.accentText) : AnyShapeStyle(.primary))
             .frame(minWidth: 100, alignment: .leading)
@@ -1269,7 +1263,7 @@ private struct CompactResolutionRow: View {
                 if preferred.isVRRTwin {
                     Text("VRR")
                 } else {
-                    Text(verbatim: preferred.mode.refreshHz.map { "\($0) Hz" } ?? "")
+                    Text(verbatim: preferred.mode.refreshHz.map { ModeFormat.rate($0) } ?? "")
                 }
             }
             .font(Design.Typography.cardSubtitle)
@@ -1285,7 +1279,7 @@ private struct CompactResolutionRow: View {
             Button {
                 apply(only.mode)
             } label: {
-                Text(only.hz > 0 ? "\(only.hz) Hz" : "—")
+                Text(verbatim: only.hz > 0 ? ModeFormat.rate(only.hz) : "-")
                     .font(.system(size: 11, weight: only.mode.ioDisplayModeID == currentModeID ? .semibold : .regular).monospacedDigit())
                     .foregroundStyle(only.mode.ioDisplayModeID == currentModeID ? Color.white : .secondary)
                     .padding(.horizontal, 9)
@@ -1374,7 +1368,7 @@ private struct CompactResolutionRow: View {
 
     private var tooltipText: String {
         let kind = group.isHiDPI ? "Scaled (HiDPI)" : "Native (1:1)"
-        let pixels = "\(group.pixelWidth)×\(group.pixelHeight) pixels"
+        let pixels = "\(ModeFormat.size(width: group.pixelWidth, height: group.pixelHeight)) pixels"
         let area = areaDelta
         return "\(kind) · \(pixels)\(area)"
     }
@@ -1409,27 +1403,10 @@ private struct VariableRateHint: ViewModifier {
                 .accessibilityLabel("Variable refresh rate, up to \(option.hz) Hz")
         } else {
             content
-                .help("\(option.hz) Hz")
+                .help(Text(verbatim: ModeFormat.rate(option.hz)))
                 .accessibilityLabel("\(option.hz) Hertz")
         }
     }
-}
-
-// MARK: - Number formatting (shared)
-
-/// Cached formatter — instantiating NumberFormatter is surprisingly expensive
-/// (it pulls locale data) and we'd otherwise allocate one per cell per render
-/// for 22+ resolution rows.
-private let thousandsFormatter: NumberFormatter = {
-    let f = NumberFormatter()
-    f.numberStyle = .decimal
-    f.groupingSeparator = "\u{202F}" // narrow no-break space
-    f.usesGroupingSeparator = true
-    return f
-}()
-
-private func formatThousands(_ n: Int) -> String {
-    thousandsFormatter.string(from: NSNumber(value: n)) ?? "\(n)"
 }
 
 private extension View {

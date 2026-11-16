@@ -16,6 +16,11 @@ final class RevertHistory {
         let displayID: CGDirectDisplayID
         let displayName: String
         let before: CGDisplayMode
+
+        /// The size Revert goes back to, in the shared format.
+        var beforeSize: String {
+            ModeFormat.size(width: before.width, height: before.height)
+        }
     }
 
     private(set) var entries: [Entry] = []
@@ -30,7 +35,7 @@ final class RevertHistory {
     var canRevert: Bool { !entries.isEmpty || beforeMainID != nil }
 
     /// Human-readable description of what Revert will do, e.g.
-    /// "Built-in → 1800×1169" or "Built-in, LG UltraFine".
+    /// "Built-in → 1 800 × 1 169" or "Built-in, LG UltraFine".
     var summary: String {
         if entries.isEmpty, beforeMainID != nil { return "main display" }
         let mainSuffix = beforeMainID != nil ? " + main display" : ""
@@ -38,7 +43,7 @@ final class RevertHistory {
         case 0: return ""
         case 1:
             let e = entries[0]
-            return "\(e.displayName) → \(e.before.width)×\(e.before.height)\(mainSuffix)"
+            return "\(e.displayName) → \(e.beforeSize)\(mainSuffix)"
         default:
             return entries.map(\.displayName).joined(separator: ", ") + mainSuffix
         }
