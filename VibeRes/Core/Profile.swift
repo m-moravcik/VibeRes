@@ -240,6 +240,14 @@ struct Profile: Identifiable, Codable, Hashable {
             }
         }
 
+        /// Whether two entries ask for the same mode, whatever display they
+        /// name.
+        func asksSameMode(as other: Entry) -> Bool {
+            pointWidth == other.pointWidth && pointHeight == other.pointHeight
+                && refreshHz == other.refreshHz && isHiDPI == other.isHiDPI
+                && isVariableRefresh == other.isVariableRefresh
+        }
+
         /// The refresh rate to ask of one live display, given the rate it
         /// runs at right now.
         ///

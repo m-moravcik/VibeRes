@@ -209,6 +209,7 @@ private struct PreviewRow: View {
         case .alreadyApplied: return "checkmark.circle.fill"
         case .skippedNotConnected: return "exclamationmark.triangle.fill"
         case .skippedNoMode: return "questionmark.circle.fill"
+        case .skippedIndistinguishable: return "exclamationmark.triangle.fill"
         }
     }
 
@@ -219,6 +220,7 @@ private struct PreviewRow: View {
         case .alreadyApplied: return .green
         case .skippedNotConnected: return .red
         case .skippedNoMode: return .orange
+        case .skippedIndistinguishable: return .orange
         }
     }
 }

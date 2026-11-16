@@ -115,7 +115,7 @@ enum ShortcutActions {
         let outcomeMissed = result.outcomes.contains { outcome in
             switch outcome.status {
             case .applied, .alreadyApplied, .appliedWithFallback: return false
-            case .skippedNoMatch, .skippedNoMode, .failed: return true
+            case .skippedNoMatch, .skippedNoMode, .skippedIndistinguishable, .failed: return true
             }
         }
         return outcomeMissed || result.mainChange?.problemSummary != nil

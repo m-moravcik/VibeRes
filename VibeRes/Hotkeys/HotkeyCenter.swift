@@ -63,6 +63,11 @@ final class HotkeyCenter {
     /// recorder so a shortcut that silently does nothing cannot happen.
     private(set) var inactive: [HotkeyOwner: HotkeyProblem] = [:]
 
+    /// True while at least one saved shortcut is not working. The popover
+    /// says so quietly, so a shortcut lost at launch is not found only by
+    /// pressing it and getting nothing.
+    var hasInactiveShortcuts: Bool { !inactive.isEmpty }
+
     /// Fired on the main actor when a registered shortcut is pressed.
     @ObservationIgnored var onPress: ((HotkeyOwner) -> Void)?
 

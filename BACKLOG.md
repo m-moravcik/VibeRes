@@ -235,32 +235,6 @@ Found in the 1.0 QA pass and left for later on purpose. The pass fixed the
 safety nets, the profile catalog, and Settings, shortcuts and copy; these did
 not make that cut.
 
-### Identical twin monitors saved at different modes
-Two monitors that report the same vendor, model and serial bind to both
-`.edid` entries of a profile, so applying stages the same display twice and
-both rows of the outcome report success (`ProfileStore.applyDetailed`). The
-save already warns that such displays cannot be told apart; apply should say
-so too, or bind entries to displays one to one.
-
-### More than 200 profiles
-`ProfileStore.capped` keeps the first 200 profiles of a hand-edited or
-merged catalog, and the next save writes only those. Since the catalog fix,
-a file the app could not fully read is copied aside before it is replaced,
-but the cap does not count as "could not read" yet, so the profiles past 200
-are lost without a copy or a note.
-
-### Duplicate profile ids in a hand-edited file
-Two profiles with the same id: delete removes both, and the profile list's
-`ForEach` gets non-unique ids. Decoding could give the second a new id, or
-keep only the first and report the drop like any unreadable item.
-
-### A shortcut that fails at launch is easy to miss
-A saved shortcut that cannot be registered at launch is reported in Settings
-→ Shortcuts and in the profile's Edit form, nowhere else. VISION.md wants
-problems "reported, never hidden"; a quiet note in the popover would be
-enough. (Falling back quietly when a shortcut is pressed while the action
-cannot run is accepted in PRD §4.11.)
-
 ## Motion and polish audit (2026-11-13)
 
 A pass over the whole app with the motion-polish checklist. The popover
@@ -411,6 +385,26 @@ that ate the first click on the pill. The preview is now a plain `.help(...)`
 tooltip built from the same `ProfileApplyPreview` rows, so there is no panel to
 intercept anything. The trade — no icons or colour in the tooltip — was
 accepted and has not been complained about since.
+
+### Break-it QA findings, shipped in 0.14.0
+
+- **More than 200 profiles.** A catalog past the limit counts like an
+  unreadable one: the original file is copied aside as
+  `profiles-unreadable-<date>.json` before a save replaces it, and the
+  problem row says so. The limit itself (200) is unchanged; whether it
+  should stay is still the owner's call.
+- **Duplicate profile ids in a hand-edited file.** The first profile of an id
+  is kept; the later ones are left out, reported and copied aside like any
+  unreadable item, so delete removes one profile and the list ids are unique.
+- **A shortcut that fails at launch.** The popover shows a quiet, dismissable
+  note when a saved shortcut could not be registered; Settings, Shortcuts
+  still says which one and why.
+- **Identical twin monitors saved at different modes.** Apply and the preview
+  refuse to guess which twin gets which mode: those entries are left alone
+  and reported as "looks the same as another monitor". Twins asked for one
+  and the same mode apply as before. Binding entries to displays one to one
+  was not chosen, because the order of identical monitors is not something
+  the app can know.
 
 ## Known limitations (accepted, not deferred)
 

@@ -406,6 +406,24 @@ struct HotkeyCenterTests {
         #expect(center.inactive == [.profile(desk): .reservedBySystem, .profile(sofa): .usedByAnotherApp])
     }
 
+    @Test("The popover is told when any saved shortcut could not be registered")
+    func popoverNoteFollowsInactiveShortcuts() {
+        let (center, registrar) = make()
+        #expect(center.hasInactiveShortcuts == false)
+
+        registrar.takenElsewhere = [comboA]
+        center.setBindings([
+            HotkeyBinding(owner: .profile(desk), combo: comboA, name: "Desk"),
+            HotkeyBinding(owner: .profile(sofa), combo: comboB, name: "Sofa"),
+        ])
+        #expect(center.hasInactiveShortcuts)
+
+        // Freed by the other app: the retry registers it and the note goes.
+        registrar.takenElsewhere = []
+        center.retryInactive()
+        #expect(center.hasInactiveShortcuts == false)
+    }
+
     @Test("A hand-edited single-modifier shortcut is reported, not registered")
     func badShapeFromFileIsReported() {
         let (center, registrar) = make()

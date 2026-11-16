@@ -77,6 +77,70 @@ struct ProfileCatalogResilienceTests {
         #expect(try Data(contentsOf: copies[0]) == original)
     }
 
+    @Test("Profiles past the limit are kept aside and reported, not lost quietly")
+    func profilesPastLimitKeptAside() throws {
+        let dir = makeDirectory()
+        let many = (0..<(ProfileStore.maximumProfiles + 3)).map {
+            Profile(name: "P\($0)", entries: [entry(lg, "LG")])
+        }
+        let original = try write(try jsonCatalog(many), to: dir)
+
+        let store = ProfileStore(directory: dir)
+
+        #expect(store.profiles.count == ProfileStore.maximumProfiles)
+        guard case .profilesPartlyUnreadable(let keptAs?) = store.lastError else {
+            Issue.record("Profiles past the limit must be reported, with the copy's name")
+            return
+        }
+        let copies = try keptCopies(in: dir)
+        #expect(copies.map(\.lastPathComponent) == [keptAs])
+        let copy = try #require(copies.first)
+        #expect(try Data(contentsOf: copy) == original)
+    }
+
+    @Test("Saving after a capped read leaves the full original beside the catalog")
+    func cappedCatalogSaveKeepsOriginal() throws {
+        let dir = makeDirectory()
+        let many = (0..<(ProfileStore.maximumProfiles + 1)).map {
+            Profile(name: "P\($0)", entries: [entry(lg, "LG")])
+        }
+        let original = try write(try jsonCatalog(many), to: dir)
+        let store = ProfileStore(directory: dir)
+
+        if let victim = store.profiles.first { _ = store.delete(victim) }
+
+        let copies = try keptCopies(in: dir)
+        #expect(copies.count == 1)
+        let copy = try #require(copies.first)
+        #expect(try Data(contentsOf: copy) == original)
+    }
+
+    @Test("Two profiles with one id: the first stays, the second is reported as left out")
+    func duplicateIdsKeepFirstAndReport() throws {
+        let dir = makeDirectory()
+        let first = Profile(name: "First", entries: [entry(lg, "LG")])
+        var second = Profile(name: "Second", entries: [entry(acer, "Acer")])
+        second.id = first.id
+        let other = Profile(name: "Other", entries: [entry(acer, "Acer")])
+        let original = try write(try jsonCatalog([first, second, other]), to: dir)
+
+        let store = ProfileStore(directory: dir)
+
+        #expect(store.profiles.map(\.name) == ["First", "Other"])
+        #expect(Set(store.profiles.map(\.id)).count == store.profiles.count)
+        guard case .profilesPartlyUnreadable(let keptAs?) = store.lastError else {
+            Issue.record("A profile dropped for its id must be reported, with the copy's name")
+            return
+        }
+        let copies = try keptCopies(in: dir)
+        #expect(copies.map(\.lastPathComponent) == [keptAs])
+        let copy = try #require(copies.first)
+        #expect(try Data(contentsOf: copy) == original)
+        // Deleting one id removes one profile, not two.
+        if let victim = store.profiles.first { _ = store.delete(victim) }
+        #expect(store.profiles.map(\.name) == ["Other"])
+    }
+
     @Test("A profile with no readable entry is dropped; the others stay")
     func profileWithoutReadableEntriesDropped() throws {
         let dir = makeDirectory()
@@ -141,7 +205,8 @@ struct ProfileCatalogResilienceTests {
         #expect(store.profiles == [desk])
         let copies = try keptCopies(in: dir)
         #expect(copies.count == 1)
-        #expect(try Data(contentsOf: copies[0]) == original)
+        let copy = try #require(copies.first)
+        #expect(try Data(contentsOf: copy) == original)
     }
 
     @Test("A catalog where every profile was dropped is unreadable, not partly readable")

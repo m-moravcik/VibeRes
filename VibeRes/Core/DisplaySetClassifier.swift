@@ -112,6 +112,9 @@ struct ProfileApplyPreview: Equatable {
             case skippedNotConnected
             /// No usable mode for this resolution on the bound display.
             case skippedNoMode
+            /// Identical twin monitors asked for different modes; see
+            /// `ApplyOutcome.Status.skippedIndistinguishable`.
+            case skippedIndistinguishable
         }
 
         let id: UUID
