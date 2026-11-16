@@ -406,22 +406,37 @@ struct HotkeyCenterTests {
         #expect(center.inactive == [.profile(desk): .reservedBySystem, .profile(sofa): .usedByAnotherApp])
     }
 
-    @Test("The popover is told when any saved shortcut could not be registered")
+    @Test("The popover note shows a broken shortcut, hides on dismiss, and returns for a new failure")
     func popoverNoteFollowsInactiveShortcuts() {
         let (center, registrar) = make()
-        #expect(center.hasInactiveShortcuts == false)
+        #expect(center.showsShortcutNote == false)
 
         registrar.takenElsewhere = [comboA]
         center.setBindings([
             HotkeyBinding(owner: .profile(desk), combo: comboA, name: "Desk"),
             HotkeyBinding(owner: .profile(sofa), combo: comboB, name: "Sofa"),
         ])
-        #expect(center.hasInactiveShortcuts)
+        #expect(center.showsShortcutNote)
 
-        // Freed by the other app: the retry registers it and the note goes.
+        center.dismissShortcutNote()
+        #expect(center.showsShortcutNote == false)
+        // A retry that changes nothing keeps it dismissed.
+        center.retryInactive()
+        #expect(center.showsShortcutNote == false)
+
+        // Another shortcut stops working: reported again, never hidden.
+        registrar.takenElsewhere = [comboA, comboB]
+        center.setBindings([
+            HotkeyBinding(owner: .profile(desk), combo: comboA, name: "Desk"),
+            HotkeyBinding(owner: .profile(sofa), combo: comboB, name: "Sofa Two"),
+        ])
+        #expect(center.inactive.count == 2)
+        #expect(center.showsShortcutNote)
+
+        // Freed by the other app: the retry registers them and the note goes.
         registrar.takenElsewhere = []
         center.retryInactive()
-        #expect(center.hasInactiveShortcuts == false)
+        #expect(center.showsShortcutNote == false)
     }
 
     @Test("A hand-edited single-modifier shortcut is reported, not registered")

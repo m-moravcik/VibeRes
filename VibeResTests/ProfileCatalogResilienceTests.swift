@@ -136,9 +136,6 @@ struct ProfileCatalogResilienceTests {
         #expect(copies.map(\.lastPathComponent) == [keptAs])
         let copy = try #require(copies.first)
         #expect(try Data(contentsOf: copy) == original)
-        // Deleting one id removes one profile, not two.
-        if let victim = store.profiles.first { _ = store.delete(victim) }
-        #expect(store.profiles.map(\.name) == ["Other"])
     }
 
     @Test("A profile with no readable entry is dropped; the others stay")

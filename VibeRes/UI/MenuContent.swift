@@ -76,9 +76,6 @@ struct RootView: View {
     @Environment(HotkeyCenter.self) private var hotkeys: HotkeyCenter?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var path: NavigationPath
-    /// Set once the shortcut note is dismissed; cleared when the set of
-    /// shortcuts that do not work changes, so a new failure is said again.
-    @State private var shortcutNoteDismissed = false
     /// The MAIN badge is one element that moves between cards.
     @Namespace private var mainBadge
     /// Opens the inline save form on appear. Only the screenshot harness sets
@@ -108,7 +105,7 @@ struct RootView: View {
             // reported only in Settings and the profile's Edit form. Quiet,
             // dismissable, and gone once nothing is wrong (VISION.md:
             // "reported, never hidden").
-            if hotkeys?.hasInactiveShortcuts == true, !shortcutNoteDismissed {
+            if hotkeys?.showsShortcutNote == true {
                 NoteRow(
                     tone: .fallback,
                     text: Text(LocalizedStringResource(
@@ -116,7 +113,7 @@ struct RootView: View {
                         defaultValue: "A saved shortcut is not working. See Settings, Shortcuts.",
                         comment: "Popover note when a saved global shortcut could not be registered at launch; Settings, Shortcuts is the tab that says which and why"
                     )),
-                    dismiss: { shortcutNoteDismissed = true }
+                    dismiss: { hotkeys?.dismissShortcutNote() }
                 )
                 .padding(.top, Design.Spacing.xs)
                 .transition(.row(reduceMotion: reduceMotion))
@@ -183,9 +180,8 @@ struct RootView: View {
                    value: store.lastError)
         .animation(Design.Motion.rows(arriving: profiles.lastError != nil, reduceMotion: reduceMotion),
                    value: profiles.lastError)
-        .animation(Design.Motion.rows(arriving: hotkeys?.hasInactiveShortcuts == true, reduceMotion: reduceMotion),
-                   value: hotkeys?.hasInactiveShortcuts == true && !shortcutNoteDismissed)
-        .onChange(of: hotkeys?.inactive) { shortcutNoteDismissed = false }
+        .animation(Design.Motion.rows(arriving: hotkeys?.showsShortcutNote == true, reduceMotion: reduceMotion),
+                   value: hotkeys?.showsShortcutNote == true)
         .animation(Design.Motion.rows(arriving: updateStatus.isUpdateReady, reduceMotion: reduceMotion),
                    value: updateStatus.isUpdateReady)
         .animation(Design.Motion.rows(arriving: store.confirmationSecondsRemaining != nil, reduceMotion: reduceMotion),
