@@ -302,7 +302,7 @@ extension ApplyOutcomeNote.Detail {
                 "note.detail.indistinguishable",
                 defaultValue: "\(display) looks the same as another monitor, so it was left unchanged",
                 locale: locale,
-                comment: "Two identical monitors are attached and the profile asks them for different modes, so neither is changed. 1: display name"
+                comment: "The profile names one monitor identity twice at different modes (identical twin monitors), whether one or both are connected, so that monitor is not changed. 1: display name"
             ))
 
         case let .failed(display, problem):

@@ -88,7 +88,7 @@ extension ProfileApplyPreview.Row {
             return String(localized: LocalizedStringResource(
                 "preview.row.indistinguishable",
                 defaultValue: "identical monitors, cannot tell apart: skip",
-                comment: "Two identical monitors are attached and the profile asks them for different modes, so neither is changed"
+                comment: "The profile names one monitor identity twice at different modes (identical twin monitors), whether one or both are connected, so that monitor is not changed"
             ))
         }
     }

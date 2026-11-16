@@ -693,10 +693,10 @@ final class ProfileStore {
             case alreadyApplied           // mode === current; nothing changed
             case skippedNoMatch           // nothing matched the matcher
             case skippedNoMode            // matched but no usable mode found
-            /// The entry binds to two or more displays that report the same
-            /// identity, and another entry of the profile asks the same
-            /// identity for a different mode: which display gets which cannot
-            /// be told, so neither is touched.
+            /// Another entry of the profile names the same identity (identical
+            /// twin monitors) and asks it for a different mode, whether one or
+            /// both twins are connected: which display gets which cannot be
+            /// told, so neither entry is applied.
             case skippedIndistinguishable
             /// The transaction refused this display. Carries the problem as
             /// a value so the UI can localise it; the CLI renders
