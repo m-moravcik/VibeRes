@@ -178,7 +178,7 @@ struct ApplyOutcomeNoteTests {
     func modeFormatting() {
         // These go into localised sentences as arguments. They must not contain
         // prose, or every language would have to re-format the numbers.
-        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 60) == "2 560 × 1 440 · 60 Hz")
+        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 60) == "2 560 × 1 440 · 60 Hz")
         #expect(ApplyOutcomeNote.modeString(width: 1920, height: 1080, hz: nil) == "1 920 × 1 080")
     }
 

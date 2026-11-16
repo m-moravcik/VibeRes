@@ -51,9 +51,9 @@ struct CopyPunctuationTests {
     @Test("Both profile forms write a rate as \"120 Hz\"")
     func modeSummarySpacesTheUnit() {
         #expect(ModeSummary.text(width: 1800, height: 1169, refreshHz: 120, isVRR: false, isHiDPI: true)
-            == "1 800 × 1 169 · 120 Hz · HiDPI")
+            == "1 800 × 1 169 · 120 Hz · HiDPI")
         #expect(ModeSummary.text(width: 2560, height: 1440, refreshHz: 160, isVRR: true, isHiDPI: false)
-            == "2 560 × 1 440 · 160 Hz VRR")
+            == "2 560 × 1 440 · 160 Hz VRR")
         #expect(ModeSummary.text(width: 1920, height: 1080, refreshHz: nil, isVRR: false, isHiDPI: false)
             == "1 920 × 1 080")
     }

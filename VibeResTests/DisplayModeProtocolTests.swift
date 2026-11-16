@@ -35,7 +35,7 @@ struct DisplayModeProtocolTests {
     @Test("menuDescription includes refresh when present")
     func menuDescriptionWithRefresh() {
         let mode = StubDisplayMode(width: 1920, height: 1080, refreshRate: 60)
-        #expect(mode.menuDescription == "1 920 × 1 080 · 60 Hz")
+        #expect(mode.menuDescription == "1 920 × 1 080 · 60 Hz")
     }
 
     @Test("menuDescription omits refresh when zero")

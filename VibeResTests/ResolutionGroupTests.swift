@@ -47,7 +47,7 @@ struct ResolutionGroupExtraTests {
     func menuDescriptionHz() {
         let withHz = StubDisplayMode(width: 1920, height: 1080, refreshRate: 60)
         let zeroHz = StubDisplayMode(width: 1920, height: 1080, refreshRate: 0)
-        #expect(withHz.menuDescription.contains("60 Hz"))
+        #expect(withHz.menuDescription.contains("60 Hz"))
         #expect(zeroHz.menuDescription.contains("Hz") == false)
     }
 

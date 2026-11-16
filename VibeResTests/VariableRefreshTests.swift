@@ -299,8 +299,8 @@ struct VariableRefreshProfileCodingTests {
 
     @Test("A mode string says VRR only when asked to")
     func modeStringVRR() {
-        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160) == "2 560 × 1 440 · 160 Hz")
-        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160, vrr: true) == "2 560 × 1 440 · 160 Hz VRR")
+        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160) == "2 560 × 1 440 · 160 Hz")
+        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160, vrr: true) == "2 560 × 1 440 · 160 Hz VRR")
         #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: nil, vrr: true) == "2 560 × 1 440")
     }
 

@@ -141,7 +141,7 @@ struct ProfileFormLogicTests {
     @Test("A row with nothing connected still describes the mode it will apply")
     func savedModeDescriptionReadsCompletely() {
         #expect(entry(width: 2560, height: 1440, hz: 75, hiDPI: true).savedModeDescription
-                == "2 560 × 1 440 · 75 Hz · HiDPI")
+                == "2 560 × 1 440 · 75 Hz · HiDPI")
         #expect(entry(width: 1920, height: 1080, hz: nil, hiDPI: false).savedModeDescription
                 == "1 920 × 1 080")
     }
@@ -156,7 +156,7 @@ struct ProfileFormLogicTests {
             mode(2560, 1440, 60, hiDPI: true),
             mode(2560, 1440, 120),
         ])
-        #expect(buckets.map(\.label) == ["2 560 × 1 440 · HiDPI", "2 560 × 1 440", "1 920 × 1 080"])
+        #expect(buckets.map(\.label) == ["2 560 × 1 440 · HiDPI", "2 560 × 1 440", "1 920 × 1 080"])
     }
 
     @Test("A size appears once however many rates it has")
@@ -261,8 +261,8 @@ struct ProfileFormLogicTests {
     @Test("A disconnected VRR entry says so in its saved mode")
     func savedModeSaysVRR() {
         var row = entry(width: 2560, height: 1440, hz: 160)
-        #expect(row.savedModeDescription == "2 560 × 1 440 · 160 Hz")
+        #expect(row.savedModeDescription == "2 560 × 1 440 · 160 Hz")
         row.isVariableRefresh = true
-        #expect(row.savedModeDescription == "2 560 × 1 440 · 160 Hz VRR")
+        #expect(row.savedModeDescription == "2 560 × 1 440 · 160 Hz VRR")
     }
 }

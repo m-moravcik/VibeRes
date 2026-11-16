@@ -16,26 +16,48 @@ struct ModeFormatTests {
         #expect(ModeFormat.size(width: 2560, height: 1440) == Self.size)
         #expect(ModeFormat.size(width: 800, height: 600) == "800 \u{00D7} 600")
         #expect(ModeFormat.size(width: 1_000_000, height: 12) == "1\u{202F}000\u{202F}000 \u{00D7} 12")
-        #expect(ModeFormat.rate(60) == "60 Hz")
-        #expect(ModeFormat.rate(160, vrr: true) == "160 Hz VRR")
-        #expect(ModeFormat.mode(width: 2560, height: 1440, hz: 60) == Self.size + " \u{00B7} 60 Hz")
+        #expect(ModeFormat.rate(60) == "60\u{00A0}Hz")
+        #expect(ModeFormat.rate(160, vrr: true) == "160\u{00A0}Hz VRR")
+        #expect(ModeFormat.mode(width: 2560, height: 1440, hz: 60) == Self.size + "\u{00A0}\u{00B7} 60\u{00A0}Hz")
         #expect(ModeFormat.mode(width: 2560, height: 1440, hz: nil) == Self.size)
         #expect(ModeFormat.mode(width: 2560, height: 1440, hz: 120, vrr: true, hiDPI: true)
-            == Self.size + " \u{00B7} 120 Hz VRR \u{00B7} HiDPI")
+            == Self.size + "\u{00A0}\u{00B7} 120\u{00A0}Hz VRR\u{00A0}\u{00B7} HiDPI")
+    }
+
+    /// A wrapped note must never leave "75" at a line end and "Hz" on the next,
+    /// nor start a line with "·". U+0020 is a break opportunity; U+00A0 is not
+    /// (Unicode line breaking, UAX #14: class GL), so only U+00A0 may sit there.
+    @Test("A rate never wraps between its number and Hz, nor before the separator")
+    func rateDoesNotWrap() {
+        #expect(ModeFormat.rate(75) == "75\u{00A0}Hz")
+        #expect(ModeFormat.rate(160, vrr: true).hasPrefix("160\u{00A0}Hz"))
+
+        let mode = ModeFormat.mode(width: 2560, height: 1440, hz: 75, vrr: true, hiDPI: true)
+        #expect(!mode.contains(" Hz"))
+        #expect(!mode.contains(" \u{00B7}"))
+
+        let sk = Locale(identifier: "sk")
+        let fallback = ApplyOutcomeNote.Detail.fallback(
+            display: "LG", wantedWidth: 2560, wantedHeight: 1440, wantedHz: 75,
+            usedWidth: 2560, usedHeight: 1440, usedHz: 60, wantedVRR: false, usedVRR: false)
+        let text = fallback.localizedDescription(locale: sk)
+        #expect(text.contains("75\u{00A0}Hz"))
+        #expect(!text.contains(" Hz"))
+        #expect(!text.contains(" \u{00B7}"))
     }
 
     @Test("Apply notes use the shared format in a non-English locale")
     func notesInSlovak() {
         let sk = Locale(identifier: "sk")
         let applied = ApplyOutcomeNote.Detail.applied(display: "LG", width: 2560, height: 1440, hz: 75, vrr: false)
-        #expect(applied.localizedDescription(locale: sk).contains(Self.size + " \u{00B7} 75 Hz"))
+        #expect(applied.localizedDescription(locale: sk).contains(Self.size + "\u{00A0}\u{00B7} 75\u{00A0}Hz"))
 
         let fallback = ApplyOutcomeNote.Detail.fallback(
             display: "LG", wantedWidth: 2560, wantedHeight: 1440, wantedHz: 75,
             usedWidth: 2560, usedHeight: 1440, usedHz: 60, wantedVRR: false, usedVRR: false)
         let text = fallback.localizedDescription(locale: sk)
-        #expect(text.contains(Self.size + " \u{00B7} 75 Hz"))
-        #expect(text.contains(Self.size + " \u{00B7} 60 Hz"))
+        #expect(text.contains(Self.size + "\u{00A0}\u{00B7} 75\u{00A0}Hz"))
+        #expect(text.contains(Self.size + "\u{00A0}\u{00B7} 60\u{00A0}Hz"))
         #expect(!text.contains("@"))
     }
 
@@ -46,8 +68,8 @@ struct ModeFormatTests {
             action: .willApplyFallback(targetWidth: 2560, targetHeight: 1440, targetHz: 60),
             savedWidth: 2560, savedHeight: 1440, savedHz: 75, savedIsHiDPI: false)
         let text = row.detailText
-        #expect(text.contains(Self.size + " \u{00B7} 75 Hz"))
-        #expect(text.contains(Self.size + " \u{00B7} 60 Hz"))
+        #expect(text.contains(Self.size + "\u{00A0}\u{00B7} 75\u{00A0}Hz"))
+        #expect(text.contains(Self.size + "\u{00A0}\u{00B7} 60\u{00A0}Hz"))
         #expect(!text.contains("@"))
     }
 

@@ -20,7 +20,8 @@ import Foundation
 /// `viberes` tool compiles too. "VRR" is an acronym and stays as it is.
 enum ModeFormat {
     /// Between a size and a rate, and between either and a flag such as HiDPI.
-    static let separator = " \u{00B7} "
+    /// U+00A0 before the dot, so a wrapped line never starts with "·".
+    static let separator = "\u{00A0}\u{00B7} "
 
     /// "2 560 × 1 440". The spaces inside a number are U+202F, so a line break
     /// never lands in the middle of one.
@@ -29,8 +30,9 @@ enum ModeFormat {
     }
 
     /// "60 Hz", or "60 Hz VRR" for a variable mode that has a fixed twin.
+    /// U+00A0 joins the number and "Hz", so a line never breaks between them.
     static func rate(_ hz: Int, vrr: Bool = false) -> String {
-        vrr ? "\(hz) Hz VRR" : "\(hz) Hz"
+        vrr ? "\(hz)\u{00A0}Hz VRR" : "\(hz)\u{00A0}Hz"
     }
 
     /// "2 560 × 1 440 · 60 Hz"; just the size when the mode reports no rate.
