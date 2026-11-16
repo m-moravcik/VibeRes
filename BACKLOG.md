@@ -268,11 +268,6 @@ problems "reported, never hidden"; a quiet note in the popover would be
 enough. (Falling back quietly when a shortcut is pressed while the action
 cannot run is accepted in PRD §4.11.)
 
-### One format for a refresh rate in notes
-The profile forms and the display rows write "120 Hz"; the apply notes and
-the hover preview still write "@60Hz" and "@ 60Hz". Rendered with numbers
-from code, so one shared formatter would align them in every language.
-
 ## Motion and polish audit (2026-11-13)
 
 A pass over the whole app with the motion-polish checklist. The popover
@@ -399,6 +394,14 @@ effort; each item says when it was built.
   one sound worth having.
 
 ## Shipped, kept here so they are not re-proposed
+
+### One format for sizes and refresh rates — shipped in 0.14.0
+
+Cards, both profile forms, apply notes, the hover preview, the confirmation
+rows and Revert notes wrote three dialects ("2 560 × 1 440 · 60 Hz",
+"2560×1440 · 60 Hz", "2560×1440 @75Hz"). `ModeFormat` now writes all of them
+as "2 560 × 1 440 · 60 Hz" (narrow no-break space between digit groups, "Hz"
+and "VRR" as symbols), the same in en, sk, cs, de, es and fr.
 
 ### Sparkle in-app updates — shipped in 0.8.2
 

@@ -107,7 +107,7 @@ struct ApplyOutcomeTests {
         )
         // Looser assertions — we want the user-meaningful info present
         // without locking down exact punctuation.
-        #expect(outcome.summary.contains("2560×1440"))
+        #expect(outcome.summary.contains("2 560 × 1 440 · 75 Hz"))
         #expect(outcome.summary.contains("75"))
         #expect(outcome.summary.contains("60"))
         #expect(outcome.summary.contains("closest"))

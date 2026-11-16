@@ -711,20 +711,23 @@ final class ProfileStore {
             case anyExternal
         }
 
+        /// The mode that was reached, in the shared format; "?" when none was.
+        private var appliedMode: String {
+            guard let size = appliedSize else { return "?" }
+            return ModeFormat.mode(width: size.width, height: size.height, hz: appliedHz, vrr: appliedVRR)
+        }
+
         /// Human-readable summary used in tooltips and CLI output.
         var summary: String {
             switch status {
             case .applied:
-                let hz = appliedHz.map { " @ \($0)Hz" + (appliedVRR ? " VRR" : "") } ?? ""
-                return "\(displayName) → \(appliedSize?.formatted ?? "?")\(hz)"
+                return "\(displayName) → \(appliedMode)"
             case .alreadyApplied:
                 return "\(displayName) already at requested mode"
             case .appliedWithFallback:
-                let req = requestedSize.formatted
-                    + (requestedHz.map { " @\($0)Hz" + (requestedVRR ? " VRR" : "") } ?? "")
-                let got = (appliedSize?.formatted ?? "?")
-                    + (appliedHz.map { " @\($0)Hz" + (appliedVRR ? " VRR" : "") } ?? "")
-                return "\(displayName): wanted \(req), used \(got) (closest available)"
+                let req = ModeFormat.mode(width: requestedSize.width, height: requestedSize.height,
+                                          hz: requestedHz, vrr: requestedVRR)
+                return "\(displayName): wanted \(req), used \(appliedMode) (closest available)"
             case .skippedNoMatch:
                 switch matcherKind {
                 case .anyExternal: return "no external monitor connected"

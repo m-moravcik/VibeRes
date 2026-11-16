@@ -299,9 +299,9 @@ struct VariableRefreshProfileCodingTests {
 
     @Test("A mode string says VRR only when asked to")
     func modeStringVRR() {
-        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160) == "2560×1440 @160Hz")
-        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160, vrr: true) == "2560×1440 @160Hz VRR")
-        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: nil, vrr: true) == "2560×1440")
+        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160) == "2 560 × 1 440 · 160 Hz")
+        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: 160, vrr: true) == "2 560 × 1 440 · 160 Hz VRR")
+        #expect(ApplyOutcomeNote.modeString(width: 2560, height: 1440, hz: nil, vrr: true) == "2 560 × 1 440")
     }
 
     @Test("A VRR fallback says what was wanted and what was used")
@@ -317,7 +317,7 @@ struct VariableRefreshProfileCodingTests {
             requestedVRR: true,
             appliedVRR: false
         )
-        #expect(outcome.summary == "Adaptive: wanted 2560×1440 @160Hz VRR, used 2560×1440 @160Hz (closest available)")
+        #expect(outcome.summary == "Adaptive: wanted 2 560 × 1 440 · 160 Hz VRR, used 2 560 × 1 440 · 160 Hz (closest available)")
     }
 }
 

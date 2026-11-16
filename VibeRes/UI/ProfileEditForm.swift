@@ -229,11 +229,7 @@ struct ProfileEditForm: View {
     @ViewBuilder
     private func rateLabel(_ rate: ProfilesSection.LiveMode.RateChoice) -> some View {
         if let hz = rate.hz {
-            if rate.isVRRTwin {
-                Text("\(hz) Hz VRR")
-            } else {
-                Text("\(hz) Hz")
-            }
+            Text(verbatim: ModeFormat.rate(hz, vrr: rate.isVRRTwin))
         } else {
             Text(verbatim: "—")
         }
@@ -348,7 +344,7 @@ extension ProfilesSection.LiveMode {
         let isHiDPI: Bool
 
         var label: String {
-            "\(pointWidth)×\(pointHeight)" + (isHiDPI ? " HiDPI" : "")
+            ModeFormat.mode(width: pointWidth, height: pointHeight, hz: nil, hiDPI: isHiDPI)
         }
     }
 

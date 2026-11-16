@@ -183,9 +183,7 @@ struct ApplyOutcomeNote: Equatable {
     ///
     /// "VRR" is an acronym like "Hz" and stays as it is in every language.
     static func modeString(width: Int, height: Int, hz: Int?, vrr: Bool = false) -> String {
-        let size = "\(width)×\(height)"
-        guard let hz else { return size }
-        return "\(size) @\(hz)Hz" + (vrr ? " VRR" : "")
+        ModeFormat.mode(width: width, height: height, hz: hz, vrr: vrr)
     }
 
     private static func detail(for outcome: ProfileStore.ApplyOutcome) -> Detail {

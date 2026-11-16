@@ -15,10 +15,8 @@ import Foundation
 extension ProfileApplyPreview.Row {
     /// The saved mode, as digits and units only.
     private var savedMode: String {
-        var text = "\(savedWidth)×\(savedHeight)"
-        if let savedHz { text += " @ \(savedHz)Hz" + (savedVRR ? " VRR" : "") }
-        if savedIsHiDPI { text += " HiDPI" }
-        return text
+        ModeFormat.mode(width: savedWidth, height: savedHeight, hz: savedHz,
+                        vrr: savedVRR, hiDPI: savedIsHiDPI)
     }
 
     /// True when the mode the display is already in is the one the profile
@@ -45,7 +43,7 @@ extension ProfileApplyPreview.Row {
             ))
 
         case let .willApplyFallback(width, height, hz):
-            let used = "\(width)×\(height)" + (hz.map { " @ \($0)Hz" + (targetVRR ? " VRR" : "") } ?? "")
+            let used = ModeFormat.mode(width: width, height: height, hz: hz, vrr: targetVRR)
             return String(localized: LocalizedStringResource(
                 "preview.row.willApplyFallback",
                 defaultValue: "wanted \(savedMode), will use \(used)",
@@ -63,9 +61,8 @@ extension ProfileApplyPreview.Row {
             // Report what the display is actually at, not what was asked for:
             // an `.anyExternal` entry saved from a 4K panel lands on 1920×1080
             // on a 1080p one, and "already at 2880×1620" would be a lie.
-            var current = "\(width)×\(height)"
-            if let hz { current += " @ \(hz)Hz" + (targetVRR ? " VRR" : "") }
-            if isHiDPI { current += " HiDPI" }
+            let current = ModeFormat.mode(width: width, height: height, hz: hz,
+                                          vrr: targetVRR, hiDPI: isHiDPI)
             return String(localized: LocalizedStringResource(
                 "preview.row.alreadyAtClosest",
                 defaultValue: "already at \(current) (closest to \(savedMode))",
@@ -80,7 +77,7 @@ extension ProfileApplyPreview.Row {
             ))
 
         case .skippedNoMode:
-            let size = "\(savedWidth)×\(savedHeight)"
+            let size = ModeFormat.size(width: savedWidth, height: savedHeight)
             return String(localized: LocalizedStringResource(
                 "preview.row.noUsableMode",
                 defaultValue: "no usable mode for \(size)",

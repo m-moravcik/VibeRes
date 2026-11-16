@@ -25,10 +25,6 @@ extension DisplayModeProtocol {
     }
 
     var menuDescription: String {
-        var parts = ["\(width) × \(height)"]
-        if let hz = refreshHz {
-            parts.append("@ \(hz)Hz")
-        }
-        return parts.joined(separator: " ")
+        ModeFormat.mode(width: width, height: height, hz: refreshHz)
     }
 }

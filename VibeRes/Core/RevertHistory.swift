@@ -38,7 +38,7 @@ final class RevertHistory {
         case 0: return ""
         case 1:
             let e = entries[0]
-            return "\(e.displayName) → \(e.before.width)×\(e.before.height)\(mainSuffix)"
+            return "\(e.displayName) → \(ModeFormat.size(width: e.before.width, height: e.before.height))\(mainSuffix)"
         default:
             return entries.map(\.displayName).joined(separator: ", ") + mainSuffix
         }
