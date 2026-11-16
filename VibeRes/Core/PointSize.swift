@@ -17,8 +17,4 @@ struct PointSize: Equatable, Hashable, Sendable {
         self.width = width
         self.height = height
     }
-
-    /// Digits and a multiplication sign, no units and no words, so it can be
-    /// dropped into a sentence in any language. See `ModeFormat`.
-    var formatted: String { ModeFormat.size(width: width, height: height) }
 }

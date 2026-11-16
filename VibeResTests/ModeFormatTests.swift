@@ -51,11 +51,6 @@ struct ModeFormatTests {
         #expect(!text.contains("@"))
     }
 
-    @Test("Point sizes use the shared format")
-    func pointSize() {
-        #expect(PointSize(width: 2560, height: 1440).formatted == Self.size)
-    }
-
     /// Reads a mode of the main display; never sets one.
     @Test("The Revert row's size uses the shared format")
     @MainActor
