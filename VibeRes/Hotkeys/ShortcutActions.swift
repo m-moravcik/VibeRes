@@ -129,7 +129,7 @@ enum ShortcutActions {
         let landed = result.outcomes.contains { outcome in
             switch outcome.status {
             case .applied, .alreadyApplied, .appliedWithFallback: return true
-            case .skippedNoMatch, .skippedNoMode, .failed: return false
+            case .skippedNoMatch, .skippedNoMode, .skippedIndistinguishable, .failed: return false
             }
         }
         let mainLanded: Bool

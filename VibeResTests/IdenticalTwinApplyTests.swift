@@ -68,6 +68,7 @@ struct IdenticalTwinApplyTests {
             #expect(outcome.isProblem)
         }
         #expect(result.didChangeAnything == false)
+        #expect(ShortcutActions.landedNothing(result), "a twin-only profile that changed nothing must not report success")
     }
 
     @Test("With one twin connected, entries at different modes are not applied to it twice")
