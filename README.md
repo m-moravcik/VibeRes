@@ -123,7 +123,7 @@ Built-in is always specific. Excluded displays are left untouched, so a "Code" p
 
 Pill icons telegraph the type at a glance. `[🖥 Work]` is locked to specific monitors, `[🖥 Presentation ✱]` carries the small `✱` badge that means *"this profile travels"*, `[💻 Code]` uses the laptop icon when the profile only touches the built-in. The profile that matches what the displays are currently doing is highlighted with a checkmark and an accent border — that one is *on*, the others are one click away. A pill none of whose displays is connected is dimmed, and its tooltip says which monitor it is waiting for; clicking it still opens the panel that explains why there is nothing to apply.
 
-When you click a pill, a note under the pills shows the outcome. A green check means it applied as saved, and the note clears itself after a few seconds. An orange triangle means the closest available mode was used as a fallback (e.g. *"LG UltraFine: wanted 2560 × 1440 @ 75 Hz, used 2560 × 1440 @ 60 Hz (closest available)"*); a red one means a display had no usable mode or the switch failed. Those stay until you dismiss them or close the popover. A display the profile names that isn't connected is mentioned on a quieter second line; only when none of them is connected does it become the note itself, in orange.
+When you click a pill, a note under the pills shows the outcome. A green check means it applied as saved, and the note clears itself after a few seconds. An orange triangle means the closest available mode was used as a fallback (e.g. *"LG UltraFine: wanted 2 560 × 1 440 · 75 Hz, used 2 560 × 1 440 · 60 Hz (closest available)"*); a red one means a display had no usable mode or the switch failed. Those stay until you dismiss them or close the popover. A display the profile names that isn't connected is mentioned on a quieter second line; only when none of them is connected does it become the note itself, in orange.
 
 ### Editing a profile
 
@@ -182,8 +182,8 @@ viberes profile save Presentation --any-external
 viberes profile save Code --only Built-in
 viberes profile apply Presentation
 # # applied profile "Presentation"
-#   ✓ Built-in Retina Display → 1280×800 @60Hz
-#   ~ LG UltraFine: wanted 1920×1080 @60Hz, used 1920×1080 @60Hz (closest available)
+#   ✓ Built-in Retina Display → 1280x800 @60Hz
+#   ~ LG UltraFine: wanted 1920x1080 @60Hz, used 1920x1080 @60Hz (closest available)
 ```
 
 `list`, `current`, `set` and `profile show` print `VRR` after the rate of a variable refresh mode, and `modes` lists it as `160vrr`, the spelling `set` accepts.
