@@ -140,8 +140,14 @@ struct ApplyOutcomeNote: Equatable {
             }
         }
         if !problems.isEmpty {
+            // Identical twins report one name, so both of their entries would
+            // say the same sentence; an equal detail is said once.
+            var details: [Detail] = []
+            for problem in problems.map(detail(for:)) where !details.contains(problem) {
+                details.append(problem)
+            }
             return ApplyOutcomeNote(
-                tone: .problem, content: .problems(problems.map(detail(for:))), skipped: skipped
+                tone: .problem, content: .problems(details), skipped: skipped
             )
         }
 
