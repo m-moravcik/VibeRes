@@ -310,13 +310,18 @@ room to negotiate.
 
 ### 4.10 Shortcuts and Siri
 
-- **Set Display Resolution** and **Get Current Resolution** register as App
-  Intents, reachable from Shortcuts, Spotlight and Siri.
+- **Apply Profile** (the profile is an `AppEntity` picked from the saved
+  list), **Set Display Resolution** and **Get Current Resolution** register
+  as App Intents, reachable from Shortcuts, Spotlight and Siri.
+- Apply Profile and Set Display Resolution act through `ProfileStore` and
+  `DisplayStore`, like the popover and the global shortcuts, so each records
+  Revert. Apply Profile fails the action when nothing could be applied.
 - Parameters are validated at the boundary with the same bounds as the CLI
   (1–16384 points, 1–1000 Hz) and refused per parameter, not silently
   best-matched. Scoring is overflow-safe regardless, as a second line.
 
-*Evidence:* `Shortcuts/SetResolutionIntent.swift`, `Core/ModeScoring.swift`.
+*Evidence:* `Shortcuts/ApplyProfileIntent.swift`, `Shortcuts/SetResolutionIntent.swift`,
+`Shortcuts/IntentActions.swift`, `Core/ModeScoring.swift`.
 
 ### 4.11 Global shortcuts
 

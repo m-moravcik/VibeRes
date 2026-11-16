@@ -58,6 +58,10 @@ struct VibeResApp: App {
             profiles.watchForExternalChanges()
             hotkeys.retryWhenAppsQuit(observing: NSWorkspace.shared, \.runningApplications)
         }
+        // App Intents act through these same stores, so Revert in the popover
+        // takes back what a Shortcut applied.
+        IntentRuntime.displays = displays
+        IntentRuntime.profiles = profiles
         _hotkeys = State(initialValue: hotkeys)
         _iconAnimator = State(initialValue: iconAnimator)
         _displayStore = State(initialValue: displays)

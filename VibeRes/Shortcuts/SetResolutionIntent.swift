@@ -18,7 +18,7 @@ struct SetResolutionIntent: AppIntent {
         categoryName: "Display"
     )
 
-    /// Most users have one display — let Shortcuts auto-select it when only one exists.
+    /// Most users have one display, so let Shortcuts auto-select it when only one exists.
     static var parameterSummary: some ParameterSummary {
         Summary("Set \(\.$display) to \(\.$width) by \(\.$height)") {
             \.$refreshHz
@@ -59,52 +59,37 @@ struct SetResolutionIntent: AppIntent {
     )
     var variableRefresh: Bool
 
+    @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        // Shortcuts hands over whatever the automation supplies, including
-        // values no display could have. Scoring survives them now, but the
-        // honest answer is to reject them at the parameter that is wrong rather
-        // than silently pick some "closest" mode.
-        guard ModeScoring.isRequestInRange(width: width, height: height, refreshHz: refreshHz) else {
-            if !(1...16384).contains(width) {
-                throw $width.needsValueError("Width must be between 1 and 16384 points.")
-            }
-            if !(1...16384).contains(height) {
-                throw $height.needsValueError("Height must be between 1 and 16384 points.")
-            }
-            throw $refreshHz.needsValueError("Refresh rate must be between 1 and 1000 Hz.")
-        }
-
-        let snapshot = await MainActor.run { DisplayManager.snapshot() }
-        guard let info = snapshot.first(where: { Int($0.id) == display.id }) else {
-            throw $display.needsValueError("That display is no longer connected.")
-        }
-
-        guard let mode = bestMatch(on: info) else {
-            throw $width.needsValueError(
-                "No mode close to \(width)×\(height) is available on \(display.name)."
+        // Through the app's DisplayStore, like a click in the popover, so the
+        // mode this replaces is armed for Revert.
+        do {
+            let said = try IntentActions.setResolution(
+                displayID: display.id, width: width, height: height, refreshHz: refreshHz,
+                preferHiDPI: preferHiDPI, variableRefresh: variableRefresh,
+                displays: try IntentRuntime.requireDisplays()
             )
+            return .result(value: said)
+        } catch let problem as IntentProblem {
+            // Point Shortcuts at the parameter that is wrong, so it asks for
+            // that one value again instead of failing the whole action.
+            switch problem {
+            case .widthOutOfRange:
+                throw $width.needsValueError("Width must be between 1 and 16384 points.")
+            case .heightOutOfRange:
+                throw $height.needsValueError("Height must be between 1 and 16384 points.")
+            case .refreshOutOfRange:
+                throw $refreshHz.needsValueError("Refresh rate must be between 1 and 1000 Hz.")
+            case .displayNotConnected:
+                throw $display.needsValueError("That display is no longer connected.")
+            case .noCloseMode:
+                throw $width.needsValueError(
+                    "No mode close to \(width)×\(height) is available on \(display.name)."
+                )
+            default:
+                throw problem
+            }
         }
-
-        // CGConfigure* APIs are thread-safe; no need to hop to the main actor.
-        try ResolutionSwitcher.apply(mode, to: info.id)
-
-        return .result(value: "\(mode.width) × \(mode.height)\(Self.hzPart(mode, on: info))")
-    }
-
-    /// Scoring: lower is better. Penalises distance from requested size, mismatched
-    /// HiDPI preference, and (when refreshHz is set) distance from requested refresh.
-    private func bestMatch(on info: DisplayInfo) -> CGDisplayMode? {
-        ModeScoring.bestMatch(
-            in: info.modes,
-            request: ModeScoring.Request(
-                width: width,
-                height: height,
-                refreshHz: refreshHz,
-                preferHiDPI: preferHiDPI,
-                preferVariable: variableRefresh
-            ),
-            isVariable: info.isVariable
-        )
     }
 
     /// " @ 160 Hz", or " @ 160 Hz VRR" for a variable mode that has a fixed

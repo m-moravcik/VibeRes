@@ -16,6 +16,16 @@ struct VibeResAppShortcuts: AppShortcutsProvider {
         )
 
         AppShortcut(
+            intent: ApplyProfileIntent(),
+            phrases: [
+                "Apply a profile in \(.applicationName)",
+                "Apply profile with \(.applicationName)",
+            ],
+            shortTitle: "Apply Profile",
+            systemImageName: "rectangle.3.group"
+        )
+
+        AppShortcut(
             intent: GetCurrentResolutionIntent(),
             phrases: [
                 "Get current resolution from \(.applicationName)",

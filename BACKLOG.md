@@ -170,8 +170,8 @@ Bind global keyboard shortcuts to apply a specific profile (e.g.
 - Already addressable via Shortcuts.app (the App Intents integration): a
   keyboard shortcut can run a Shortcut that applies a profile.
   *Corrected 2026-11-15: this was never true. The App Intents are Set
-  Resolution and Get Resolution; applying a profile from Shortcuts needs the
-  Apply Profile intent listed under the break-it QA findings below.*
+  Resolution and Get Resolution; applying a profile from Shortcuts needed the
+  Apply Profile intent, added in 0.14.0.*
 
 **Decided 2026-11-13: build it, next after the first-profile onboarding.**
 The Shortcuts route needs one hand-built Shortcut per profile; a shortcut
@@ -222,25 +222,18 @@ oldest log lines are left out first and the report says how many; if even
 that is too long, the form opens empty and the full report goes on the
 clipboard, which the Debug tab says.
 
-### Revert after the CLI and the Set Resolution intent
+### Revert after the CLI
 VISION.md: a shortcut or script applies like the CLI, and Revert takes it
-back. Profiles, shortcuts and auto-apply record Revert; the `viberes` CLI
-(a separate process) and the Set Resolution App Intent (which calls the
-switcher directly) still record none, so Revert afterwards offers the
-action before them. Open: how the CLI hands its change to the running app,
-and whether the intent should go through `DisplayStore` instead.
+back. Profiles, shortcuts, auto-apply and the Apply Profile and Set Resolution
+App Intents record Revert; the `viberes` CLI (a separate process) still
+records none, so Revert afterwards offers the action before it. Open: how the
+CLI hands its change to the running app.
 
 ## Break-it QA findings, deferred (2026-11-15)
 
 Found in the 1.0 QA pass and left for later on purpose. The pass fixed the
 safety nets, the profile catalog, and Settings, shortcuts and copy; these did
 not make that cut.
-
-### Apply Profile App Intent
-VISION.md and the README imply a Shortcut can apply a profile, but the App
-Intents are only Set Resolution and Get Resolution. An Apply Profile intent
-(with the profile as an `AppEntity`) would close that. Open question for
-1.0: build it as its own change, or document the gap.
 
 ### Identical twin monitors saved at different modes
 Two monitors that report the same vendor, model and serial bind to both
