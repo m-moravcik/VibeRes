@@ -77,3 +77,4 @@ build-dd-loc/
 
 # Xcode derived data kept next to the checkout
 .build-dd/
+docs/superpowers/
